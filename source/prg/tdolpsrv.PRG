@@ -52,6 +52,9 @@ CLASS TDolphinSrv
                               /* Returns the error code for the most recently invoked 
                                 API function that can succeed or fail. 
                                 A return value of zero means that no error occurred.*/
+                                
+   METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
+                              /* verify is Data Base exist, return logical value*/
    
    METHOD ListDBs( cWild )    INLINE MySqlListDBs( ::hMysql, cWild )
                               /* Returns a array set consisting of database names on the server 
