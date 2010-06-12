@@ -1,11 +1,5 @@
-
-
-#ifdef __XHARBOUR__ 
-   #include "fivewin.ch"
-#else 
-   #include "hbcompat.ch"
-   #define CRLF Chr( 13 ) + Chr( 10 )
-#endif
+#include "hbcompat.ch"
+#define CRLF Chr( 13 ) + Chr( 10 )
 
 PROCEDURE Main()
    
@@ -25,7 +19,6 @@ PROCEDURE Main()
    IF ! oServer:lError 
       cText += "Connection OK" + CRLF
       oServer:SelectDB( "test01" )
-      
       ? cText
    ENDIF
    
