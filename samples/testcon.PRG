@@ -20,6 +20,7 @@ PROCEDURE Main()
       cText += "Connection OK" + CRLF
       oServer:SelectDB( "test01" )
       ? cText
+      wait "presiona una tecla"
    ENDIF
    
 
@@ -35,6 +36,7 @@ PROCEDURE GetError( oServer, nError, lInternal )
    cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
    
    ? cText + CRLF
+      wait "presiona una tecla"
    
 RETURN
    
