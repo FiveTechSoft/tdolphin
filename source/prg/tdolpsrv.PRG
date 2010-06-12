@@ -46,7 +46,7 @@ CLASS TDolphinSrv
    METHOD ErrorTxt()   INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
    METHOD ErrorNo()    INLINE ::lError := .F., MySqlGetErrNo( ::hMysql )
    
-   METHOD SelectDB( cDBName ) /*Select data base in current active connection
+   METHOD SelectDB( cDBName ) /*Select data base in current active connection*/
 
    
 ENDCLASS
