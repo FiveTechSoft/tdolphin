@@ -1,0 +1,1 @@
+c:\bcc582\bin\make -ftdolpx.mak HPATH=\XHARBOUR BCCPATH=\BCC582

@@ -1,0 +1,56 @@
+// CLASS TDolphinSrv
+// Manager MySql server connection
+
+
+#include "hbclass.ch"
+#include "common.ch"
+#include "tdolphin.ch"
+
+#define CRLF Chr( 13 ) + Chr( 10 )
+
+#ifdef __HARBOUR__
+#include "hbcompat.ch"
+#ifndef RGB
+#define RGB( nR,nG,nB )  ( nR + ( nG * 256 ) + ( nB * 256 * 256 ) )
+#endif /*RGB*/
+#endif/*__HARBOUR__*/
+
+
+CLASS TDolphinSrv
+
+   DATA bOnError    /*Custom manager error message*/
+
+   DATA cPassword   /*Data contains the password for user*/
+   DATA cServer     /*Host name, may be either a host name or an IP address */
+   DATA cUser       /*DAta contains the user's MySQL login ID*/
+
+   DATA hMysql      /*MySQL connection handle*/
+                  
+   DATA lError      /*Error detection switch*/
+                  
+   DATA nFlags      /*Client flags*/
+   DATA nInternalError /*error manager, no come from MySQL*/
+   DATA nPort       /*value is used as the port number for the TCP/IP connection*/
+   
+   METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError )
+   
+   
+ENDCLASS
+
+METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError ) CLASS TDolphinSrv
+
+   ::cServer        = cServer
+   ::cUser          = cUser
+   ::cPassword      = cPassword
+   ::nPort          = nPort
+   ::nFlags         = nFlags
+   ::hMysql         = MySqlConnect(cServer, cUser, cPassword, nPort, nFlags )
+   ::lError         = .F.
+   ::bOnError       = bOnError
+   ::nInternalError = 0
+
+   IF ::hMysql <= 0
+      ::lError := .T.
+   ENDIF
+
+return Self
