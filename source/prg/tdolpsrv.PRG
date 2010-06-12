@@ -16,11 +16,14 @@
 #endif/*__HARBOUR__*/
 
 
+#define ERR_EMPTYDBNAME 9000
+
 CLASS TDolphinSrv
 
    DATA bOnError    /*Custom manager error message
                       ( Self, nError, lInternal ) */
 
+   DATA cDBName     /*Data base selected*/
    DATA cPassword   /*Data contains the password for user*/
    DATA cServer     /*Host name, may be either a host name or an IP address */
    DATA cUser       /*DAta contains the user's MySQL login ID*/
@@ -34,11 +37,16 @@ CLASS TDolphinSrv
    DATA nPort       /*value is used as the port number for the TCP/IP connection*/
    
    METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError )
-
+   
    METHOD CheckError( nError )
    METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )	
    
+   METHOD End()        INLINE MySqlClose( ::hMysql )
+   
+   METHOD ErrorTxt()   INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
    METHOD ErrorNo()    INLINE ::lError := .F., MySqlGetErrNo( ::hMysql )
+   
+   METHOD SelectDB( cDBName ) /*Select data base in current active connection
 
    
 ENDCLASS
@@ -60,7 +68,7 @@ METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError ) CLASS TDolphinS
    
    ::CheckError()
    IF ::lError
-      MySqlClose( ::hMysql )
+      ::End()
    ENDIF
 
 RETURN Self
@@ -79,8 +87,11 @@ METHOD CheckError( nError ) CLASS TDolphinSrv
          lInternal = .T.
          ::lError    = .T.
       ENDIF
-   ELSE
-      ::lError = .T.
+   ELSE 
+      ::lError := .T.   
+   ENDIF
+   
+   IF ::lError
       IF ::bOnError != nil
          Eval( ::bOnError, Self, nError, lInternal )
       ENDIF
@@ -102,3 +113,31 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
    
 
 RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
+
+//----------------------------------------------------//
+
+METHOD SelectDB( cDBName ) CLASS TDolphinSrv
+
+   LOCAL nError 
+   
+   ::lError := .F.
+
+   IF Empty( cDBName )
+      ::nInternalError = ERR_EMPTYDBNAME
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+
+   IF ( nError := MysqlSelectDB( ::hMysql, cDBName ) ) != 0   // table not exist
+      ::cDBName :=""
+      ::lError  := .T.
+      ::CheckError( nError )
+   ELSE                                       // table exist
+      ::cDBName := cDBName
+      ::lError  := .F.
+      RETURN .T.
+   ENDIF
+
+RETURN .F.
+
+//----------------------------------------------------//

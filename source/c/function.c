@@ -33,8 +33,24 @@ HB_FUNC( MYSQLCLOSE )//->none
 }
 
 //------------------------------------------------//
+// char *mysql_error(MYSQL *mysql)
+HB_FUNC( MYSQLERROR ) //-> A null-terminated character string that describes the error. 
+                      //   An empty string if no error occurred.
+{
+   hb_retc( ( char * ) mysql_error( ( MYSQL * ) hb_parnl( 1 ) ) );
+}
+
+//------------------------------------------------//
 //unsigned int mysql_errno(MYSQL *mysql)
 HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 {
    hb_retnl( mysql_errno( ( MYSQL * ) hb_parnl( 1 ) ) );
+}
+
+//------------------------------------------------//
+//int mysql_select_db(MYSQL *mysql, const char *db)
+HB_FUNC( MYSQLSELECTDB ) //-> Zero for success. Nonzero if an error occurred.
+{
+   const   char * db = ( const char* ) hb_parc( 2 );
+   hb_retnl( ( long ) mysql_select_db( ( MYSQL * ) hb_parnl( 1 ), db ) );
 }

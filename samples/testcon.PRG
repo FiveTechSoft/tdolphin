@@ -10,7 +10,7 @@
 PROCEDURE Main()
    
    LOCAL oServer
-   LOCAL cServer := "localhost1",;
+   LOCAL cServer := "localhost",;
          cUser   := "testing",;
          cPassword := "123456",;
          nPort   := 3306
@@ -24,8 +24,9 @@ PROCEDURE Main()
    
    IF ! oServer:lError 
       cText += "Connection OK" + CRLF
-      cText += Str( oServer:hMySql )
-      ? cText + CRLF
+      oServer:SelectDB( "test01" )
+      
+      ? cText
    ENDIF
    
 
@@ -34,10 +35,11 @@ RETURN
 PROCEDURE GetError( oServer, nError, lInternal )
    LOCAL cText := ""
    
-   IF nError == 2005 
-      cText += "Connection Error" + CRLF
-      cText += "Unknow Host" + CRLF
-   ENDIF
+   cText += "Error from Custom Error Message" + CRLF
+   cText += "================================" + CRLF
+   cText += oServer:ErrorTxt() + CRLF
+   cText += "ERROR No: " + Str( nError ) + CRLF
+   cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
    
    ? cText + CRLF
    
