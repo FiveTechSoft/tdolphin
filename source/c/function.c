@@ -4,6 +4,16 @@
 #include <hbapifs.h>
 #include <mysql.h>
 
+
+LPSTR LToStr( long w )
+{
+   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+   sprintf( dbl, "%f", ( double ) w );
+   * strchr( dbl, '.' ) = 0;
+   
+   return ( char * ) dbl;
+}  
+
 // MYSQL *mysql_real_connect( MYSQL*, char * host, char * user, char * password, char * db, uint port, char *, uint flags )
 HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
 {
@@ -48,34 +58,81 @@ HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 }
 
 //------------------------------------------------//
-//MYSQL_RES *mysql_list_dbs(MYSQL *mysql, const char *wild)
-HB_FUNC( MYSQLLISTDBS ) 
+//MYSQL_RES *mysql_list_tables(MYSQL *mysql, const char *wild)
+HB_FUNC( MYSQLLISTTBLS ) //->A MYSQL_RES result set for success. NULL if an error occurred. 
 {
    MYSQL * mysql = ( MYSQL * ) hb_parnl( 1 );
    const char *szwild = ( const char* ) hb_parc( 2 );
-   MYSQL_RES * mresult;
+   MYSQL_RES * mresult = NULL;
    MYSQL_ROW mrow;
    long nr, i;
-   PHB_ITEM itDBs;
-   
-   mresult = mysql_list_dbs( mysql, szwild );
+   PHB_ITEM itemReturn;
 
-   nr = ( LONG ) mysql_num_rows( mresult );
+//   MessageBox( 0, "paso", "ok", 0 );
 
-   itDBs = hb_itemArrayNew( nr );
-   
-   for ( i = 0; i < nr; i++ )
+   if( mysql )
+      mresult = mysql_list_tables( mysql, szwild );
+
+//   MessageBox( 0, LToStr( ( long ) mresult ), "ok", 0 );
+
+   if( mresult )
    {
-   	  PHB_ITEM pString;
-      mrow = mysql_fetch_row( mresult );
-      pString = hb_itemPutC( NULL, mrow[ 0 ] );
-      hb_itemArrayPut( itDBs, i+1, pString );
-      hb_itemRelease( pString );
-   }
+      nr = ( LONG ) mysql_num_rows( mresult );
 
-   mysql_free_result( mresult );
-   hb_itemReturn( itDBs );
-   hb_itemRelease( itDBs );
+      itemReturn = hb_itemArrayNew( nr );
+      
+      for ( i = 0; i < nr; i++ )
+      {
+     	   PHB_ITEM pString;
+         mrow = mysql_fetch_row( mresult );
+         pString = hb_itemPutC( NULL, mrow[ 0 ] );
+         hb_itemArrayPut( itemReturn, i+1, pString );
+         hb_itemRelease( pString );
+         mysql_free_result( mresult );
+      }
+   }else
+   itemReturn = hb_itemArrayNew( 0 );
+
+   hb_itemReturn( itemReturn );
+   hb_itemRelease( itemReturn );         
+
+}
+
+//------------------------------------------------//
+//MYSQL_RES *mysql_list_dbs(MYSQL *mysql, const char *wild)
+HB_FUNC( MYSQLLISTDBS ) //->A MYSQL_RES result set for success. NULL if an error occurred. 
+{
+   MYSQL * mysql = ( MYSQL * ) hb_parnl( 1 );
+   const char *szwild = ( const char* ) hb_parc( 2 );
+   MYSQL_RES * mresult = NULL;
+   MYSQL_ROW mrow;
+   long nr, i;
+   PHB_ITEM itemReturn;
+
+   if( mysql )
+      mresult = mysql_list_dbs( mysql, szwild );
+
+   if( mresult )
+   {
+      nr = ( LONG ) mysql_num_rows( mresult );
+
+      itemReturn = hb_itemArrayNew( nr );
+      
+      for ( i = 0; i < nr; i++ )
+      {
+     	   PHB_ITEM pString;
+         mrow = mysql_fetch_row( mresult );
+         pString = hb_itemPutC( NULL, mrow[ 0 ] );
+         hb_itemArrayPut( itemReturn, i+1, pString );
+         hb_itemRelease( pString );
+         mysql_free_result( mresult );
+      }
+   }else
+   itemReturn = hb_itemArrayNew( 0 );
+
+   hb_itemReturn( itemReturn );
+   hb_itemRelease( itemReturn );         
+
 }
 
 //------------------------------------------------//

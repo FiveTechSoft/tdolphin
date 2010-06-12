@@ -56,11 +56,15 @@ CLASS TDolphinSrv
    METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
                               /* verify is Data Base exist, return logical value*/
    
-   METHOD ListDBs( cWild )    INLINE MySqlListDBs( ::hMysql, cWild )
-                              /* Returns a array set consisting of database names on the server 
+   METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
                                  wild may contain the wildcard characters “%” or “_”, 
                                  or may be a "" to match all databases.*/
+   
+   METHOD ListTables( cWild ) /* Returns a array set consisting of tables names in current satabase 
+                                 that match the simple regular expression specified by the wild parameter. 
+                                 wild may contain the wildcard characters “%” or “_”, 
+                                 or may be a "" to match all tables.*/
    
    METHOD SelectDB( cDBName ) /*Select data base in current active connection*/
 
@@ -129,6 +133,29 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
    
 
 RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
+
+//----------------------------------------------------//
+
+METHOD ListDBs( cWild ) CLASS TDolphinSrv
+   LOCAL aList
+      
+   aList = MySqlListDBs( ::hMysql, cWild ) 
+   ::CheckError()
+   
+RETURN aList
+
+
+//----------------------------------------------------//
+
+   
+METHOD ListTables( cWild ) CLASS TDolphinSrv
+   LOCAL aList
+
+   aList = MysqlListTbls( ::hMysql, cWild )
+   ::CheckError()
+
+RETURN aList
+
 
 //----------------------------------------------------//
 

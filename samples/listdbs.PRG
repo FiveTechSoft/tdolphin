@@ -21,7 +21,8 @@ PROCEDURE Main()
       ? "Data Base: test01 is: " + IsExist( oServer, "test01" )
       ? "Data Base: test02 is: " + IsExist( oServer, "test02" )
       ?
-      
+      oServer:SelectDB( "test01" )
+      ListTables( oServer )
    ENDIF
    
    oServer:End()
@@ -58,7 +59,34 @@ PROCEDURE ListDBs( oServer )
    ?
    
 
-RETURN NIL
+RETURN 
+
+PROCEDURE ListTables( oServer )
+
+   LOCAL aList
+   LOCAL n
+   
+   aList = oServer:ListTables()
+   
+   ? "Total Tables" + Str( Len( aList ) )
+   
+   FOR n = 1 TO Len( aList )
+      ? aList[ n ]
+   NEXT
+   ? "================="
+   
+   aList = oServer:ListTables( "a%" )
+   
+   ? "Wild: a%" 
+   ? "Total Tables" + Str( Len( aList ) )
+   
+   FOR n = 1 TO Len( aList )
+      ? aList[ n ]
+   NEXT
+   ?
+   
+
+RETURN 
 
 PROCEDURE GetError( oServer, nError, lInternal )
    LOCAL cText := ""
