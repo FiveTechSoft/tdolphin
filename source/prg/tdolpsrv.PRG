@@ -20,31 +20,44 @@
 
 CLASS TDolphinSrv
 
-   DATA bOnError    /*Custom manager error message
-                      ( Self, nError, lInternal ) */
-
-   DATA cDBName     /*Data base selected*/
-   DATA cPassword   /*Data contains the password for user*/
-   DATA cServer     /*Host name, may be either a host name or an IP address */
-   DATA cUser       /*DAta contains the user's MySQL login ID*/
-
-   DATA hMysql      /*MySQL connection handle*/
+   DATA bOnError       /*Custom manager error message
+                         ( Self, nError, lInternal ) */
+                       
+   DATA cDBName        /*Data base selected*/
+   DATA cPassword      /*Data contains the password for user*/
+   DATA cServer        /*Host name, may be either a host name or an IP address */
+   DATA cUser          /*DAta contains the user's MySQL login ID*/
+                       
+   DATA hMysql         /*MySQL connection handle*/
+                       
+   DATA lError         /*Error detection switch*/
                   
-   DATA lError      /*Error detection switch*/
-                  
-   DATA nFlags      /*Client flags*/
+   DATA nFlags         /*Client flags*/
    DATA nInternalError /*error manager, no come from MySQL*/
-   DATA nPort       /*value is used as the port number for the TCP/IP connection*/
+   DATA nPort          /*value is used as the port number for the TCP/IP connection*/
    
    METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError )
    
    METHOD CheckError( nError )
    METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )	
+                              /*to establish a connection to a MySQL database engine running on server*/
    
-   METHOD End()        INLINE MySqlClose( ::hMysql )
+   METHOD End()               INLINE MySqlClose( ::hMysql )
    
-   METHOD ErrorTxt()   INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
-   METHOD ErrorNo()    INLINE ::lError := .F., MySqlGetErrNo( ::hMysql )
+   METHOD ErrorTxt()          INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
+                              /* Returns a string containing the error message for 
+                                 the most recently invoked API function that failed.*/
+   
+   METHOD ErrorNo()           INLINE ::lError := .F., MySqlGetErrNo( ::hMysql )
+                              /* Returns the error code for the most recently invoked 
+                                API function that can succeed or fail. 
+                                A return value of zero means that no error occurred.*/
+   
+   METHOD ListDBs( cWild )    INLINE MySqlListDBs( ::hMysql, cWild )
+                              /* Returns a array set consisting of database names on the server 
+                                 that match the simple regular expression specified by the wild parameter. 
+                                 wild may contain the wildcard characters “%” or “_”, 
+                                 or may be a "" to match all databases.*/
    
    METHOD SelectDB( cDBName ) /*Select data base in current active connection*/
 

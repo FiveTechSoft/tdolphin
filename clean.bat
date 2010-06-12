@@ -17,6 +17,8 @@ del *.map /Q
 del *.ppo /Q
 del *.obj /Q
 del *.exe /Q
+del *.c /Q
+del *.tds /Q
 cd ..
 cls
 @echo on

@@ -1,24 +1,23 @@
 @echo off
 ECHO Compiling...
 
-set wfile=testcon
-set hdir=y:\xharbcvs
-set bcdir=y:\borland\bcc55\bin
+set hdir=c:\xharbour
+set bcdir=c:\bcc582\bin
 
-%hdir%\bin\harbour %wfile% /n /i..\include;%hdir%\include /p %2 %3 > clip.log
+%hdir%\bin\harbour %1 /n /i..\include;%hdir%\include /p %2 %3 > clip.log
 @type clip.log
 IF ERRORLEVEL 1 PAUSE
 IF ERRORLEVEL 1 GOTO EXIT
 
-echo -O2 -e%wfile%.exe -I%hdir%\include %wfile%.c > b32.bc
+echo -O2 -e%1.exe -I%hdir%\include %1.c > b32.bc
 %bcdir%\bcc32 -M -c @b32.bc
 :ENDCOMPILE
 
 echo c0x32.obj + > b32.bc
-echo %wfile%.obj, + >> b32.bc
-echo %wfile%.exe, + >> b32.bc
-echo %wfile%.map, + >> b32.bc
-echo dolphinx.lib + >> b32.bc
+echo %1.obj, + >> b32.bc
+echo %1.exe, + >> b32.bc
+echo %1.map, + >> b32.bc
+echo ..\lib\dolphinx.lib + >> b32.bc
 echo ..\lib\libmysql.lib + >> b32.bc
 echo %hdir%\lib\rtl.lib + >> b32.bc
 echo %hdir%\lib\hsx.lib + >> b32.bc
@@ -50,10 +49,11 @@ ECHO Linking...
 %bcdir%\ilink32 -Gn -Tpe -s @b32.bc
 
 rem delete temporary files
-rem @del %wfile%.c
+rem @del %1.c
 
 IF ERRORLEVEL 1 GOTO LINKERROR
 ECHO * Application successfully built
+%1
 GOTO EXIT
 ECHO
 
@@ -62,4 +62,3 @@ rem PAUSE * Linking errors *
 GOTO EXIT
 
 :EXIT
-pause 

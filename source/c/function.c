@@ -48,6 +48,37 @@ HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 }
 
 //------------------------------------------------//
+//MYSQL_RES *mysql_list_dbs(MYSQL *mysql, const char *wild)
+HB_FUNC( MYSQLLISTDBS ) 
+{
+   MYSQL * mysql = ( MYSQL * ) hb_parnl( 1 );
+   const char *szwild = ( const char* ) hb_parc( 2 );
+   MYSQL_RES * mresult;
+   MYSQL_ROW mrow;
+   long nr, i;
+   PHB_ITEM itDBs;
+   
+   mresult = mysql_list_dbs( mysql, szwild );
+
+   nr = ( LONG ) mysql_num_rows( mresult );
+
+   itDBs = hb_itemArrayNew( nr );
+   
+   for ( i = 0; i < nr; i++ )
+   {
+   	  PHB_ITEM pString;
+      mrow = mysql_fetch_row( mresult );
+      pString = hb_itemPutC( NULL, mrow[ 0 ] );
+      hb_itemArrayPut( itDBs, i+1, pString );
+      hb_itemRelease( pString );
+   }
+
+   mysql_free_result( mresult );
+   hb_itemReturn( itDBs );
+   hb_itemRelease( itDBs );
+}
+
+//------------------------------------------------//
 //int mysql_select_db(MYSQL *mysql, const char *db)
 HB_FUNC( MYSQLSELECTDB ) //-> Zero for success. Nonzero if an error occurred.
 {
