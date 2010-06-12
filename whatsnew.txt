@@ -1,2 +1,21 @@
+JUN-12-2010 -1
+======
+
 * first version
 + TDolphinSrv
+
+JUN-12-2010 -2
+======
+> testcon.PRG
+* forced error connection in testcon 
+
+> tdolpsrv.PRG
++ METHOD CheckError( nError )
++ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )
+   > default values from DATAS
++ METHOD ErrorNo()
+
+> function.c
++ FUNCTION MySqlGetErrNo()
++ FUNCTION MySqlClose()
+* Changed MySqlConnect, now return pointer MYSQL when mysql_init is successful

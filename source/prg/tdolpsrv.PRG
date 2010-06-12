@@ -18,7 +18,8 @@
 
 CLASS TDolphinSrv
 
-   DATA bOnError    /*Custom manager error message*/
+   DATA bOnError    /*Custom manager error message
+                      ( Self, nError, lInternal ) */
 
    DATA cPassword   /*Data contains the password for user*/
    DATA cServer     /*Host name, may be either a host name or an IP address */
@@ -33,9 +34,16 @@ CLASS TDolphinSrv
    DATA nPort       /*value is used as the port number for the TCP/IP connection*/
    
    METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError )
+
+   METHOD CheckError( nError )
+   METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )	
    
+   METHOD ErrorNo()    INLINE ::lError := .F., MySqlGetErrNo( ::hMysql )
+
    
 ENDCLASS
+
+//----------------------------------------------------//
 
 METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError ) CLASS TDolphinSrv
 
@@ -44,13 +52,53 @@ METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError ) CLASS TDolphinS
    ::cPassword      = cPassword
    ::nPort          = nPort
    ::nFlags         = nFlags
-   ::hMysql         = MySqlConnect(cServer, cUser, cPassword, nPort, nFlags )
    ::lError         = .F.
    ::bOnError       = bOnError
    ::nInternalError = 0
 
-   IF ::hMysql <= 0
-      ::lError := .T.
+   ::hMysql         = ::Connect() 
+   
+   ::CheckError()
+   IF ::lError
+      MySqlClose( ::hMysql )
    ENDIF
 
-return Self
+RETURN Self
+
+//----------------------------------------------------//
+
+METHOD CheckError( nError ) CLASS TDolphinSrv
+
+   LOCAL lInternal := .F.
+
+   DEFAULT nError TO ::ErrorNo()
+
+   IF nError == 0 
+      IF ::nInternalError > 0 
+         nError = ::nInternalError
+         lInternal = .T.
+         ::lError    = .T.
+      ENDIF
+   ELSE
+      ::lError = .T.
+      IF ::bOnError != nil
+         Eval( ::bOnError, Self, nError, lInternal )
+      ENDIF
+   ENDIF
+
+RETURN NIL
+
+//----------------------------------------------------//
+
+
+METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
+
+   
+   DEFAULT cServer   TO ::cServer
+   DEFAULT cUser     TO ::cUser
+   DEFAULT cPassword TO ::cPassword
+   DEFAULT nPort     TO ::nPort
+   DEFAULT nFlags    TO ::nFlags
+   
+
+RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
