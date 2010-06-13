@@ -35,3 +35,4 @@ JUN-12-2010 -2
 + METHOD End() (see MySqlClose)
 + METHOD ErrorTxt() (see MySqlError)
 + METHOD SelectDB( cDBName ) 
+

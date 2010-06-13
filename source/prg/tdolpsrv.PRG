@@ -17,7 +17,13 @@
 #endif/*__HARBOUR__*/
 
 
-#define ERR_EMPTYDBNAME 9000
+#define ERR_EMPTYDBNAME                  9000
+#define ERR_INVALID_STRUCT_ROW_SIZE      9001
+#define ERR_INVALID_STRUCT_NOTNULL_VALUE 9002
+#define ERR_INVALID_STRUCT_PRIKEY        9003
+#define ERR_INVALID_STRUCT_UNIQUE        9004
+#define ERR_INVALID_STRUCT_AUTO          9005
+
 
 CLASS TDolphinSrv
 
@@ -82,6 +88,9 @@ CLASS TDolphinSrv
                               you should not add a terminating semicolon (“;”) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
+ 
+   METHOD TableExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListTables( Lower( cDB ) ) ) > 0, .F. )
+                              /* verify is table exist, return logical value*/ 
                                  
 ENDCLASS
 
@@ -176,33 +185,61 @@ RETURN ::SqlQuery( cQuery )
 //----------------------------------------------------//
 //Table Structure
 //Name, Type, Length, Decimal, Not Null (logical), Defaul value
-METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra ) CLASS TDolphinSrv
+METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIfNotExist, lVer ) CLASS TDolphinSrv
 
    LOCAL aField
    LOCAL cQuery   
-
-   // returns NOT NULL if extended structure has DBS_NOTNULL field to true
-//   local bNotNull := {| aArr | iif( Len( aArr ) > DBS_DEC, IF( valtype(aArr[ DBS_NOTNULL ]) == "L", iif( aArr[ DBS_NOTNULL ], " NOT NULL ", "" ), "" ), "" ) }
    LOCAL bNotNull := { | aRow, cPrimary, cAuto | ;
                                      If( ValType( aRow[ DBS_NOTNULL ] ) == "L" .AND.;
                                          aRow[ DBS_NOTNULL ], " NOT NULL ", ;
                                          If( Lower( AllTrim( aField[ DBS_NAME ] ) ) == cPrimaryKey .OR.;
                                              Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto, " NOT NULL ", "" ) ) }
      
-   LOCAL bDefault := { | aRow | If( ! Empty( aRow[ DBS_DEFAULT ] ), ClipValue2SQL( aRow[ DBS_DEFAULT ] ) + " ", " NULL " ) }
+   LOCAL bDefault := { | aRow | " DEFAULT " + If( ! ValType( aRow[ DBS_DEFAULT ] ) == "U", ClipValue2SQL( aRow[ DBS_DEFAULT ] ), " NULL" ) }
      
-   LOCAL bAuto    := { | aRow, cAuto | If( Lower( AllTrim( aRow[ DBS_NAME ] ) ) == cAuto, " auto_increment ", "" ) }
+   LOCAL lAutoIncrement
+   LOCAL lRet := .T.
 
+   DEFAULT lVer TO .T.
+   DEFAULT lIfNotExist TO .T.
 
    cPrimaryKey = If( ! Empty( cPrimaryKey ), Lower( AllTrim( cPrimaryKey ) ), "" )
    cAuto       = If( ! Empty( cAuto ), Lower( AllTrim( cAuto ) ), "" )
    cUniqueKey  = If( ! Empty( cUniqueKey ), Lower( AllTrim( cUniqueKey ) ), "" )
    cExtra      = If( ! Empty( cExtra ), Lower( AllTrim( cExtra ) ), "" )
+
+   IF lVer
+      ::CheckError( VerifyStructure( aStruct ) )
+
+      IF ! ::lError .AND. cPrimarykey != NIL
+         IF AScan( aStruct, {| aRow | AllTrim( Lower( aRow[ DBS_NAME ] ) ) == cPrimarykey } ) == 0
+            ::nInternalError = ERR_INVALID_STRUCT_PRIKEY
+            ::CheckError()
+         ENDIF
+      ENDIF
    
-   cQuery := "CREATE TABLE " + Lower( cTable ) + " ("
+      IF ! ::lError .AND. cUniquekey != NIL 
+         IF AScan( aStruct, {| aRow | AllTrim( Lower( aRow[ DBS_NAME ] ) ) == cUniquekey } ) == 0
+            ::nInternalError = ERR_INVALID_STRUCT_UNIQUE
+            ::CheckError()
+         ENDIF
+      ENDIF
+      
+      IF ! ::lError .AND. cAuto != NIL 
+         IF AScan( aStruct, {| aRow | AllTrim( Lower( aRow[ DBS_NAME ] ) ) == cAuto } ) == 0
+            ::nInternalError = ERR_INVALID_STRUCT_AUTO
+            ::CheckError()
+         ENDIF
+      ENDIF      
+
+      IF ::lError
+         RETURN NIL 
+      ENDIF
+   ENDIF
+   
+   cQuery := "CREATE TABLE " + If( lIfNotExist, " IF NOT EXISTS ", "" ) + Lower( cTable ) + " ("
 
    FOR EACH aField IN aStruct
-
       SWITCH aField[ DBS_TYPE ]
       CASE "C"
          cQuery += aField[ DBS_NAME ] + " char(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + ;
@@ -214,26 +251,30 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra ) CL
          EXIT
 
       CASE "N"
-
-         IF aField[ DBS_DEC ] == 0 .AND. aField[ DBS_LEN ] <= 18
-
-            DO CASE
-               CASE aField[ DBS_LEN ] <= 4
-                  cQuery += aField[ DBS_NAME ] + " smallint("  + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-
-               CASE aField[ DBS_LEN ] <= 6
-                  cQuery += aField[ DBS_NAME ] + " mediumint(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-
-               CASE aField[ DBS_LEN ] <= 9
-                  cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-
-               OTHERWISE
-                  cQuery += aField[ DBS_NAME ] + " long("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-
-            ENDCASE
+         lAutoIncrement = Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto
+         
+         IF aField[ DBS_DEC ] == 0 .AND. aField[ DBS_LEN ] <= 18 
+            IF lAutoIncrement
+               cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+            ELSE
+               DO CASE
+                  CASE aField[ DBS_LEN ] <= 4
+                     cQuery += aField[ DBS_NAME ] + " smallint("  + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+   
+                  CASE aField[ DBS_LEN ] <= 6
+                     cQuery += aField[ DBS_NAME ] + " mediumint(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+   
+                  CASE aField[ DBS_LEN ] <= 9
+                     cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+   
+                  OTHERWISE
+                     cQuery += aField[ DBS_NAME ] + " long("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+   
+               ENDCASE
+            ENDIF
 
             cQuery += Eval( bNotNull, aField ) + ;
-                      If( Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto, " auto_increment ", ;
+                      If( lAutoIncrement, " auto_increment", ;
                           Eval( bDefault, aField ) ) + ","
 
          ELSE
@@ -248,7 +289,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra ) CL
          EXIT
 
       CASE "L"
-         cQuery += aField[ DBS_NAME ] + " tinyint " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+         cQuery += aField[ DBS_NAME ] + " tinyint (1)" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
          EXIT
 
       CASE "B"
@@ -264,29 +305,28 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra ) CL
          EXIT
 
 #ifdef __XHARBOUR__
-      default
+      DEFAULT
 #else
-      otherwise
+      OTHERWISE
 #endif            
          cQuery += aField[ DBS_NAME ] + " char(" + AllTrim(Str(aField[DBS_LEN])) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
 
-      end
+      END
 
-   next
+   NEXT
 
-   if cPrimarykey != NIL
-        cQuery += ' PRIMARY KEY (' + cPrimaryKey + '),'
-   endif
+   IF cPrimarykey != NIL
+      cQuery += ' PRIMARY KEY (' + cPrimaryKey + '),'
+   ENDIF
 
-   if cUniquekey != NIL
-        cQuery += ' UNIQUE ' + cUniquekey + ' (' + cUniqueKey + '),'
-   endif
+   IF ::nInternalError == 0 .AND. cUniquekey != NIL 
+      cQuery += ' UNIQUE ' + cUniquekey + ' (' + cUniqueKey + '),'
+   ENDIF
 
    // remove last comma from list
    cQuery := Left( cQuery, Len( cQuery ) - 1 ) + ")" + cExtra + ";"
-
-   ? cQuery
-RETURN .T.// ::MySqlQuery( cQuery )
+   
+RETURN ::SqlQuery( cQuery ) 
 
 //----------------------------------------------------//
 
@@ -409,3 +449,22 @@ FUNCTION ClipValue2SQL( Value, cType )
    END
 
 RETURN cValue
+
+STATIC FUNCTION VerifyStructure( aStruct )
+   
+   LOCAL aRow 
+   LOCAL nError
+   
+   FOR EACH aRow IN aStruct
+      IF Len( aRow ) < DBS_DEFAULT 
+         nError = ERR_INVALID_STRUCT_ROW_SIZE
+         EXIT 
+      ENDIF
+      IF ValType( aRow[ DBS_NOTNULL ] ) != "U" .AND. ValType( aRow[ DBS_NOTNULL ] ) != "L"  
+         nError = ERR_INVALID_STRUCT_NOTNULL_VALUE
+         EXIT 
+      ENDIF
+   NEXT 
+
+RETURN nError
+         

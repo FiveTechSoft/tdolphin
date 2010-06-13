@@ -18,11 +18,14 @@ PROCEDURE Main()
    
    IF ! oServer:lError 
       ListDBs( oServer )
-      ? "Data Base: test01 is: " + IsExist( oServer, "test01" )
-      ? "Data Base: test02 is: " + IsExist( oServer, "test02" )
+      ? "Data Base: test01 is: " + IsExistDB( oServer, "test01" )
+      ? "Data Base: test02 is: " + IsExistDB( oServer, "test02" )
       ?
       oServer:SelectDB( "test01" )
       ListTables( oServer )
+      ? "Table: test is: " + IsExistTB( oServer, "test" )
+      ? "Table: test02 is: " + IsExistTB( oServer, "test02" )
+      ?
    ENDIF
    
    oServer:End()
@@ -30,8 +33,11 @@ PROCEDURE Main()
 
 RETURN
 
-FUNCTION IsExist( oServer, cDB )
+FUNCTION IsExistDB( oServer, cDB )
 RETURN  If( oServer:DBExist( cDB ), "Valid", "Invalid" )
+
+FUNCTION IsExistTB( oServer, cTable )
+RETURN  If( oServer:TableExist( cTable ), "Valid", "Invalid" )
 
 
 PROCEDURE ListDBs( oServer )
