@@ -1,4 +1,5 @@
 #include "hbcompat.ch"
+#include "tdolphin.ch"
 #define CRLF Chr( 13 ) + Chr( 10 )
 
 PROCEDURE Main()
@@ -30,16 +31,29 @@ PROCEDURE Main()
          ? "Database created correctly test02"
          ?
       ENDIF
+
+      IF oServer:DBCreate( "test03" )
+         ? "Database created correctly test03"
+         ?
+      ENDIF
       
       oServer:SelectDB( "test02" )
       IF oServer:CreateTable( "test", aStruc, "id", "id", "id" )
          ? "Table created correctly test"
          ?
-      ENDIF      
+         oServer:CreateIndex( "index01", "test", { { "LAST", IDX_ASC }, "BIRTH" } )
+         ? "Create Index succefull"
+         ? 
+      ENDIF
+            
       IF oServer:CreateTable( "test2", aStruc, "id", "id", "id" )
          ? "Table created correctly test2"
          ?
-      ENDIF      
+         oServer:CreateIndex( "index02", "test2", { "NAME" }, IDX_UNIQUE )
+         ? "Create Index succefull"
+         ? 
+      ENDIF
+            
       IF oServer:CreateTable( "test3", , , , , "LIKE TEST2" )
          ? "Table created correctly test3"
          ?
@@ -58,9 +72,14 @@ PROCEDURE Main()
          ? "Delete successful: test2, test3"
          ?
       ENDIF
-      
+
       IF oServer:DeleteDB( "test02" )
          ? "Delete database successful: test02"
+         ?
+      ENDIF
+      
+      IF oServer:DeleteDB( "test03" )
+         ? "Delete database successful: test03"
          ?
       ENDIF
       

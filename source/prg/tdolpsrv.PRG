@@ -49,6 +49,8 @@ CLASS TDolphinSrv
    METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )	
                               /*to establish a connection to a MySQL database engine running on server*/
 
+   METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
+
    METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate )
                               /* Create Database in current active connection*/
                               
@@ -162,6 +164,42 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
 
 RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
 
+//-----------------------------------------------------------
+
+METHOD CreateIndex( cName, cTable, aFNames, nCons, nType ) CLASS TDolphinSrv
+
+   LOCAL cQuery := "ALTER TABLE "
+   LOCAL cField
+   LOCAL cConst, cType, cOrden
+   LOCAL aIDX_CONST  := { "UNIQUE", "FULLTEXT", "SPATIAL", "PRIMARY KEY" }
+   LOCAL aIDX_ORDEN  := { "ASC", "DESC" }
+   LOCAL aIDX_TYPE   := { "BTREE", "HASH", "RTREE" }   
+
+   // NOTE: aFNames each item can be array 2 position (1) column name (2) orden type 
+   // like numeric, (1) ASC, (2) DESC ie. { "FIELD_NAME", 1 }
+   DEFAULT nCons TO 0
+   DEFAULT nType TO 0
+   
+
+   cQuery += Lower( AllTrim( cTable ) ) + " ADD " 
+   cQuery += If( nCons == 0, "INDEX ", aIDX_CONST[ nCons ] + " " ) 
+   cQuery += Lower( AllTrim( cName ) ) + " ("
+
+   FOR EACH cField IN aFNames
+      IF ValType( cField ) == "A"
+         cQuery += cField[ 1 ] + " " + aIDX_ORDEN[ cField[ 2 ] ] + ","
+      ELSE 
+         cQuery += cField + ","
+      ENDIF 
+   NEXT
+   
+   //remove last coma(,)
+   cQuery = Left( cQuery, Len( cQuery ) - 1 ) + ") "
+   cQuery += If( nType == 0, "", aIDX_TYPE[ nType ] ) 
+
+RETURN ::SqlQuery( cQuery )
+
+
 //----------------------------------------------------//
 //Table Structure
 //Name, Type, Length, Decimal, Not Null (logical), Defaul value
@@ -214,7 +252,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
       ENDIF      
 
       IF ::lError
-         RETURN NIL 
+         RETURN ::lError 
       ENDIF
    ENDIF
    
@@ -446,6 +484,8 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
       ENDIF
    ELSE 
       ::nInternalError = ERR_NOQUERY
+      ::CheckError()
+      nRet = ::nInternalError
    ENDIF
 
 RETURN nRet == 0

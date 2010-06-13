@@ -17,11 +17,11 @@ set hdirl=%hdir%\lib
 set fwh=c:\fivewin\svn\repo
 set bcdir=c:\bcc582
 
-%hdir%\bin\harbour %1 /n /i%fwh%\include;%hdir%\include /w /p %2 %3 > comp.log
+%hdir%\bin\harbour %1 /n /i%fwh%\include;%hdir%\include;..\include /w /p %2 %3 > comp.log
 IF ERRORLEVEL 1 GOTO COMPILEERRORS
 @type comp.log
 
-echo -O2 -e%1.exe -I%hdir%\include -I%bcdir%\include %1.c > b32.bc
+echo -O2 -e%1.exe -I%hdir%\include -I%bcdir%\include;..\include %1.c > b32.bc
 %bcdir%\bin\bcc32 -M -c @b32.bc
 :ENDCOMPILE
 

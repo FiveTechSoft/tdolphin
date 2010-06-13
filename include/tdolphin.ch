@@ -56,3 +56,16 @@
 #define  DBS_NOTNULL             5        /* True if field has to be NOT NULL */
 #define  DBS_DEFAULT             6        /* Field Value by default  */
 
+
+//Create index
+#define IDX_UNIQUE      1
+#define IDX_FULLTEXT    2
+#define IDX_SPATIAL     3
+#define IDX_PRIMARY     4
+                        
+#define IDX_ASC         1
+#define IDX_DES         2
+                        
+#define IDX_BTREE       1
+#define IDX_HASH        2
+#define IDX_RTREE       3
