@@ -41,6 +41,14 @@ CLASS TDolphinSrv
    METHOD CheckError( nError )
    METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )	
                               /*to establish a connection to a MySQL database engine running on server*/
+
+   METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate )
+                              /* Create Database in current active connection*/
+
+                                
+   METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
+                              /* verify is Data Base exist, return logical value*/
+
    
    METHOD End()               INLINE MySqlClose( ::hMysql )
    
@@ -52,9 +60,7 @@ CLASS TDolphinSrv
                               /* Returns the error code for the most recently invoked 
                                 API function that can succeed or fail. 
                                 A return value of zero means that no error occurred.*/
-                                
-   METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
-                              /* verify is Data Base exist, return logical value*/
+
    
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
@@ -73,8 +79,7 @@ CLASS TDolphinSrv
                               you should not add a terminating semicolon (“;”) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
-
-   
+                                 
 ENDCLASS
 
 //----------------------------------------------------//
@@ -139,6 +144,30 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
    
 
 RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
+
+//----------------------------------------------------//
+
+METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate ) CLASS TDolphinSrv
+
+   LOCAL cQuery := "CREATE DATABASE" 
+   
+   DEFAULT lIfNotExist TO .T.
+   
+   IF lIfNotExist
+      cQuery += " IF NOT EXISTS"
+   ENDIF
+   
+   cQuery += " " + Lower( Alltrim(  cName ) )
+   
+   IF ! Empty( cCharSet )
+      cQuery += " CHARACTER SET " + cCharSet
+   ENDIF 
+   
+   IF ! Empty( cCollate )
+      cQuery += " COLLATE  " + cCollate
+   ENDIF 
+
+RETURN ::SqlQuery( cQuery )
 
 //----------------------------------------------------//
 
