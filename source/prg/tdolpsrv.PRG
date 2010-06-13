@@ -23,7 +23,7 @@
 #define ERR_INVALID_STRUCT_PRIKEY        9003
 #define ERR_INVALID_STRUCT_UNIQUE        9004
 #define ERR_INVALID_STRUCT_AUTO          9005
-
+#define ERR_NOQUERY                      9006
 
 CLASS TDolphinSrv
 
@@ -58,6 +58,7 @@ CLASS TDolphinSrv
    METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
                               /* verify is Data Base exist, return logical value*/
 
+   METHOD DeleteTables( acTable, lExists )
    
    METHOD End()               INLINE  If( ::hMysql > 0, ( MySqlClose( ::hMysql ), ::hMysql := 0 ), )
    
@@ -158,31 +159,6 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
 RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
 
 //----------------------------------------------------//
-
-METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate ) CLASS TDolphinSrv
-
-   LOCAL cQuery := "CREATE DATABASE" 
-   
-   DEFAULT lIfNotExist TO .T.
-   
-   IF lIfNotExist
-      cQuery += " IF NOT EXISTS"
-   ENDIF
-   
-   cQuery += " " + Lower( Alltrim(  cName ) )
-   
-   IF ! Empty( cCharSet )
-      cQuery += " CHARACTER SET " + cCharSet
-   ENDIF 
-   
-   IF ! Empty( cCollate )
-      cQuery += " COLLATE  " + cCollate
-   ENDIF 
-
-RETURN ::SqlQuery( cQuery )
-
-
-//----------------------------------------------------//
 //Table Structure
 //Name, Type, Length, Decimal, Not Null (logical), Defaul value
 METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIfNotExist, lVer ) CLASS TDolphinSrv
@@ -199,6 +175,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
      
    LOCAL lAutoIncrement
    LOCAL lRet := .T.
+   LOCAL nLenStruct := If( ! Empty( aStruct ), Len( aStruct ), 0 ) 
 
    DEFAULT lVer TO .T.
    DEFAULT lIfNotExist TO .T.
@@ -208,7 +185,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    cUniqueKey  = If( ! Empty( cUniqueKey ), Lower( AllTrim( cUniqueKey ) ), "" )
    cExtra      = If( ! Empty( cExtra ), Lower( AllTrim( cExtra ) ), "" )
 
-   IF lVer
+   IF lVer .AND. nLenStruct > 0
       ::CheckError( VerifyStructure( aStruct ) )
 
       IF ! ::lError .AND. cPrimarykey != NIL
@@ -237,96 +214,152 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
       ENDIF
    ENDIF
    
-   cQuery := "CREATE TABLE " + If( lIfNotExist, " IF NOT EXISTS ", "" ) + Lower( cTable ) + " ("
+   cQuery := "CREATE TABLE " + If( lIfNotExist, " IF NOT EXISTS ", "" ) + Lower( cTable ) + If( nLenStruct > 0, " (", " " )
 
-   FOR EACH aField IN aStruct
-      SWITCH aField[ DBS_TYPE ]
-      CASE "C"
-         cQuery += aField[ DBS_NAME ] + " char(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + ;
-                   Eval( bNotNull, aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
-         EXIT
-
-      CASE "M"
-         cQuery += aField[ DBS_NAME ] + " text" + Eval( bNotNull, aField ) + ","
-         EXIT
-
-      CASE "N"
-         lAutoIncrement = Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto
-         
-         IF aField[ DBS_DEC ] == 0 .AND. aField[ DBS_LEN ] <= 18 
-            IF lAutoIncrement
-               cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+   IF nLenStruct > 0
+   
+      FOR EACH aField IN aStruct
+         SWITCH aField[ DBS_TYPE ]
+         CASE "C"
+            cQuery += aField[ DBS_NAME ] + " char(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + ;
+                      Eval( bNotNull, aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
+            EXIT
+   
+         CASE "M"
+            cQuery += aField[ DBS_NAME ] + " text" + Eval( bNotNull, aField ) + ","
+            EXIT
+   
+         CASE "N"
+            lAutoIncrement = Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto
+            
+            IF aField[ DBS_DEC ] == 0 .AND. aField[ DBS_LEN ] <= 18 
+               IF lAutoIncrement
+                  cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+               ELSE
+                  DO CASE
+                     CASE aField[ DBS_LEN ] <= 4
+                        cQuery += aField[ DBS_NAME ] + " smallint("  + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+      
+                     CASE aField[ DBS_LEN ] <= 6
+                        cQuery += aField[ DBS_NAME ] + " mediumint(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+      
+                     CASE aField[ DBS_LEN ] <= 9
+                        cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+      
+                     OTHERWISE
+                        cQuery += aField[ DBS_NAME ] + " long("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+      
+                  ENDCASE
+               ENDIF
+   
+               cQuery += Eval( bNotNull, aField ) + ;
+                         If( lAutoIncrement, " auto_increment", ;
+                             Eval( bDefault, aField ) ) + ","
+   
             ELSE
-               DO CASE
-                  CASE aField[ DBS_LEN ] <= 4
-                     cQuery += aField[ DBS_NAME ] + " smallint("  + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+               cQuery += aField[ DBS_NAME ] + " decimal(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + "," + ;
+                         AllTrim( Str( aField[ DBS_DEC ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
    
-                  CASE aField[ DBS_LEN ] <= 6
-                     cQuery += aField[ DBS_NAME ] + " mediumint(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-   
-                  CASE aField[ DBS_LEN ] <= 9
-                     cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-   
-                  OTHERWISE
-                     cQuery += aField[ DBS_NAME ] + " long("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
-   
-               ENDCASE
             ENDIF
-
-            cQuery += Eval( bNotNull, aField ) + ;
-                      If( lAutoIncrement, " auto_increment", ;
-                          Eval( bDefault, aField ) ) + ","
-
-         ELSE
-            cQuery += aField[ DBS_NAME ] + " decimal(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + "," + ;
-                      AllTrim( Str( aField[ DBS_DEC ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-
-         ENDIF
-         EXIT
-
-      CASE "D"
-         cQuery += aField[ DBS_NAME ] + " date " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-         EXIT
-
-      CASE "L"
-         cQuery += aField[ DBS_NAME ] + " tinyint (1)" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-         EXIT
-
-      CASE "B"
-         cQuery += aField[ DBS_NAME ] + " mediumblob " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-         EXIT
-
-      CASE "I"
-         cQuery += aField[ DBS_NAME ] + " mediumint " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-         EXIT
-
-      CASE "T"
-         cQuery += aField[ DBS_NAME ] + " timestamp(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-         EXIT
-
-#ifdef __XHARBOUR__
-      DEFAULT
-#else
-      OTHERWISE
-#endif            
-         cQuery += aField[ DBS_NAME ] + " char(" + AllTrim(Str(aField[DBS_LEN])) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
-
-      END
-
-   NEXT
-
-   IF cPrimarykey != NIL
-      cQuery += ' PRIMARY KEY (' + cPrimaryKey + '),'
-   ENDIF
-
-   IF ::nInternalError == 0 .AND. cUniquekey != NIL 
-      cQuery += ' UNIQUE ' + cUniquekey + ' (' + cUniqueKey + '),'
+            EXIT
+   
+         CASE "D"
+            cQuery += aField[ DBS_NAME ] + " date " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            EXIT
+   
+         CASE "L"
+            cQuery += aField[ DBS_NAME ] + " tinyint (1)" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            EXIT
+   
+         CASE "B"
+            cQuery += aField[ DBS_NAME ] + " mediumblob " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            EXIT
+   
+         CASE "I"
+            cQuery += aField[ DBS_NAME ] + " mediumint " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            EXIT
+   
+         CASE "T"
+            cQuery += aField[ DBS_NAME ] + " timestamp(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            EXIT
+   
+   #ifdef __XHARBOUR__
+         DEFAULT
+   #else
+         OTHERWISE
+   #endif            
+            cQuery += aField[ DBS_NAME ] + " char(" + AllTrim(Str(aField[DBS_LEN])) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+   
+         END
+   
+      NEXT
+   
+      IF cPrimarykey != NIL
+         cQuery += ' PRIMARY KEY (' + cPrimaryKey + '),'
+      ENDIF
+   
+      IF ::nInternalError == 0 .AND. cUniquekey != NIL 
+         cQuery += ' UNIQUE ' + cUniquekey + ' (' + cUniqueKey + '),'
+      ENDIF     
    ENDIF
 
    // remove last comma from list
-   cQuery := Left( cQuery, Len( cQuery ) - 1 ) + ")" + cExtra + ";"
+   IF nLenStruct > 0
+      cQuery := Left( cQuery, Len( cQuery ) - 1 ) + ")" + cExtra + ";"
+   ELSE 
+      cQuery += cExtra + ";"
+   ENDIF
    
 RETURN ::SqlQuery( cQuery ) 
+
+
+//----------------------------------------------------//
+
+METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate ) CLASS TDolphinSrv
+
+   LOCAL cQuery := "CREATE DATABASE" 
+   
+   DEFAULT lIfNotExist TO .T.
+   
+   IF lIfNotExist
+      cQuery += " IF NOT EXISTS"
+   ENDIF
+   
+   cQuery += " " + Lower( Alltrim(  cName ) )
+   
+   IF ! Empty( cCharSet )
+      cQuery += " CHARACTER SET " + cCharSet
+   ENDIF 
+   
+   IF ! Empty( cCollate )
+      cQuery += " COLLATE  " + cCollate
+   ENDIF 
+
+RETURN ::SqlQuery( cQuery )
+
+//----------------------------------------------------//
+
+METHOD DeleteTables( acTables, lExists ) CLASS TDolphinSrv
+   
+   LOCAL cTables 
+   LOCAL cQuery := "DROP TABLE "
+   
+   DEFAULT lExists TO .F.
+
+   IF ValType( acTables ) == "A"
+       cTables = SqlStringFromArray( acTables )
+   ELSE 
+       cTables = Lower( acTables )
+   ENDIF 
+
+   IF lExists
+      cQuery += " IF EXISTS "
+   ENDIF 
+   
+   cQuery += cTables
+
+RETURN ::SqlQuery( cQuery ) 
+
 
 //----------------------------------------------------//
 
@@ -381,16 +414,22 @@ RETURN .F.
 
 METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
 
-   LOCAL nLen := Len( cQuery ) 
+   LOCAL nLen := If( ! Empty( cQuery ), Len( cQuery ), 0 )
    LOCAL nRet
       
-   IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
-      ::CheckError()
+   IF nLen > 0
+      IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
+         ::CheckError()
+      ENDIF
+   ELSE 
+      ::nInternalError = ERR_NOQUERY
    ENDIF
 
 RETURN nRet == 0
    
 
+//----------------------------------------------------//
+//----------------------------------------------------//
 //----------------------------------------------------//
 
 // Returns an SQL string with clipper value converted ie. Date() -> "'YYYY-MM-DD'"
@@ -450,6 +489,23 @@ FUNCTION ClipValue2SQL( Value, cType )
 
 RETURN cValue
 
+//----------------------------------------------------//
+// Return string from array separated with ","
+STATIC FUNCTION SqlStringFromArray( aArray )
+   
+   LOCAL cItem, cString := ""
+   
+
+   FOR EACH cItem IN aArray
+      cString += Lower( cItem ) + ", "
+   NEXT
+   
+   cString = Left( cString, Len( cString ) - 2 )
+   
+RETURN Lower( cString )
+
+//----------------------------------------------------//
+
 STATIC FUNCTION VerifyStructure( aStruct )
    
    LOCAL aRow 
@@ -467,4 +523,6 @@ STATIC FUNCTION VerifyStructure( aStruct )
    NEXT 
 
 RETURN nError
+         
+//----------------------------------------------------//         
          
