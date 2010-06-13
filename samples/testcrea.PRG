@@ -58,7 +58,11 @@ PROCEDURE Main()
          ? "Delete successful: test2, test3"
          ?
       ENDIF
-
+      
+      IF oServer:DeleteDB( "test02" )
+         ? "Delete database successful: test02"
+         ?
+      ENDIF
       
    ENDIF
 

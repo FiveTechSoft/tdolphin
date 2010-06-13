@@ -58,7 +58,11 @@ CLASS TDolphinSrv
    METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
                               /* verify is Data Base exist, return logical value*/
 
+   METHOD DeleteDB( cDB, lExists )
+                              /*Delete Tables*/
+   
    METHOD DeleteTables( acTable, lExists )
+                              /*Delete Tables*/
    
    METHOD End()               INLINE  If( ::hMysql > 0, ( MySqlClose( ::hMysql ), ::hMysql := 0 ), )
    
@@ -336,6 +340,25 @@ METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate ) CLASS TDolphinSrv
    ENDIF 
 
 RETURN ::SqlQuery( cQuery )
+
+//----------------------------------------------------//
+
+METHOD DeleteDB( cDB, lExists ) CLASS TDolphinSrv
+
+   LOCAL cQuery := "DROP DATABASE "
+   
+   DEFAULT lExists TO .F.
+
+   cDB = Lower( cDB )
+
+   IF lExists
+      cQuery += " IF EXISTS "
+   ENDIF 
+   
+   cQuery += cDB
+
+RETURN ::SqlQuery( cQuery ) 
+   
 
 //----------------------------------------------------//
 
