@@ -136,6 +136,15 @@ HB_FUNC( MYSQLLISTDBS ) //->A MYSQL_RES result set for success. NULL if an error
 }
 
 //------------------------------------------------//
+//int mysql_real_query(MYSQL *mysql, const char *stmt_str, unsigned long length)
+HB_FUNC( MYSQLQUERY ) //
+{
+   hb_retnl( ( long ) mysql_real_query( ( MYSQL * )hb_parnl( 1 ),
+              ( const char * ) hb_parc( 2 ),
+              ( unsigned long ) hb_parnl( 3 ) ) ) ;
+}
+
+//------------------------------------------------//
 //int mysql_select_db(MYSQL *mysql, const char *db)
 HB_FUNC( MYSQLSELECTDB ) //-> Zero for success. Nonzero if an error occurred.
 {

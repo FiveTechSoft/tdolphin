@@ -67,6 +67,12 @@ CLASS TDolphinSrv
                                  or may be a "" to match all tables.*/
    
    METHOD SelectDB( cDBName ) /*Select data base in current active connection*/
+   
+   METHOD SqlQuery( cQuery ) /*Executes the SQL statement pointed to by cQuery, 
+                              Normally, the string must consist of a single SQL statement and 
+                              you should not add a terminating semicolon (“;”) or \g to the statement. 
+                              If multiple-statement execution has been enabled, 
+                              the string can contain several statements separated by semicolons.*/
 
    
 ENDCLASS
@@ -182,5 +188,19 @@ METHOD SelectDB( cDBName ) CLASS TDolphinSrv
    ENDIF
 
 RETURN .F.
+
+//----------------------------------------------------//
+
+METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
+
+   LOCAL nLen := Len( cQuery ) 
+   LOCAL nRet
+      
+   IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
+      ::CheckError()
+   ENDIF
+
+RETURN nRet == 0
+   
 
 //----------------------------------------------------//
