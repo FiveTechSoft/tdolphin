@@ -59,7 +59,7 @@ CLASS TDolphinSrv
                               /* verify is Data Base exist, return logical value*/
 
    
-   METHOD End()               INLINE MySqlClose( ::hMysql )
+   METHOD End()               INLINE  If( ::hMysql > 0, ( MySqlClose( ::hMysql ), ::hMysql := 0 ), )
    
    METHOD ErrorTxt()          INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
                               /* Returns a string containing the error message for 
@@ -89,7 +89,7 @@ CLASS TDolphinSrv
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
  
-   METHOD TableExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListTables( Lower( cDB ) ) ) > 0, .F. )
+   METHOD TableExist( cTable )      INLINE If( ! Empty( cTable ), Len( ::ListTables( Lower( cTable ) ) ) > 0, .F. )
                               /* verify is table exist, return logical value*/ 
                                  
 ENDCLASS

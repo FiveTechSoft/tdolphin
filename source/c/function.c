@@ -25,7 +25,6 @@ HB_FUNC( MYSQLESCAPE )
    char *ToBuffer;
    BOOL bResult = FALSE ;
    iSize= hb_parclen( 1 ) ;
-   iFromSize = iSize ;
 
    FromBuffer = ( CHAR * )hb_parc( 1 ) ;
    if ( iSize )

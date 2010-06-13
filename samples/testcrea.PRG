@@ -4,7 +4,7 @@
 PROCEDURE Main()
    
    LOCAL oServer
-   LOCAL cServer := "192.168.0.200",;
+   LOCAL cServer := "192.168.0.144",;
          cUser   := "testing",;
          cPassword := "123456",;
          nPort   := 3306
@@ -36,9 +36,8 @@ PROCEDURE Main()
          ?
       ENDIF      
    ENDIF
-   
-   oServer:End()
-   
+
+   oServer:End()   
 
 RETURN
 
