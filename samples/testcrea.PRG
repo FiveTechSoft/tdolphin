@@ -9,6 +9,14 @@ PROCEDURE Main()
          cPassword := "123456",;
          nPort   := 3306
    LOCAL cText := ""
+
+   LOCAL aStruc 
+   
+   
+   aStruc = { { "ID", "N", 10, 0, .T., NIL },;
+              { "NAME", "C", 15, 0, .F., "First" },;
+              { "LAST", "C", 15, 0, .F., "Last" },;
+              { "BIRTH", "D", , , , } }
    
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
@@ -21,6 +29,10 @@ PROCEDURE Main()
          ? "Database created correctly"
          ?
       ENDIF
+      
+      oServer:SelectDB( "test02" )
+    //  CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra )
+      oServer:CretaeTable( "test", "id", "id", "id" )
    ENDIF
    
    oServer:End()

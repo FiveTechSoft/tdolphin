@@ -54,4 +54,5 @@
 
 
 #define  DBS_NOTNULL             5        /* True if field has to be NOT NULL */
+#define  DBS_DEFAULT             6        /* Field Value by default  */
 

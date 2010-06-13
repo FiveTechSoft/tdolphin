@@ -4,6 +4,7 @@
 
 #include "hbclass.ch"
 #include "common.ch"
+#include "dbstruct.ch"
 #include "tdolphin.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )
@@ -44,6 +45,8 @@ CLASS TDolphinSrv
 
    METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate )
                               /* Create Database in current active connection*/
+                              
+   METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra )
 
                                 
    METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
@@ -169,6 +172,122 @@ METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate ) CLASS TDolphinSrv
 
 RETURN ::SqlQuery( cQuery )
 
+
+//----------------------------------------------------//
+//Table Structure
+//Name, Type, Length, Decimal, Not Null (logical), Defaul value
+METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra ) CLASS TDolphinSrv
+
+   LOCAL aField
+   LOCAL cQuery   
+
+   // returns NOT NULL if extended structure has DBS_NOTNULL field to true
+//   local bNotNull := {| aArr | iif( Len( aArr ) > DBS_DEC, IF( valtype(aArr[ DBS_NOTNULL ]) == "L", iif( aArr[ DBS_NOTNULL ], " NOT NULL ", "" ), "" ), "" ) }
+   LOCAL bNotNull := { | aRow, cPrimary, cAuto | ;
+                                     If( ValType( aRow[ DBS_NOTNULL ] ) == "L" .AND.;
+                                         aRow[ DBS_NOTNULL ], " NOT NULL ", ;
+                                         If( Lower( AllTrim( aField[ DBS_NAME ] ) ) == cPrimaryKey .OR.;
+                                             Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto, " NOT NULL ", "" ) ) }
+     
+   LOCAL bDefault := { | aRow | If( ! Empty( aRow[ DBS_DEFAULT ] ), ClipValue2SQL( aRow[ DBS_DEFAULT ] ) + " ", " NULL " ) }
+     
+   LOCAL bAuto    := { | aRow, cAuto | If( Lower( AllTrim( aRow[ DBS_NAME ] ) ) == cAuto, " auto_increment ", "" ) }
+
+
+   cPrimaryKey = If( ! Empty( cPrimaryKey ), Lower( AllTrim( cPrimaryKey ) ), "" )
+   cAuto       = If( ! Empty( cAuto ), Lower( AllTrim( cAuto ) ), "" )
+   cUniqueKey  = If( ! Empty( cUniqueKey ), Lower( AllTrim( cUniqueKey ) ), "" )
+   cExtra      = If( ! Empty( cExtra ), Lower( AllTrim( cExtra ) ), "" )
+   
+   cQuery := "CREATE TABLE " + Lower( cTable ) + " ("
+
+   FOR EACH aField IN aStruct
+
+      SWITCH aField[ DBS_TYPE ]
+      CASE "C"
+         cQuery += aField[ DBS_NAME ] + " char(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + ;
+                   Eval( bNotNull, aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
+         EXIT
+
+      CASE "M"
+         cQuery += aField[ DBS_NAME ] + " text" + Eval( bNotNull, aField ) + ","
+         EXIT
+
+      CASE "N"
+
+         IF aField[ DBS_DEC ] == 0 .AND. aField[ DBS_LEN ] <= 18
+
+            DO CASE
+               CASE aField[ DBS_LEN ] <= 4
+                  cQuery += aField[ DBS_NAME ] + " smallint("  + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+
+               CASE aField[ DBS_LEN ] <= 6
+                  cQuery += aField[ DBS_NAME ] + " mediumint(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+
+               CASE aField[ DBS_LEN ] <= 9
+                  cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+
+               OTHERWISE
+                  cQuery += aField[ DBS_NAME ] + " long("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+
+            ENDCASE
+
+            cQuery += Eval( bNotNull, aField ) + ;
+                      If( Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto, " auto_increment ", ;
+                          Eval( bDefault, aField ) ) + ","
+
+         ELSE
+            cQuery += aField[ DBS_NAME ] + " decimal(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + "," + ;
+                      AllTrim( Str( aField[ DBS_DEC ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+
+         ENDIF
+         EXIT
+
+      CASE "D"
+         cQuery += aField[ DBS_NAME ] + " date " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+         EXIT
+
+      CASE "L"
+         cQuery += aField[ DBS_NAME ] + " tinyint " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+         EXIT
+
+      CASE "B"
+         cQuery += aField[ DBS_NAME ] + " mediumblob " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+         EXIT
+
+      CASE "I"
+         cQuery += aField[ DBS_NAME ] + " mediumint " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+         EXIT
+
+      CASE "T"
+         cQuery += aField[ DBS_NAME ] + " timestamp(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+         EXIT
+
+#ifdef __XHARBOUR__
+      default
+#else
+      otherwise
+#endif            
+         cQuery += aField[ DBS_NAME ] + " char(" + AllTrim(Str(aField[DBS_LEN])) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+
+      end
+
+   next
+
+   if cPrimarykey != NIL
+        cQuery += ' PRIMARY KEY (' + cPrimaryKey + '),'
+   endif
+
+   if cUniquekey != NIL
+        cQuery += ' UNIQUE ' + cUniquekey + ' (' + cUniqueKey + '),'
+   endif
+
+   // remove last comma from list
+   cQuery := Left( cQuery, Len( cQuery ) - 1 ) + ")" + cExtra + ";"
+
+   ? cQuery
+RETURN .T.// ::MySqlQuery( cQuery )
+
 //----------------------------------------------------//
 
 METHOD ListDBs( cWild ) CLASS TDolphinSrv
@@ -233,3 +352,60 @@ RETURN nRet == 0
    
 
 //----------------------------------------------------//
+
+// Returns an SQL string with clipper value converted ie. Date() -> "'YYYY-MM-DD'"
+FUNCTION ClipValue2SQL( Value, cType )
+
+   LOCAL cValue := ""
+
+   DEFAULT cType to ValType( Value )
+
+   switch cType
+      CASE "N"
+         cValue := AllTrim( Str( Value ) )
+         EXIT
+      CASE "I"
+         cValue := AllTrim( Str( Value ) )
+         EXIT
+
+      CASE "D"
+         if ! Empty( Value )
+            // MySQL dates are like YYYY-MM-DD or YYYYMMDD
+            cValue := "'" + Transform( Dtos( Value ), "@R 9999-99-99" ) + "'"
+         else
+            cValue := "NULL"
+         endif
+         EXIT
+
+      CASE "C"
+         cValue := "'" + AllTrim( Value ) + "'"
+         EXIT
+      CASE "M"
+         cValue := "'" + AllTrim( Value ) + "'"
+         EXIT
+      CASE "B"
+         IF Empty( Value)
+            cValue := "''"
+         ELSE
+            cValue := "'" + MySqlEscape( value ) + "'"
+         ENDIF
+         EXIT
+
+      CASE "L"
+         cValue := AllTrim( Str( iif(Value, 1, 0 ) ) )
+         EXIT
+
+      CASE "T"
+         cValue := iif( Value < 0, "NULL", Alltrim( str( Value ) ) )
+         EXIT
+
+#ifdef __XHARBOUR__
+      DEFAULT
+#else 
+      OTHERWISE
+#endif
+         cValue := "''"       // NOTE: Here we lose values we cannot convert
+
+   END
+
+RETURN cValue

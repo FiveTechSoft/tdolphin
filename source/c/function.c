@@ -4,6 +4,9 @@
 #include <hbapifs.h>
 #include <mysql.h>
 
+#ifdef __HARBOUR__
+#define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
+#endif //__HARBOUR__
 
 LPSTR LToStr( long w )
 {
@@ -13,7 +16,36 @@ LPSTR LToStr( long w )
    
    return ( char * ) dbl;
 }  
+//------------------------------------------------//
+//unsigned long mysql_real_escape_string(MYSQL *mysql, char *to, const char *from, unsigned long length)
+HB_FUNC( MYSQLESCAPE )
+{
+   char *FromBuffer ;
+   ULONG iSize, iFromSize ;
+   char *ToBuffer;
+   BOOL bResult = FALSE ;
+   iSize= hb_parclen( 1 ) ;
+   iFromSize = iSize ;
 
+   FromBuffer = ( CHAR * )hb_parc( 1 ) ;
+   if ( iSize )
+   {
+     ToBuffer = ( char * ) hb_xgrab( ( iSize*2 ) + 1 );
+     if ( ToBuffer )
+     {
+       iSize = mysql_real_escape_string( ( MYSQL * ) hb_parnl( 2 ), ToBuffer, FromBuffer, iSize );
+       hb_retclenAdopt( ( char * ) ToBuffer, iSize ) ;
+       bResult = TRUE ;
+     }
+   }
+   if ( !bResult )
+   {
+     // Should we raise a runtime error here????? or just return the original string
+     hb_retclen( ( char * ) FromBuffer, iSize ) ;
+   }
+}
+
+//------------------------------------------------//
 // MYSQL *mysql_real_connect( MYSQL*, char * host, char * user, char * password, char * db, uint port, char *, uint flags )
 HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
 {
