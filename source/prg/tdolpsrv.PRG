@@ -98,6 +98,8 @@ CLASS TDolphinSrv
  
    METHOD TableExist( cTable )      INLINE If( ! Empty( cTable ), Len( ::ListTables( Lower( cTable ) ) ) > 0, .F. )
                               /* verify is table exist, return logical value*/ 
+   
+   METHOD TableStructure( cTable )  
                                  
 ENDCLASS
 
@@ -207,12 +209,6 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
 
    LOCAL aField
    LOCAL cQuery   
-   LOCAL bNotNull := { | aRow, cPrimary, cAuto | ;
-                                     If( ValType( aRow[ DBS_NOTNULL ] ) == "L" .AND.;
-                                         aRow[ DBS_NOTNULL ], " NOT NULL ", ;
-                                         If( Lower( AllTrim( aField[ DBS_NAME ] ) ) == cPrimaryKey .OR.;
-                                             Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto, " NOT NULL ", "" ) ) }
-     
    LOCAL bDefault := { | aRow | " DEFAULT " + If( ! ValType( aRow[ DBS_DEFAULT ] ) == "U", ClipValue2SQL( aRow[ DBS_DEFAULT ] ), " NULL" ) }
      
    LOCAL lAutoIncrement
@@ -221,6 +217,10 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
 
    DEFAULT lVer TO .T.
    DEFAULT lIfNotExist TO .T.
+   DEFAULT cPrimaryKey TO ""
+   DEFAULT cUniqueKey TO ""
+   DEFAULT cExtra TO ""
+   
 
    cPrimaryKey = If( ! Empty( cPrimaryKey ), Lower( AllTrim( cPrimaryKey ) ), "" )
    cAuto       = If( ! Empty( cAuto ), Lower( AllTrim( cAuto ) ), "" )
@@ -264,11 +264,11 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
          SWITCH aField[ DBS_TYPE ]
          CASE "C"
             cQuery += aField[ DBS_NAME ] + " char(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + ;
-                      Eval( bNotNull, aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
+                      fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
             EXIT
    
          CASE "M"
-            cQuery += aField[ DBS_NAME ] + " text" + Eval( bNotNull, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " text" + fNotNull( aField, cPrimaryKey, cAuto ) + ","
             EXIT
    
          CASE "N"
@@ -294,35 +294,35 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
                   ENDCASE
                ENDIF
    
-               cQuery += Eval( bNotNull, aField ) + ;
+               cQuery += fNotNull( aField, cPrimaryKey, cAuto ) + ;
                          If( lAutoIncrement, " auto_increment", ;
                              Eval( bDefault, aField ) ) + ","
    
             ELSE
                cQuery += aField[ DBS_NAME ] + " decimal(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + "," + ;
-                         AllTrim( Str( aField[ DBS_DEC ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+                         AllTrim( Str( aField[ DBS_DEC ] ) ) + ")" + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
    
             ENDIF
             EXIT
    
          CASE "D"
-            cQuery += aField[ DBS_NAME ] + " date " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " date " + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
             EXIT
    
          CASE "L"
-            cQuery += aField[ DBS_NAME ] + " tinyint (1)" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " tinyint (1)" + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
             EXIT
    
          CASE "B"
-            cQuery += aField[ DBS_NAME ] + " mediumblob " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " mediumblob " + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
             EXIT
    
          CASE "I"
-            cQuery += aField[ DBS_NAME ] + " mediumint " + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " mediumint " + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
             EXIT
    
          CASE "T"
-            cQuery += aField[ DBS_NAME ] + " timestamp(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " timestamp(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
             EXIT
    
    #ifdef __XHARBOUR__
@@ -330,7 +330,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    #else
          OTHERWISE
    #endif            
-            cQuery += aField[ DBS_NAME ] + " char(" + AllTrim(Str(aField[DBS_LEN])) + ")" + Eval( bNotNull, aField ) + Eval( bDefault, aField ) + ","
+            cQuery += aField[ DBS_NAME ] + " char(" + AllTrim(Str(aField[DBS_LEN])) + ")" + fNotNull( aField, cPrimaryKey, cAuto ) + Eval( bDefault, aField ) + ","
    
          END
    
@@ -489,8 +489,23 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
    ENDIF
 
 RETURN nRet == 0
-   
 
+//----------------------------------------------------//
+
+METHOD TableStructure( cTable )  CLASS TDolphinSrv
+
+   LOCAL aStruct := {}
+   LOCAL n
+
+   aStruct = MyTableStructure( ::hMysql, cTable )
+   
+   IF Len( aStruct ) == 0
+      ::CheckError()
+   ENDIF
+
+RETURN aStruct
+   
+//----------------------------------------------------//
 //----------------------------------------------------//
 //----------------------------------------------------//
 //----------------------------------------------------//
@@ -588,4 +603,16 @@ STATIC FUNCTION VerifyStructure( aStruct )
 RETURN nError
          
 //----------------------------------------------------//         
-         
+
+STATIC FUNCTION fNotNull( aField, cPrimaryKey, cAuto )         
+   LOCAL cRet := ""
+   
+   IF ValType( aField[ DBS_NOTNULL ] ) == "L" .AND. aField[ DBS_NOTNULL ]
+      cRet = " NOT NULL "
+   ELSE 
+      IF Lower( AllTrim( aField[ DBS_NAME ] ) ) == cPrimaryKey .OR. Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto
+         cRet = " NOT NULL "
+      ENDIF
+   ENDIF
+
+RETURN cRet

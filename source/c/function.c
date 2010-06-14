@@ -8,6 +8,8 @@
 #define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
 #endif //__HARBOUR__
 
+char * SQL2ClipType( long lType );
+
 LPSTR LToStr( long w )
 {
    static char dbl[ HB_MAX_DOUBLE_LENGTH ];
@@ -16,6 +18,7 @@ LPSTR LToStr( long w )
    
    return ( char * ) dbl;
 }  
+
 //------------------------------------------------//
 //unsigned long mysql_real_escape_string(MYSQL *mysql, char *to, const char *from, unsigned long length)
 HB_FUNC( MYSQLESCAPE )
@@ -99,12 +102,8 @@ HB_FUNC( MYSQLLISTTBLS ) //->A MYSQL_RES result set for success. NULL if an erro
    long nr, i;
    PHB_ITEM itemReturn;
 
-//   MessageBox( 0, "paso", "ok", 0 );
-
    if( mysql )
       mresult = mysql_list_tables( mysql, szwild );
-
-//   MessageBox( 0, LToStr( ( long ) mresult ), "ok", 0 );
 
    if( mresult )
    {
@@ -182,3 +181,150 @@ HB_FUNC( MYSQLSELECTDB ) //-> Zero for success. Nonzero if an error occurred.
    const   char * db = ( const char* ) hb_parc( 2 );
    hb_retnl( ( long ) mysql_select_db( ( MYSQL * ) hb_parnl( 1 ), db ) );
 }
+
+//------------------------------------------------//
+// Build a Array with table structure 
+HB_FUNC( MYTABLESTRUCTURE ) //-> Table Structure
+{
+	MYSQL_RES * mresult;
+	unsigned int num_fields;
+	PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
+	PHB_ITEM itemField = hb_itemNew( NULL );
+	MYSQL_FIELD *mfield;
+	
+	mresult = mysql_list_fields( ( MYSQL * )hb_parnl( 1 ), hb_parc( 2 ), NULL );
+	if( mresult )
+  {
+  	 unsigned int i;
+     num_fields = mysql_num_fields( mresult );
+     for( i = 0; i < num_fields; i++)
+     {
+     	  mfield = mysql_fetch_field( mresult ) ;
+        hb_arrayNew( itemField, 8 );
+        hb_arraySetC( itemField, 1, mfield->name );     
+        hb_arraySetC( itemField, 2, mfield->table );
+        hb_arraySetC( itemField, 3, mfield->def );
+        hb_arraySetC( itemField, 4, SQL2ClipType( ( long ) mfield->type ) );
+        hb_arraySetNL( itemField, 5, mfield->length );
+        hb_arraySetNL( itemField, 6, mfield->max_length );
+        hb_arraySetNL( itemField, 7, mfield->flags );
+        hb_arraySetNL( itemField, 8, mfield->decimals );        	
+     	  hb_arrayAddForward( itemReturn, itemField );
+      }
+  	  mysql_free_result( mresult );
+  } else
+     itemReturn = hb_itemArrayNew( 0 );
+
+   hb_itemRelease( itemField );
+   hb_itemReturnRelease( itemReturn );
+}
+
+//------------------------------------------------//
+// convert MySql field type to clipper field type
+char * SQL2ClipType( long lType ) //-> Clipper field type 
+{
+	 char * sType;
+	 
+   switch ( lType ){
+
+      case FIELD_TYPE_DECIMAL     :
+         sType = "N";
+         break;
+
+      case FIELD_TYPE_NEWDECIMAL  :
+         sType = "N";
+         break;
+
+      case FIELD_TYPE_TINY        :
+         sType = "L";
+         break;
+
+      case FIELD_TYPE_SHORT       :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_LONG        :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_FLOAT       :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_DOUBLE      :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_NULL        :
+         sType = "U";
+         break;
+         
+      case FIELD_TYPE_TIMESTAMP   :
+         sType = "T";
+         break;
+         
+      case FIELD_TYPE_LONGLONG    :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_INT24       :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_DATE        :
+         sType = "D";
+         break;
+         
+      case FIELD_TYPE_TIME        :
+         sType = "C";
+         break;
+         
+      case FIELD_TYPE_DATETIME    :
+         sType = "C";
+         break;
+         
+      case FIELD_TYPE_YEAR        :
+         sType = "N";
+         break;
+         
+      case FIELD_TYPE_MEDIUM_BLOB :
+         sType = "B";
+         break;
+      	
+      case FIELD_TYPE_LONG_BLOB   :
+         sType = "B";
+         break;
+
+      case FIELD_TYPE_BLOB        :
+         sType = "B";
+         break;
+
+      case FIELD_TYPE_STRING      :
+         sType = "C";
+         break;
+         
+      case FIELD_TYPE_BIT         :      	
+         sType = "L";
+         break;
+      case FIELD_TYPE_NEWDATE     :
+      case FIELD_TYPE_ENUM        :
+      case FIELD_TYPE_SET         :
+      case FIELD_TYPE_TINY_BLOB   :         
+      case FIELD_TYPE_GEOMETRY    :
+      default:
+      	sType = "U";
+
+ }
+
+   return sType;
+}
+
+//------------------------------------------------//
+
+HB_FUNC( SQL2CLIPTYPE )
+{
+	hb_retc( SQL2ClipType( hb_parnl( 1 ) ) );
+}
+
+
+//------------------------------------------------//

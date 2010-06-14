@@ -9,6 +9,7 @@ del lib\*.bak /Q
 del *.bak /Q
 del .\source\c\*.bak /Q
 del .\source\prg\*.bak /Q
+del .\include\.bak
 cd samples
 del *.bak /Q
 del *.log /Q
