@@ -4,21 +4,25 @@
 PROCEDURE Main()
    
    LOCAL oServer
-   LOCAL cServer := "localhost",;
-         cUser   := "testing",;
-         cPassword := "123456",;
-         nPort   := 3306
+   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
+   LOCAL oServer   := NIL
+   LOCAL cServer   := hIni["mysql"]["host"],;
+         cUser     := hIni["mysql"]["user"],;
+         cPassword := hIni["mysql"]["psw"],;
+         nPort     := val(hIni["mysql"]["port"]), ;
+         cDBName   := hIni["mysql"]["dbname"], ;
+         nFlags    := val(hIni["mysql"]["flags"])
    LOCAL cText := ""
    
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
-                                nPort, , ;
+                                nPort, nFlags, ;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
    
    IF ! oServer:lError 
       cText += "Connection OK" + CRLF
-      oServer:SelectDB( "test01" )
+      oServer:SelectDB( cDBName )
       ? cText
       wait "presiona una tecla"
    ENDIF

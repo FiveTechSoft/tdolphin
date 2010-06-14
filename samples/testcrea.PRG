@@ -5,10 +5,14 @@
 PROCEDURE Main()
    
    LOCAL oServer
-   LOCAL cServer := "192.168.0.200",;
-         cUser   := "testing",;
-         cPassword := "123456",;
-         nPort   := 3306
+   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
+   LOCAL oServer   := NIL
+   LOCAL cServer   := hIni["mysql"]["host"],;
+         cUser     := hIni["mysql"]["user"],;
+         cPassword := hIni["mysql"]["psw"],;
+         nPort     := val(hIni["mysql"]["port"]), ;
+         cDBName   := hIni["mysql"]["dbname"], ;
+         nFlags    := val(hIni["mysql"]["flags"])
    LOCAL cText := ""
 
    LOCAL aStruc 
@@ -23,12 +27,12 @@ PROCEDURE Main()
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
-                                nPort, , ;
+                                nPort, nFlags, ;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
    
    IF ! oServer:lError 
-      IF oServer:DBCreate( "test02" )
-         ? "Database created correctly test02"
+      IF oServer:DBCreate( cDBName )
+         ? "Database created correctly " + cDBName
          ?
       ENDIF
 
@@ -37,7 +41,7 @@ PROCEDURE Main()
          ?
       ENDIF
       
-      oServer:SelectDB( "test02" )
+      oServer:SelectDB( cDBName )
       IF oServer:CreateTable( "test", aStruc, "id", "id", "id" )
          ? "Table created correctly test"
          ?

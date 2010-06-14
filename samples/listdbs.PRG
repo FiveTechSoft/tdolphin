@@ -4,24 +4,28 @@
 PROCEDURE Main()
    
    LOCAL oServer
-   LOCAL cServer := "localhost",;
-         cUser   := "testing",;
-         cPassword := "123456",;
-         nPort   := 3306
+   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
+   LOCAL oServer   := NIL
+   LOCAL cServer   := hIni["mysql"]["host"],;
+         cUser     := hIni["mysql"]["user"],;
+         cPassword := hIni["mysql"]["psw"],;
+         nPort     := val(hIni["mysql"]["port"]), ;
+         cDBName   := hIni["mysql"]["dbname"], ;
+         nFlags    := val(hIni["mysql"]["flags"])
    LOCAL cText := ""
    
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
-                                nPort, , ;
+                                nPort, nFlags, ;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
    
    IF ! oServer:lError 
       ListDBs( oServer )
-      ? "Data Base: test01 is: " + IsExistDB( oServer, "test01" )
+      ? "Data Base: "+ cDBName +" is: " + IsExistDB( oServer, cDBName )
       ? "Data Base: test02 is: " + IsExistDB( oServer, "test02" )
       ?
-      oServer:SelectDB( "test01" )
+      oServer:SelectDB( cDBName )
       ListTables( oServer )
       ? "Table: test is: " + IsExistTB( oServer, "test" )
       ? "Table: test02 is: " + IsExistTB( oServer, "test02" )
