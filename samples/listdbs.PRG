@@ -30,9 +30,9 @@ PROCEDURE Main()
       ? "Table: test02 is: " + IsExistTB( oServer, "test02" )
       ?
    ENDIF
-   
+
    oServer:End()
-   
+   inkey(5)
 
 RETURN
 

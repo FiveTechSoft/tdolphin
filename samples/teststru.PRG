@@ -58,6 +58,9 @@ PROCEDURE Main()
       ENDIF      
    ENDIF
 
+   oServer:End()
+   inkey(5)
+
 RETURN
 
 PROCEDURE GetError( oServer, nError, lInternal )

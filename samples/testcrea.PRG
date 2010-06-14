@@ -93,7 +93,8 @@ PROCEDURE Main()
       
    ENDIF
 
-   oServer:End()   
+   oServer:End()
+   inkey(5)
 
 RETURN
 

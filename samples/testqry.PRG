@@ -28,7 +28,7 @@ PROCEDURE Main()
    ENDIF
    
    oServer:End()
-   
+   inkey(5)
 
 RETURN
 

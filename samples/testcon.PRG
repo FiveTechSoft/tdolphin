@@ -23,9 +23,10 @@ PROCEDURE Main()
       cText += "Connection OK" + CRLF
       oServer:SelectDB( cDBName )
       ? cText
-      wait "presiona una tecla"
    ENDIF
-   
+
+   oServer:End()
+   inkey(5)
 
 RETURN
 
