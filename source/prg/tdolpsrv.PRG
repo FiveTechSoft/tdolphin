@@ -92,6 +92,12 @@ CLASS TDolphinSrv
                                  wild may contain the wildcard characters “%” or “_”, 
                                  or may be a "" to match all tables.*/
    
+   METHOD Ping()                  INLINE If( MySqlPing( ::hMysql ) > 0, ( ::CheckError(), .F.), .T. )
+                              /* Checks whether the connection to the server is working. 
+                                 If the connection has gone down and auto-reconnect is enabled an attempt 
+                                 to reconnect is made. If the connection is down and auto-reconnect is disabled,
+                                 ::ping() returns an error.*/
+   
    METHOD SelectDB( cDBName ) /*Select data base in current active connection*/
    
    METHOD SqlQuery( cQuery ) /*Executes the SQL statement pointed to by cQuery, 

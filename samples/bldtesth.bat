@@ -52,6 +52,7 @@ echo %hdirl%\hbcpage.lib + >> b32.bc
 echo %hdirl%\hbwin.lib + >> b32.bc
 echo %hdirl%\hbcplr.lib + >> b32.bc
 echo %hdirl%\hbct.lib + >> b32.bc
+echo %hdirl%\hbpcre.lib + >> b32.bc
 rem echo %hdirl%\xhb.lib + >> b32.bc
 rem echo %hdirl%\hbzlib.lib + >> b32.bc
 
