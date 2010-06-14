@@ -43,10 +43,10 @@ CLASS TDolphinSrv
    DATA nInternalError /*error manager, no come from MySQL*/
    DATA nPort          /*value is used as the port number for the TCP/IP connection*/
    
-   METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError )
+   METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError, cDBName )
    
    METHOD CheckError( nError )
-   METHOD Connect( cServer, cUser, cPassword, nPort, nFlags )	
+   METHOD Connect( cServer, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
@@ -115,7 +115,7 @@ ENDCLASS
 
 //----------------------------------------------------//
 
-METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError ) CLASS TDolphinSrv
+METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError, cDBName ) CLASS TDolphinSrv
 
    ::cServer        = cServer
    ::cUser          = cUser
@@ -125,6 +125,7 @@ METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError ) CLASS TDolphinS
    ::lError         = .F.
    ::bOnError       = bOnError
    ::nInternalError = 0
+   ::cDBName        = NIL
 
    ::hMysql         = ::Connect() 
    
@@ -164,7 +165,7 @@ RETURN NIL
 //----------------------------------------------------//
 
 
-METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
+METHOD Connect( cServer, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphinSrv
 
    
    DEFAULT cServer   TO ::cServer
@@ -172,9 +173,10 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags ) CLASS TDolphinSrv
    DEFAULT cPassword TO ::cPassword
    DEFAULT nPort     TO ::nPort
    DEFAULT nFlags    TO ::nFlags
+   DEFAULT cDBName   TO ::cDBName
    
 
-RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags )
+RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags, cDBName )
 
 //-----------------------------------------------------------
 
