@@ -21,7 +21,9 @@ PROCEDURE Main()
    
    IF ! oServer:lError 
       cText += "Connection OK" + CRLF
-//      oServer:SelectDB( cDBName )
+      cText += "DATABASE of INI " + cDBName + CRLF
+      cText += "DATABASE of oServer " + oServer:cDBName + CRLF
+      oServer:SelectDB( cDBName )
       ? cText
    ENDIF
 

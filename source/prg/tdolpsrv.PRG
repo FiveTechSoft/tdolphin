@@ -115,7 +115,7 @@ ENDCLASS
 
 //----------------------------------------------------//
 
-METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError, cDBName ) CLASS TDolphinSrv
+METHOD New( cServer, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TDolphinSrv
 
    ::cServer        = cServer
    ::cUser          = cUser
@@ -125,7 +125,7 @@ METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError, cDBName ) CLASS 
    ::lError         = .F.
    ::bOnError       = bOnError
    ::nInternalError = 0
-   ::cDBName        = NIL
+   ::cDBName        = cDBName
 
    ::hMysql         = ::Connect() 
    
