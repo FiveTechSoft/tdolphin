@@ -5,7 +5,6 @@
 
 PROCEDURE Main()
    
-   LOCAL oServer
    LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
    LOCAL oServer   := NIL
    LOCAL cServer   := hIni["mysql"]["host"],;
