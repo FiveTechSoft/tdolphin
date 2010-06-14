@@ -47,7 +47,11 @@ PROCEDURE Main()
            NEXT 
            ? 
          NEXT  
-            
+         ? "ID AutoIncrement:" + If( oServer:IsAutoIncrement( "ID", "test" ), "Yes", "No" )
+         ? "NAME AutoIncrement:" + If( oServer:IsAutoIncrement( "NAME", "test" ), "Yes", "No" )
+         ?
+         
+         
       ENDIF      
    ENDIF
 

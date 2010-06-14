@@ -20,6 +20,13 @@ LPSTR LToStr( long w )
 }  
 
 //------------------------------------------------//
+// returns parameter bitwise 
+HB_FUNC( MYAND )
+{
+   hb_retnl( hb_parnl( 1 ) & hb_parnl( 2 ) );
+}
+
+//------------------------------------------------//
 //unsigned long mysql_real_escape_string(MYSQL *mysql, char *to, const char *from, unsigned long length)
 HB_FUNC( MYSQLESCAPE )
 {
@@ -90,6 +97,38 @@ HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 {
    hb_retnl( mysql_errno( ( MYSQL * ) hb_parnl( 1 ) ) );
 }
+/*
+//------------------------------------------------//
+// MYSQL *, char * cTable, char * cwild
+HB_FUNC( MYGETFIELDINFO ) //-> Array with field info
+{
+	 MYSQL_RES * mresult;
+	 PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
+	 PHB_ITEM itemField = hb_itemNew( NULL );
+	 MYSQL_FIELD *mfield;
+	
+   mresult = mysql_list_fields( ( MYSQL * )hb_parnl( 1 ), hb_parc( 2 ), hb_parc( 3 ) );
+
+   PHB_ITEM itField = hb_itemArrayNew( 8 );
+   
+   mfield = mysql_fetch_field( ( MYSQL_RES * ) hb_parnl( 1 ) );
+
+   if ( !( mfield == NULL ) )
+   {
+      hb_arraySetC( itField, 1, mfield->name );
+      hb_arraySetC( itField, 2, mfield->table );
+      hb_arraySetC( itField, 3, mfield->def );
+      hb_arraySetNL( itField, 4, ( long ) mfield->type );
+      hb_arraySetNL( itField, 5, mfield->length );
+      hb_arraySetNL( itField, 6, mfield->max_length );
+      hb_arraySetNL( itField, 7, mfield->flags );
+      hb_arraySetNL( itField, 8, mfield->decimals );
+   }
+
+   hb_itemReturnRelease( itField );
+
+}
+*/
 
 //------------------------------------------------//
 //MYSQL_RES *mysql_list_tables(MYSQL *mysql, const char *wild)
@@ -192,7 +231,7 @@ HB_FUNC( MYTABLESTRUCTURE ) //-> Table Structure
 	PHB_ITEM itemField = hb_itemNew( NULL );
 	MYSQL_FIELD *mfield;
 	
-	mresult = mysql_list_fields( ( MYSQL * )hb_parnl( 1 ), hb_parc( 2 ), NULL );
+	mresult = mysql_list_fields( ( MYSQL * )hb_parnl( 1 ), hb_parc( 2 ), hb_parc( 3 ) );
 	if( mresult )
   {
   	 unsigned int i;

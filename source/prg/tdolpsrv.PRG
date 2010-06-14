@@ -80,6 +80,7 @@ CLASS TDolphinSrv
                                 API function that can succeed or fail. 
                                 A return value of zero means that no error occurred.*/
 
+   METHOD IsAutoIncrement( cField, cTable )
    
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
@@ -434,6 +435,22 @@ METHOD DeleteTables( acTables, lExists ) CLASS TDolphinSrv
    cQuery += cTables
 
 RETURN ::SqlQuery( cQuery ) 
+
+//----------------------------------------------------//
+
+METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
+
+   LOCAL lAuto := .F.
+   LOCAL aStruct
+   
+   cField = Lower( Alltrim( cField ) )
+   cTable = Lower( Alltrim( cTable ) )
+ 
+   aStruct = MyTableStructure( ::hMysql, cTable, cField )
+     
+   lAuto = MyAnd( aStruct[ 1, MYSQL_FS_FLAGS ], AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
+
+return( lAuto )
 
 
 //----------------------------------------------------//
