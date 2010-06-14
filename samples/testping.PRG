@@ -27,7 +27,10 @@ PROCEDURE Main()
       ? "Ping to server " , If( oServer:Ping(), "OK", "Failed" )
       ?
    ENDIF 
-   
+
+   oServer:end()
+   inkey(5)
+
 RETURN NIL
 
 PROCEDURE GetError( oServer, nError, lInternal )
