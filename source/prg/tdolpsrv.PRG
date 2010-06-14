@@ -62,6 +62,9 @@ CLASS TDolphinSrv
 
    METHOD DeleteDB( cDB, lExists )
                               /*Delete Tables*/
+                              
+   METHOD DeleteIndex( cName, cTable )         
+                              /*Delete Index*/                     
    
    METHOD DeleteTables( acTable, lExists )
                               /*Delete Tables*/
@@ -397,6 +400,17 @@ METHOD DeleteDB( cDB, lExists ) CLASS TDolphinSrv
 
 RETURN ::SqlQuery( cQuery ) 
    
+//----------------------------------------------------//   
+
+METHOD DeleteIndex( cName, cTable, lPrimary ) CLASS TDolphinSrv
+
+   LOCAL cQuery 
+   DEFAULT lPrimary TO .F.
+   
+   cQuery = "DROP INDEX" + If( lPrimary, " PRIMARY ", " " ) + cName + " ON " + Lower( cTable )
+
+RETURN ::SqlQuery( cQuery )
+
 
 //----------------------------------------------------//
 

@@ -41,9 +41,14 @@ PROCEDURE Main()
       IF oServer:CreateTable( "test", aStruc, "id", "id", "id" )
          ? "Table created correctly test"
          ?
-         oServer:CreateIndex( "index01", "test", { { "LAST", IDX_ASC }, "BIRTH" } )
-         ? "Create Index succefull"
-         ? 
+         IF oServer:CreateIndex( "index01", "test", { { "LAST", IDX_ASC }, "BIRTH" } )
+            ? "Create Index succefull"
+            ? 
+         ENDIF
+         IF oServer:DeleteIndex( "index01", "test" )
+            ? "Delete Index succefull"
+            ?
+         ENDIF
       ENDIF
             
       IF oServer:CreateTable( "test2", aStruc, "id", "id", "id" )
@@ -72,12 +77,12 @@ PROCEDURE Main()
          ? "Delete successful: test2, test3"
          ?
       ENDIF
-
+/*
       IF oServer:DeleteDB( "test02" )
          ? "Delete database successful: test02"
          ?
       ENDIF
-      
+  */    
       IF oServer:DeleteDB( "test03" )
          ? "Delete database successful: test03"
          ?
