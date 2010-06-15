@@ -55,6 +55,20 @@ HB_FUNC( MYSQLESCAPE )
 }
 
 //------------------------------------------------//
+// my_bool mysql_commit(MYSQL *mysql)
+HB_FUNC( MYSQLCOMMIT )
+{
+	 int iret = 1;
+   MYSQL * hMysql =  ( MYSQL * )hb_parnl( 1 );
+
+   if( hMysql )
+      iret = ( int )mysql_commit( hMysql );
+   
+   hb_retni( iret );
+}	
+
+
+//------------------------------------------------//
 // MYSQL *mysql_real_connect( MYSQL*, char * host, char * user, char * password, char * db, uint port, char *, uint flags )
 HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
 {
@@ -173,6 +187,18 @@ HB_FUNC( MYSQLLISTDBS ) //->A MYSQL_RES result set for success. NULL if an error
 
 }
 
+//------------------------------------------------//
+//int mysql_options(MYSQL *mysql, enum mysql_option option, const void *arg)
+HB_FUNC( MYSQLOPTION )
+{
+	const void *arg = ( const void * ) hb_param( 1, HB_IT_ANY );
+	MYSQL *mysql = ( MYSQL * ) hb_parnl( 1 );
+  int iret = 1;
+	if( mysql )
+	   iret = mysql_options( mysql, hb_parnl( 2 ), arg );
+	   
+	hb_retni( iret );
+}
 
 //------------------------------------------------//
 //int mysql_ping(MYSQL *mysql)
@@ -195,6 +221,20 @@ HB_FUNC( MYSQLQUERY ) //
               ( const char * ) hb_parc( 2 ),
               ( unsigned long ) hb_parnl( 3 ) ) ) ;
 }
+
+//------------------------------------------------//
+// my_bool mysql_rollback(MYSQL *mysql)
+HB_FUNC( MYSQLROLLBACK )
+{
+	 int iret = 1;
+   MYSQL * hMysql =  ( MYSQL * )hb_parnl( 1 );
+
+   if( hMysql )
+      iret = ( int )mysql_rollback( hMysql );
+   
+   hb_retni( iret );
+}	
+
 
 //------------------------------------------------//
 //int mysql_select_db(MYSQL *mysql, const char *db)
@@ -310,15 +350,15 @@ char * SQL2ClipType( long lType ) //-> Clipper field type
          break;
          
       case FIELD_TYPE_MEDIUM_BLOB :
-         sType = "B";
+         sType = "M";
          break;
       	
       case FIELD_TYPE_LONG_BLOB   :
-         sType = "B";
+         sType = "M";
          break;
 
       case FIELD_TYPE_BLOB        :
-         sType = "B";
+         sType = "M";
          break;
 
       case FIELD_TYPE_STRING      :

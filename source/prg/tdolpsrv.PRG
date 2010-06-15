@@ -24,6 +24,11 @@
 #define ERR_INVALID_STRUCT_UNIQUE        9004
 #define ERR_INVALID_STRUCT_AUTO          9005
 #define ERR_NOQUERY                      9006
+#define ERR_EMPTYVALUES                  9007
+#define ERR_EMPTYTABLE                   9008
+#define ERR_NOMATCHCOLUMNSVALUES         9009
+#define ERR_INVALIDCOLUMN                9010
+
 
 CLASS TDolphinSrv
 
@@ -45,9 +50,16 @@ CLASS TDolphinSrv
    
    METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError, cDBName )
    
+   
+   METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )      
+   
    METHOD CheckError( nError )
+
    METHOD Connect( cServer, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
+
+   METHOD CommitTransaction()         INLINE MySqlCommit( ::hMySql )
+                              /*Commits the current transaction.*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
 
@@ -55,6 +67,7 @@ CLASS TDolphinSrv
                               /* Create Database in current active connection*/
                               
    METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra )
+                              /*creates a table with the cTable name*/
 
                                 
    METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
@@ -79,6 +92,11 @@ CLASS TDolphinSrv
                               /* Returns the error code for the most recently invoked 
                                 API function that can succeed or fail. 
                                 A return value of zero means that no error occurred.*/
+                                
+   METHOD Execute( cQuery )   INLINE ::SqlQuery( cQuery )  
+   
+   METHOD Insert( cTable, aColumns, aValues, lTransaction )  
+                             /*inserts new rows into an existing table.*/
 
    METHOD IsAutoIncrement( cField, cTable )
    
@@ -97,8 +115,12 @@ CLASS TDolphinSrv
                                  If the connection has gone down and auto-reconnect is enabled an attempt 
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
+
+   METHOD RollBack()                  INLINE MySqlRollBack( ::hMysql )
+                             /* Rolls back the current transaction.*/
    
-   METHOD SelectDB( cDBName ) /*Select data base in current active connection*/
+   METHOD SelectDB( cDBName ) 
+                             /*Select data base in current active connection*/
    
    METHOD SqlQuery( cQuery ) /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
@@ -110,6 +132,9 @@ CLASS TDolphinSrv
                               /* verify is table exist, return logical value*/ 
    
    METHOD TableStructure( cTable )  
+   
+   METHOD Update( cTable, aColumns, aValues, cWhere, lAddSelf, lTransaction )
+                             /*inserts new rows into an existing table.*/
                                  
 ENDCLASS
 
@@ -446,6 +471,57 @@ RETURN ::SqlQuery( cQuery )
 
 //----------------------------------------------------//
 
+METHOD Insert( cTable, aColumns, aValues, lTransaction ) CLASS TDolphinSrv
+
+   LOCAL cExecute
+   LOCAL lRet, n
+   
+   DEFAULT lTransaction TO .F.
+   
+   IF Empty( aColumns ) .AND. Empty( aValues ) 
+      ::nInternalError = ERR_EMPTYVALUES
+      ::CheckError()
+      RETURN .F. 
+   ENDIF    
+   
+   IF Empty( cTable ) 
+      ::nInternalError = ERR_EMPTYTABLE
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+   IF Len( aColumns ) # Len( aValues )
+      ::nInternalError = ERR_NOMATCHCOLUMNSVALUES
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+   cExecute := "INSERT INTO " + Lower( cTable ) + " SET "
+   
+   FOR n = 1 TO Len( aColumns )
+      cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
+   NEXT 
+   IF lTransaction
+      ::BeginTransaction()
+   ENDIF   
+   //Delete last coma 
+   cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
+
+   lRet = ::Execute( cExecute )  
+   
+   IF lTransaction
+      IF lRet
+         ::CommitTransaction()
+      ELSE 
+         ::RollBack()
+      ENDIF
+   ENDIF   
+   
+  
+RETURN lRet
+
+//----------------------------------------------------//
+
 METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
 
    LOCAL lAuto := .F.
@@ -543,6 +619,77 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
    ENDIF
 
 RETURN aStruct
+   
+//----------------------------------------------------//   
+   
+METHOD Update( cTable, aColumns, aValues, cWhere, lAddSelf, lTransaction ) CLASS TDolphinSrv
+
+   LOCAL cExecute
+   LOCAL lRet, n
+   LOCAL aStruc, nPos
+   
+   DEFAULT lTransaction TO .F.   
+   DEFAULT lAddSelf     TO .F.   
+   DEFAULT cWhere       TO ""
+   
+   IF Empty( aColumns ) .OR. Empty( aValues )
+      ::nInternalError = ERR_EMPTYVALUES
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+   
+   IF Empty( cTable ) 
+      ::nInternalError = ERR_EMPTYTABLE
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+   IF Len( aColumns ) # Len( aValues )
+      ::nInternalError = ERR_NOMATCHCOLUMNSVALUES
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+   cExecute := "UPDATE " + Lower( cTable ) + " SET "
+   aStruc = ::TableStructure( cTable )
+   FOR n = 1 TO Len( aColumns )
+      IF lAddSelf
+         nPos := AScan( aStruc, {| uItem | Upper( AllTrim( uItem[ 1 ] ) ) == Upper( AllTrim( aColumns[ n ] ) ) } )
+         IF nPos > 0 .AND. aStruc[ nPos ][ 2 ] == "M"
+            cExecute += aColumns[ n ] + " = CONCAT(" + aColumns[ n ] + ", " + ClipValue2SQL( aValues[ n ] ) + "),"
+         ELSEIF nPos > 0
+            cExecute += aColumns[ n ] + " = " + aColumns[ n ] + " + " + ClipValue2SQL( aValues[ n ] ) + ","
+         ELSE 
+            ::lError := .T.
+            ::nInternalError = ERR_INVALIDCOLUMN
+            EXIT
+         ENDIF
+      ELSE
+         cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
+      ENDIF
+   NEXT 
+   IF ! ::lError
+      //Delete last comma 
+      cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
+      IF !Empty( cWhere )
+         cExecute += " WHERE " + cWhere
+      ENDIF
+      lRet = ::Execute( cExecute )   
+   ELSE 
+      lRet = .F.
+      ::CheckError()
+   ENDIF
+   
+   IF lTransaction
+      IF lRet
+         ::CommitTransaction()
+      ELSE 
+         ::RollBack()
+      ENDIF
+   ENDIF   
+
+RETURN lRet   
    
 //----------------------------------------------------//
 //----------------------------------------------------//
