@@ -20,7 +20,7 @@ PROCEDURE Main()
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
-                                nPort, nFlags, ;
+                                nPort, nFlags, ,;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
    oServer:DBCreate( "test03" )
    oServer:SelectDB( "test03" )
