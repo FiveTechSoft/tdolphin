@@ -53,6 +53,7 @@ PROCEDURE DoInsert( oServer )
    LOCAL aFields
    LOCAL aValues
    LOCAL n, lSwitch := .T.
+   LOCAL nTimes := GetTickCount()
    
    aFields = { "NAME", "LAST", "BIRTH", "ACTIVE" }
    ?
@@ -76,8 +77,8 @@ PROCEDURE DoInsert( oServer )
    NEXT
 
    ? "Finished Insert 500 items"
+   ? "Time " + Str( (  GetTickCount() - nTimes ) / 1000, 8, 2 ) + " Sec"
    ?
-
 RETURN
 
 

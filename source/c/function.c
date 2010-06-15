@@ -388,5 +388,11 @@ HB_FUNC( SQL2CLIPTYPE )
 	hb_retc( SQL2ClipType( hb_parnl( 1 ) ) );
 }
 
+//------------------------------------------------//
+HB_FUNC( GETTICKCOUNT )
+{
+   hb_retnl( GetTickCount() );
+}
 
 //------------------------------------------------//
+
