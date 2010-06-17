@@ -22,10 +22,10 @@ PROCEDURE Main()
                                 cPassword, ;
                                 nPort, nFlags, ,;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
-   oServer:DBCreate( "test03" )
-   oServer:SelectDB( "test03" )
-   
+
    IF ! oServer:lError 
+      oServer:DBCreate( "test03" )
+      oServer:SelectDB( "test03" )
       IF CreateTable( oServer )
          DoInsert( oServer )
          DoUpdate( oServer )
@@ -43,7 +43,8 @@ FUNCTION CreateTable( oServer )
                      { "NAME",   "C", 15, 0, .F., "First" },;
                      { "LAST",   "C", 15, 0, .F., "Last"  },;
                      { "BIRTH",  "D",   ,  ,    ,         },;
-                     { "ACTIVE", "L",   ,  ,    ,.F.      } }
+                     { "ACTIVE", "L",   ,  ,    ,.F.      },;
+                     { "AUX",    "N", 10, 0, , 0} }
 
 RETURN oServer:CreateTable( "testman", aStruc, "id", "id", "id" )
 
@@ -52,18 +53,19 @@ PROCEDURE DoInsert( oServer )
 
    LOCAL aFields
    LOCAL aValues
-   LOCAL n, lSwitch := .T.
-   LOCAL nTimes := GetTickCount()
+   LOCAL n := 1, lSwitch := .T.
+   LOCAL cTime := time()
+   LOCAL lOk := .T.
+
    
    aFields = { "NAME", "LAST", "BIRTH", "ACTIVE" }
    ?
-   FOR n = 1 TO 500
+   WHILE lOk .AND. n <= 500
        aValues = { "NAME" + StrZero( n, 4 ),;
                    "LAST" + StrZero( n, 4 ),;
                    Date(),;
-                   .T. }
-       oServer:Insert( "testman", aFields, aValues )
-       
+                   .T. } 
+            
        IF n%50 == 0
           lSwitch = ! lSwitch 
        ENDIF
@@ -73,11 +75,13 @@ PROCEDURE DoInsert( oServer )
        ELSE
          ?? chr( 8 )
        ENDIF
+       lOk = oServer:Insert( "testman", aFields, aValues )
+       n++
           
-   NEXT
+   ENDDO
 
    ? "Finished Insert 500 items"
-   ? "Time " + Str( (  GetTickCount() - nTimes ) / 1000, 8, 2 ) + " Sec"
+   ? "Time " + elaptime( cTime, time() )
    ?
 RETURN
 
@@ -89,9 +93,10 @@ PROCEDURE DoUpdate( oServer )
    LOCAL n, lSwitch := .T.
    
    
-   aFields = { "BIRTH" }
-   aValues = { Date() - 5 }
-   
+   aFields = { "BIRTH", "AUX" }
+   aValues = { Date() - 5,;
+              { 1, .T. } } //Add Self ( AUX = AUX + 1  )
+
    oServer:Update( "testman", aFields, aValues, "ID<=200" )
    
    ? "Finished Update 200 items"

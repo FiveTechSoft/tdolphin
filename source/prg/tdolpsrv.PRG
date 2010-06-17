@@ -37,7 +37,7 @@ CLASS TDolphinSrv
                        
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
-   DATA cServer        /*Host name, may be either a host name or an IP address */
+   DATA cHost        /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
                        
    DATA hMysql         /*MySQL connection handle*/
@@ -48,26 +48,32 @@ CLASS TDolphinSrv
    DATA nInternalError /*error manager, no come from MySQL*/
    DATA nPort          /*value is used as the port number for the TCP/IP connection*/
    
-   METHOD New( cServer, cUser, cPassword, nPort, nFlags, bOnError, cDBName )
+   METHOD New( cHost, cUser, cPassword, nPort, nFlags, bOnError, cDBName )
    
+   METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOption )
+                              /*The AddUser() enables system administrators to grant privileges to MySQL user accounts. 
+                                AddUser also serves to specify other account characteristics such as use of secure 
+                                connections and limits on access to server resources. 
+                                To use AddUser(), you must have the GRANT OPTION privilege, 
+                                and you must have the privileges that you are granting.*/
    
    METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )      
    
    METHOD CheckError( nError )
 
-   METHOD Connect( cServer, cUser, cPassword, nPort, nFlags, cDBName )	
+   METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
 
    METHOD CommitTransaction()         INLINE MySqlCommit( ::hMySql )
                               /*Commits the current transaction.*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
-
-   METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate )
-                              /* Create Database in current active connection*/
                               
    METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra )
                               /*creates a table with the cTable name*/
+
+   METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate )
+                              /* Create Database in current active connection*/
 
                                 
    METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
@@ -81,6 +87,9 @@ CLASS TDolphinSrv
    
    METHOD DeleteTables( acTable, lExists )
                               /*Delete Tables*/
+                              
+   METHOD DropUser( cUser )             INLINE ::Execute( "DROP USER " + cUser )
+                              /*Drop User*/
    
    METHOD End()               INLINE  If( ::hMysql > 0, ( MySqlClose( ::hMysql ), ::hMysql := 0 ), )
    
@@ -96,7 +105,7 @@ CLASS TDolphinSrv
    METHOD Execute( cQuery )   INLINE ::SqlQuery( cQuery )  
    
    METHOD Insert( cTable, aColumns, aValues, lTransaction )  
-                             /*inserts new rows into an existing table.*/
+                              /*inserts new rows into an existing table.*/
 
    METHOD IsAutoIncrement( cField, cTable )
    
@@ -116,13 +125,20 @@ CLASS TDolphinSrv
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
 
+   METHOD RenameUser( cUser, cRename )  INLINE ::Execute( "RENAME USER " + cUser + " TO " + cRename )  
+                              /*Rename User*/
+
+   METHOD RevokePrivileges( cHost, cUser, cDB, acPrivilegs )
+                              /*The RevokePrivileges() enables system administrators to revoke privileges from MySQL accounts.*/
+   
+
    METHOD RollBack()                  INLINE MySqlRollBack( ::hMysql )
-                             /* Rolls back the current transaction.*/
-   
+                              /* Rolls back the current transaction.*/
+                             
    METHOD SelectDB( cDBName ) 
-                             /*Select data base in current active connection*/
+                              /*Select data base in current active connection*/
    
-   METHOD SqlQuery( cQuery ) /*Executes the SQL statement pointed to by cQuery, 
+   METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
                               you should not add a terminating semicolon (“;”) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
@@ -140,9 +156,9 @@ ENDCLASS
 
 //----------------------------------------------------//
 
-METHOD New( cServer, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TDolphinSrv
+METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TDolphinSrv
 
-   ::cServer        = cServer
+   ::cHost        = cHost
    ::cUser          = cUser
    ::cPassword      = cPassword
    ::nPort          = nPort
@@ -160,6 +176,58 @@ METHOD New( cServer, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS 
    ENDIF
 
 RETURN Self
+
+//----------------------------------------------------//
+
+METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOption ) CLASS TDolphinSrv
+   LOCAL lReturn := .f.
+   LOCAL cQuery  := ""
+   LOCAL cDbOld  := ""
+   LOCAL cPriv
+
+   DEFAULT cHost     TO ::cHost
+   DEFAULT cUser     TO ""
+   DEFAULT cPassword TO ""
+   DEFAULT cDb       TO "*"
+   DEFAULT lCreateDB TO .f.
+   DEFAULT acPrivilegs TO "ALL PRIVILEGES"
+   DEFAULT cWithOption     TO ""
+   
+
+   IF Empty( cHost ) .OR. Empty( cUser ) .OR. Empty( cDb )
+      RETURN lReturn
+   ENDIF
+
+   cHost     := Alltrim( cHost )
+   cUser     := Alltrim( cUser )
+   cPassword := Alltrim( cPassword )
+   cDb       := Alltrim( cDb )
+
+   IF !::DBExist( cDb ) .AND. lCreateDB
+      ::DBCreate( cDb )
+   ENDIF
+   
+   IF ValType( acPrivilegs ) == "A"
+      cPriv = SQLStringFromArray( acPrivilegs )
+   ELSE 
+      cPriv = acPrivilegs
+   ENDIF
+   
+
+   cQuery  := "GRANT " + cPriv + " ON " + cDb + ".* TO "
+   cQuery  += "'" + cUser + "'@'" + cHost + "'"
+   IF !Empty( cPassword )
+      cQuery  += " IDENTIFIED BY "
+      cQuery  += "'" + cPassword + "'"
+   ENDIF
+   
+   IF !Empty( cWithOption )
+      cQuery += " WITH " + cWithOption
+   ENDIF
+
+   lReturn := ::Execute( cQuery )
+
+RETURN lReturn
 
 //----------------------------------------------------//
 
@@ -190,10 +258,10 @@ RETURN NIL
 //----------------------------------------------------//
 
 
-METHOD Connect( cServer, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphinSrv
+METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphinSrv
 
    
-   DEFAULT cServer   TO ::cServer
+   DEFAULT cHost   TO ::cHost
    DEFAULT cUser     TO ::cUser
    DEFAULT cPassword TO ::cPassword
    DEFAULT nPort     TO ::nPort
@@ -201,7 +269,7 @@ METHOD Connect( cServer, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolph
    DEFAULT cDBName   TO ::cDBName
    
 
-RETURN MySqlConnect( cServer, cUser, cPassword, nPort, nFlags, cDBName )
+RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName )
 
 //-----------------------------------------------------------
 
@@ -326,7 +394,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
                         cQuery += aField[ DBS_NAME ] + " int("       + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
       
                      OTHERWISE
-                        cQuery += aField[ DBS_NAME ] + " long("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
+                        cQuery += aField[ DBS_NAME ] + " bigint("    + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")"
       
                   ENDCASE
                ENDIF
@@ -388,7 +456,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    ELSE 
       cQuery += cExtra + ";"
    ENDIF
-   
+
 RETURN ::SqlQuery( cQuery ) 
 
 
@@ -560,6 +628,36 @@ METHOD ListTables( cWild ) CLASS TDolphinSrv
 RETURN aList
 
 
+//---------------------------------------------//
+
+METHOD RevokePrivileges( cHost, cUser, cDB, acPrivilegs ) CLASS TDolphinSrv
+   LOCAL lReturn := .f.
+   LOCAL cQuery  := ""
+   LOCAL cPriv
+
+   DEFAULT cHost     TO ::cHost
+   DEFAULT cUser     TO ""
+   DEFAULT cDB       TO "*"
+   DEFAULT acPrivilegs TO "ALL PRIVILEGES"
+
+   IF Empty( cHost ) .OR. Empty( cUser )
+      RETURN lReturn
+   ENDIF
+
+   cHost     := Alltrim( cHost )
+   cUser     := Alltrim( cUser )
+   
+   IF ValType( acPrivilegs ) == "A"
+      cPriv = SQLStringFromArray( acPrivilegs )
+   ELSE 
+      cPriv = acPrivilegs
+   ENDIF
+
+   cQuery  := "REVOKE " + cPriv + " ON " + cDb + ".* FROM "
+   cQuery  += "'" + cUser + "'@'" + cHost + "'"
+
+RETURN ::SqlQuery( cQuery )
+
 //----------------------------------------------------//
 
 METHOD SelectDB( cDBName ) CLASS TDolphinSrv
@@ -622,14 +720,15 @@ RETURN aStruct
    
 //----------------------------------------------------//   
    
-METHOD Update( cTable, aColumns, aValues, cWhere, lAddSelf, lTransaction ) CLASS TDolphinSrv
+METHOD Update( cTable, aColumns, aValues, cWhere, lTransaction ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n
    LOCAL aStruc, nPos
+   LOCAL lAddSelf := .F.
+   LOCAL cValue
    
    DEFAULT lTransaction TO .F.   
-   DEFAULT lAddSelf     TO .F.   
    DEFAULT cWhere       TO ""
    
    IF Empty( aColumns ) .OR. Empty( aValues )
@@ -654,12 +753,19 @@ METHOD Update( cTable, aColumns, aValues, cWhere, lAddSelf, lTransaction ) CLASS
    cExecute := "UPDATE " + Lower( cTable ) + " SET "
    aStruc = ::TableStructure( cTable )
    FOR n = 1 TO Len( aColumns )
+      IF ValType( aValues[ n ] ) == "A"
+         lAddSelf = aValues[ n ][ 2 ]
+         cValue   = ClipValue2SQL( aValues[ n ][ 1 ] )
+      ELSE 
+         cValue   = ClipValue2SQL( aValues[ n ] )
+      ENDIF
+         
       IF lAddSelf
          nPos := AScan( aStruc, {| uItem | Upper( AllTrim( uItem[ 1 ] ) ) == Upper( AllTrim( aColumns[ n ] ) ) } )
          IF nPos > 0 .AND. aStruc[ nPos ][ 2 ] == "M"
-            cExecute += aColumns[ n ] + " = CONCAT(" + aColumns[ n ] + ", " + ClipValue2SQL( aValues[ n ] ) + "),"
+            cExecute += aColumns[ n ] + " = CONCAT(" + aColumns[ n ] + ", " + cValue + "),"
          ELSEIF nPos > 0
-            cExecute += aColumns[ n ] + " = " + aColumns[ n ] + " + " + ClipValue2SQL( aValues[ n ] ) + ","
+            cExecute += aColumns[ n ] + " = " + aColumns[ n ] + " + " + cValue + ","
          ELSE 
             ::lError := .T.
             ::nInternalError = ERR_INVALIDCOLUMN
@@ -668,6 +774,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere, lAddSelf, lTransaction ) CLASS
       ELSE
          cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
       ENDIF
+      lAddSelf = .F.
    NEXT 
    IF ! ::lError
       //Delete last comma 
