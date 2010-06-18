@@ -125,7 +125,7 @@ CLASS TDolphinSrv
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
 
-   METHOD RenameUser( cUser, cRename )  INLINE ::Execute( "RENAME USER " + cUser + " TO " + cRename )  
+   METHOD RenameUser( cUser, cRename )  INLINE ::Execute( "RENAME USER " + Lower( AllTrim( cUser ) )+ "@ TO " + cRename )  
                               /*Rename User*/
 
    METHOD RevokePrivileges( cHost, cUser, cDB, acPrivilegs )
