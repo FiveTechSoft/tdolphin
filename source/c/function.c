@@ -106,6 +106,23 @@ HB_FUNC( MYSQLERROR ) //-> A null-terminated character string that describes the
    hb_retc( ( char * ) mysql_error( ( MYSQL * ) hb_parnl( 1 ) ) );
 }
 
+
+//------------------------------------------------//
+// unsigned int mysql_num_fields( MYSQL_RES * )
+HB_FUNC( MYSQLFIELDCOUNT ) //-> num fields
+{
+   hb_retnl( mysql_field_count( ( ( MYSQL * )hb_parnl( 1 ) ) ) );
+}
+
+
+//------------------------------------------------//
+// void mysql_free_result( MYSQL_RES * )
+HB_FUNC( MYSQLFREERESULT ) // VOID
+{
+   mysql_free_result( ( MYSQL_RES * )hb_parnl( 1 ) );
+}
+
+
 //------------------------------------------------//
 //unsigned int mysql_errno(MYSQL *mysql)
 HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
@@ -188,6 +205,14 @@ HB_FUNC( MYSQLLISTDBS ) //->A MYSQL_RES result set for success. NULL if an error
 }
 
 //------------------------------------------------//
+//my_ulonglong mysql_num_rows(MYSQL_RES *result)
+HB_FUNC( MYSQLNUMROWS ) // -> The number of rows in the result set.
+{
+   hb_retnll( ( LONGLONG )mysql_num_rows( ( ( MYSQL_RES * )hb_parnl( 1 ) ) ) );
+}
+
+
+//------------------------------------------------//
 //int mysql_options(MYSQL *mysql, enum mysql_option option, const void *arg)
 HB_FUNC( MYSQLOPTION )
 {
@@ -245,16 +270,24 @@ HB_FUNC( MYSQLSELECTDB ) //-> Zero for success. Nonzero if an error occurred.
 }
 
 //------------------------------------------------//
-// Build a Array with table structure 
-HB_FUNC( MYTABLESTRUCTURE ) //-> Table Structure
+//MYSQL_RES *mysql_list_fields(MYSQL *mysql, const char *table, const char *wild)
+HB_FUNC( MYSQLLISTFIELDS ) // -> MYSQL_RES *
 {
-	MYSQL_RES * mresult;
+   hb_retnl( ( LONG ) mysql_list_fields( ( MYSQL * )hb_parnl( 1 ), hb_parc( 2 ), hb_parc( 3 ) ) );
+}
+
+
+//------------------------------------------------//
+// Build a Array with table structure 
+HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
+{
+	MYSQL_RES * mresult = ( MYSQL_RES * ) hb_parnl( 1 );
 	unsigned int num_fields;
 	PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
 	PHB_ITEM itemField = hb_itemNew( NULL );
 	MYSQL_FIELD *mfield;
 	
-	mresult = mysql_list_fields( ( MYSQL * )hb_parnl( 1 ), hb_parc( 2 ), hb_parc( 3 ) );
+	
 	if( mresult )
   {
   	 unsigned int i;
@@ -273,12 +306,19 @@ HB_FUNC( MYTABLESTRUCTURE ) //-> Table Structure
         hb_arraySetNL( itemField, 8, mfield->decimals );        	
      	  hb_arrayAddForward( itemReturn, itemField );
       }
-  	  mysql_free_result( mresult );
   } else
      itemReturn = hb_itemArrayNew( 0 );
 
    hb_itemRelease( itemField );
    hb_itemReturnRelease( itemReturn );
+}
+
+
+//------------------------------------------------//
+// MYSQL_RES *mysql_store_result(MYSQL *mysql)
+HB_FUNC( MYSQLSTORERESULT ) // -> MYSQL_RES 
+{
+   hb_retnl( ( long ) mysql_store_result( ( MYSQL * )hb_parnl( 1 ) ) );
 }
 
 //------------------------------------------------//

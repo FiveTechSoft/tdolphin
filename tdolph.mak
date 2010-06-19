@@ -3,13 +3,14 @@ OBJC    = .\objc
 INCLUDE = .\include 
 
 .path.PRG = .\source\prg
-.path.OBJ = .\objprg;.\objhc
+.path.OBJ = .\objh;.\objc
 .path.CH  = .\include
 .path.C   = .\source\c
 .path.LIB = .\lib
 
 PRG =        \
-TDOLPSRV.PRG  
+TDOLPSRV.PRG \
+TDOLPQRY.PRG
 
 C =                   \
 FUNCTION.C               

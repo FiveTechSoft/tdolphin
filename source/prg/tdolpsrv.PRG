@@ -6,6 +6,7 @@
 #include "common.ch"
 #include "dbstruct.ch"
 #include "tdolphin.ch"
+#include "dolerr.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )
 
@@ -15,19 +16,6 @@
 #define RGB( nR,nG,nB )  ( nR + ( nG * 256 ) + ( nB * 256 * 256 ) )
 #endif /*RGB*/
 #endif/*__HARBOUR__*/
-
-
-#define ERR_EMPTYDBNAME                  9000
-#define ERR_INVALID_STRUCT_ROW_SIZE      9001
-#define ERR_INVALID_STRUCT_NOTNULL_VALUE 9002
-#define ERR_INVALID_STRUCT_PRIKEY        9003
-#define ERR_INVALID_STRUCT_UNIQUE        9004
-#define ERR_INVALID_STRUCT_AUTO          9005
-#define ERR_NOQUERY                      9006
-#define ERR_EMPTYVALUES                  9007
-#define ERR_EMPTYTABLE                   9008
-#define ERR_NOMATCHCOLUMNSVALUES         9009
-#define ERR_INVALIDCOLUMN                9010
 
 
 CLASS TDolphinSrv
@@ -594,14 +582,22 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
 
    LOCAL lAuto := .F.
    LOCAL aStruct
-   
+   LOCAL hRes 
+
    cField = Lower( Alltrim( cField ) )
    cTable = Lower( Alltrim( cTable ) )
- 
-   aStruct = MyTableStructure( ::hMysql, cTable, cField )
-     
-   lAuto = MyAnd( aStruct[ 1, MYSQL_FS_FLAGS ], AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
 
+
+   hRes = MySqlListFields( ::hMysql, cTable, cField )
+   
+   IF hRes == 0 
+      ::CheckError() 
+   ELSE   
+      aStruct = MySqlResultStructure( hRes )
+      MySqlFreeResult( hRes )
+      lAuto = MyAnd( aStruct[ 1, MYSQL_FS_FLAGS ], AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
+   ENDIF
+   
 return( lAuto )
 
 
@@ -709,13 +705,23 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
 
    LOCAL aStruct := {}
    LOCAL n
+   LOCAL hRes 
 
-   aStruct = MyTableStructure( ::hMysql, cTable )
+
+   hRes = MySqlListFields( ::hMysql, cTable )
    
-   IF Len( aStruct ) == 0
-      ::CheckError()
+   IF hRes == 0 
+      ::CheckError() 
+   ELSE
+      aStruct = MySqlResultStructure( hRes )
+      
+      MySqlFreeResult( hRes )
+      
+      IF Len( aStruct ) == 0
+         ::CheckError()
+      ENDIF
    ENDIF
-
+   
 RETURN aStruct
    
 //----------------------------------------------------//   
