@@ -1,1 +1,1 @@
-c:\bcc582\bin\make -ftdolph.mak HPATH=\HARBOUR BCCPATH=\BCC582
+c:\bcc582\bin\make -ftdolph.mak HPATH=\HARBOUR BCCPATH=c:\bcc582

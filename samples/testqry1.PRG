@@ -39,11 +39,12 @@ PROCEDURE Main()
         NEXT 
         ? 
       NEXT  
-      ? "ID AutoIncrement:" + If( oServer:IsAutoIncrement( "ID", "test" ), "Yes", "No" )
-      ? "NAME AutoIncrement:" + If( oServer:IsAutoIncrement( "NAME", "test" ), "Yes", "No" )
-      ?
       ? "Field Count: " + str( oQry:FCount() )
       ? "LastRec: " + str( oQry:LastRec() )
+      ? "Current values recno 1"
+      ? oQry:name, oQry:Last, oQry:Active
+      ? "Current values recno " + Str( oQry:GoTo( 30 ) )
+      ? oQry:name, oQry:Last, oQry:Active
       oQry:End() 
              
    ENDIF

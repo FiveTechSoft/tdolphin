@@ -99,6 +99,16 @@ HB_FUNC( MYSQLCLOSE )//->none
 }
 
 //------------------------------------------------//
+//void mysql_data_seek(MYSQL_RES *result, my_ulonglong offset)
+HB_FUNC( MYSQLDATASEEK ) // ->void
+{
+   mysql_data_seek( ( MYSQL_RES * )hb_parnl( 1 ), ( unsigned int )hb_parni( 2 ) );
+   hb_ret();
+}
+
+
+
+//------------------------------------------------//
 // char *mysql_error(MYSQL *mysql)
 HB_FUNC( MYSQLERROR ) //-> A null-terminated character string that describes the error. 
                       //   An empty string if no error occurred.
@@ -124,6 +134,45 @@ HB_FUNC( MYSQLFREERESULT ) // VOID
 
 
 //------------------------------------------------//
+//unsigned int mysql_errno(MYSQL *mysql) 
+// MYSQL_RES, [ num_fields ]
+HB_FUNC( MYSQLFETCHROW ) // -> array current row data
+{
+   MYSQL_RES *mresult = ( MYSQL_RES * )hb_parnl( 1 );
+   UINT ui, uiNumFields;
+   ULONG *pulFieldLengths ;
+   MYSQL_ROW mrow;
+   PHB_ITEM itRow;
+
+   if( hb_pcount() > 1 )
+      uiNumFields = hb_parnl( 2 );
+   else
+   	  uiNumFields = mysql_num_fields( mresult );
+
+   itRow           = hb_itemArrayNew( uiNumFields );
+   mrow            = mysql_fetch_row( mresult );
+   pulFieldLengths = mysql_fetch_lengths( mresult ) ;
+   
+   if ( mrow )
+   {
+     for ( ui = 0; ui < uiNumFields; ui++ )
+     {
+       if ( mrow[ ui ] == NULL )
+       {
+         hb_arraySetC( itRow, ui + 1, NULL );
+       }
+       else  
+       {
+         hb_arraySetCL( itRow, ui + 1, mrow[ ui ], pulFieldLengths[ ui ] );
+       }
+     }
+   }
+   hb_itemReturnRelease( itRow );
+
+}
+
+
+//------------------------------------------------//
 //unsigned int mysql_errno(MYSQL *mysql)
 HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 {
@@ -132,7 +181,7 @@ HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 
 //------------------------------------------------//
 //MYSQL_RES *mysql_list_tables(MYSQL *mysql, const char *wild)
-HB_FUNC( MYSQLLISTTBLS ) //->A MYSQL_RES result set for success. NULL if an error occurred. 
+HB_FUNC( MYSQLLISTTBLS ) //->Array List Table
 {
    MYSQL * mysql = ( MYSQL * ) hb_parnl( 1 );
    const char *szwild = ( const char* ) hb_parc( 2 );
@@ -169,7 +218,7 @@ HB_FUNC( MYSQLLISTTBLS ) //->A MYSQL_RES result set for success. NULL if an erro
 
 //------------------------------------------------//
 //MYSQL_RES *mysql_list_dbs(MYSQL *mysql, const char *wild)
-HB_FUNC( MYSQLLISTDBS ) //->A MYSQL_RES result set for success. NULL if an error occurred. 
+HB_FUNC( MYSQLLISTDBS ) //->Array List Databases
 {
    MYSQL * mysql = ( MYSQL * ) hb_parnl( 1 );
    const char *szwild = ( const char* ) hb_parc( 2 );

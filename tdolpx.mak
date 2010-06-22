@@ -9,7 +9,8 @@ INCLUDE = .\include
 .path.LIB = .\lib
 
 PRG =        \
-TDOLPSRV.PRG  
+TDOLPSRV.PRG \
+TDOLPQRY.PRG
 
 C =                   \
 FUNCTION.C               
