@@ -1,1 +1,1 @@
-c:\bcc582\bin\make -ftdolpx.mak HPATH=\XHARBOUR BCCPATH=\BCC582
+c:\bcc582\bin\make -ftdolp.mak HPATH=\XHARBOUR BCCPATH=\BCC582 LIBNAME=dolphinx OBJS=objx

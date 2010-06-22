@@ -26,7 +26,9 @@ PROCEDURE Main()
    
    IF ! oServer:lError 
 
-      oQry = TDolphinQry():New( "SELECT name, last, active FROM testman", oServer )
+      oQry = TDolphinQry():New( "SELECT name, last, active FROM testman "+;
+                                "WHERE id>=10 and id<100 ORDER BY name DESC" + ;
+                                " LIMIT 60", oServer )
       ? "Table created correctly test"
       ?
       aStruc = oQry:aStructure
@@ -45,6 +47,14 @@ PROCEDURE Main()
       ? oQry:name, oQry:Last, oQry:Active
       ? "Current values recno " + Str( oQry:GoTo( 30 ) )
       ? oQry:name, oQry:Last, oQry:Active
+      ? 
+      ?
+      ? "Query = " + oQry:cQuery
+      ? "Tables= " + SqlStringFromArray( oQry:aTables )
+      ? "Where = " + oQry:cWhere
+      ? "Order = " + oQry:cOrder
+      ? "Limit = " + oQry:cLimit
+      
       oQry:End() 
              
    ENDIF

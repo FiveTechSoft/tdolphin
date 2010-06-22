@@ -23,7 +23,8 @@ CLASS TDolphinQry
    DATA cGroup        
    DATA cHaving       
    DATA cOrder        
-   DATA cLimit              
+   DATA cLimit      
+   DATA cExt        
    
    DATA cQuery
    
@@ -45,6 +46,10 @@ CLASS TDolphinQry
    METHOD New( cQuery, oServer )
    METHOD End()      INLINE MySqlFreeResult( ::hResult ), ::hResult := NIL 
    
+   METHOD BuildDatas( cQuery )
+   METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
+                      cOrder, cLimit, cExt, lWithRoll )   
+                      
    METHOD FCount()   INLINE    ::nFCount
                                /*returns the number of fields in the query, compatibility with dbf*/
                                
@@ -123,13 +128,15 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
       //Disable case sensitive
       hSetCaseMatch( ::hRow    ,.F. )
       hSetCaseMatch( ::hOldRow ,.F. )
+      //set hash
       FOR each aField in ::aStructure
          cCol := Lower( aField[ MYSQL_FS_NAME ] )
          HSet( ::hRow, "_" + cCol, NIL )
          HSet( ::hOldRow, "_" + cCol, NIL )
       NEXT
       ::GetRow()
-   
+      ::BuildDatas()
+      
    ELSE
       IF MySqlFieldCount( oServer:hMysql ) == 0
          oServer:CheckError()
@@ -137,6 +144,144 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    ENDIF   
 
 RETURN Self
+
+//----------------------------------------------------//
+
+METHOD BuildDatas( cQuery ) CLASS TDolphinQry
+
+   LOCAL aToken, cItem, cSelect, cTables, cFind
+   LOCAL aCommands := { "SELECT", ;
+                        "WHERE",;
+                        "GROUP",;
+                        "HAVING",;
+                        "LIMIT",;
+                        "ORDER",;
+                        "FROM",;
+                        "DESC",;
+                        "ASC" }
+   LOCAL nFind
+   
+   DEFAULT cQuery TO ::cQuery
+
+   ::cExt = ""
+
+   aToken := HB_ATokens( cQuery, " " )
+   
+   FOR EACH cItem IN aToken
+      IF AScan( aCommands, {| cCommand | cCommand == Upper( cItem ) } ) > 0
+         cItem := "|" + cItem
+      ENDIF
+   NEXT
+
+   cQuery := ""
+   FOR EACH cItem IN aToken
+      cQuery += cItem + " "
+   NEXT
+   cQuery := AllTrim( cQuery )
+
+   aToken := HB_ATokens( cQuery, "|" )
+   
+   FOR EACH cItem IN aToken
+   
+      cFind = Upper( SubStr( cItem, 1, At( " ", cItem ) - 1 ) )
+      
+      // for comapibility with xharbour
+      // xharbour no accept string like switch constant
+      nFind = AScan( aCommands, cFind )
+      
+      SWITCH nFind
+         CASE 1 //"SELECT"
+            cSelect := AllTrim( SubStr( cItem, 8 ) )
+            ::aColumns = ArrayFromSQLString( cSelect )
+            EXIT
+
+            
+         CASE 2 //"WHERE"
+            IF Empty( ::cWhere )
+               ::cWhere  := AllTrim( SubStr( cItem, 7 ) )
+            ENDIF
+            EXIT
+
+         CASE 3 //"GROUP" 
+            IF Empty( ::cGroup )
+               ::cGroup  := AllTrim( SubStr( cItem, 10 ) )
+            ENDIF
+            EXIT
+
+         CASE 4 //"HAVING" 
+            IF Empty( ::cHaving )
+               ::cHaving := AllTrim( SubStr( cItem, 8 ) )
+            ENDIF
+            EXIT
+
+         CASE 5 //"LIMIT"
+            IF Empty( ::cLimit )
+               ::cLimit  := AllTrim( SubStr( cItem, 7 ) )
+            ENDIF
+            IF Val(::cLimit) <= 1
+               ::cLimit := ""
+            ENDIF     
+
+         CASE 6 //"ORDER"
+            IF Empty( ::cOrder )
+               ::cOrder  := AllTrim(SubStr( cItem, 10 ))
+            ENDIF
+            EXIT
+            
+         CASE 7 //"FROM"
+            IF Empty( ::aTables )
+               cTables := AllTrim( SubStr( cItem, 6 ) )
+               ::aTables := ArrayFromSQLString( cTables )
+            ENDIF
+            EXIT
+            
+            
+         CASE 8//"DESC" 
+            IF ! Empty( ::cOrder )
+              ::cOrder  += " DESC"
+            ENDIF 
+            EXIT
+            
+         CASE 9 //"ASC" 
+            IF ! Empty( ::cOrder )
+              ::cOrder  += " ASC"
+            ENDIF
+            EXIT
+            
+
+            EXIT
+#ifdef __XHARBOUR__
+         DEFAULT 
+#else
+         OTHERWISE 
+#endif                           
+           ::cExt += cItem
+      ENDSWITCH
+   NEXT
+
+RETURN NIL
+
+//----------------------------------------------------//
+
+METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
+                   cOrder, cLimit, cExt, lWithRoll ) CLASS TDolphinQry
+
+   LOCAL cQuery := ""
+   
+   ::aColumns = aColumns
+   ::aTables  = aTables
+   ::cWhere   = cWhere
+   ::cGroup   = cGroup
+   ::cHaving  = cHaving
+   ::cOrder   = cOrder
+   ::cLimit   = cLimit 
+   ::cExt     = cExt
+
+   cQuery = BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, cExt, lWithRoll )
+   
+
+RETURN cQuery
+
 
 //----------------------------------------------------//
 
@@ -217,7 +362,8 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 RETURN ::nRecNo
 
 
-//-------------------------------------------------------------------------------------------
+//----------------------------------------------------//
+
 #ifdef __HARBOUR__
    METHOD ONERROR( uParam1, uParam2 ) CLASS TDolphinQry
       LOCAL cCol   := __GetMessage()
@@ -245,6 +391,5 @@ RETURN ::nRecNo
    ENDIF
 
 RETURN NIL
-
 
 

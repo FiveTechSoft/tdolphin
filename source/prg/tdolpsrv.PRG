@@ -868,7 +868,7 @@ RETURN cValue
 
 //----------------------------------------------------//
 // Return string from array separated with ","
-STATIC FUNCTION SqlStringFromArray( aArray )
+FUNCTION SqlStringFromArray( aArray )
    
    LOCAL cItem, cString := ""
    
@@ -915,3 +915,70 @@ STATIC FUNCTION fNotNull( aField, cPrimaryKey, cAuto )
    ENDIF
 
 RETURN cRet
+
+//----------------------------------------------------//         
+
+FUNCTION ArrayFromSqlString( cString )
+   
+   LOCAL aArray
+   
+   aArray := HB_ATokens( cString, "," )
+   
+RETURN aArray
+
+//----------------------------------------------------//         
+
+FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, cExt, lWithRoll )
+   LOCAL cQuery := ""
+   LOCAL cColumns
+
+   DEFAULT cWhere   TO ""
+   DEFAULT cGroup   TO ""
+   DEFAULT cHaving  TO ""
+   DEFAULT cOrder   TO ""
+   DEFAULT cLimit   TO ""
+   DEFAULT aTables  TO {}
+   DEFAULT aColumns TO {}
+   DEFAULT cExt     TO ""
+   DEFAULT lWithRoll TO .F.
+
+   cColumns = SQLStringFromArray( aColumns )
+   
+   IF Empty( cColumns )
+      cColumns = "*"
+   ENDIF
+
+   cQuery := "SELECT " + cColumns
+
+   IF !Empty( aTables )
+      cQuery += " FROM "
+      cQuery += SQLStringFromArray( aTables )
+   ENDIF
+   IF !Empty( cWhere )
+      cQuery += " WHERE "
+      cQuery += cWhere
+   ENDIF
+   IF !Empty( cGroup )
+      cQuery += " GROUP BY "
+      cQuery += cGroup
+      IF lWithRoll
+         cQuery += " WITH ROLLUP"
+      ENDIF
+   ENDIF
+   IF !Empty( cHaving )
+      cQuery += " HAVING "
+      cQuery += cHaving
+   ENDIF
+   IF !Empty( cOrder )
+      cQuery += " ORDER BY "
+      cQuery += cOrder
+   ENDIF
+   IF !Empty( cLimit )
+      cQuery += " LIMIT "
+      cQuery += cLimit
+   ENDIF
+   
+   cQuery += cExt
+
+RETURN cQuery
+
