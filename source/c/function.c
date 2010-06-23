@@ -344,15 +344,16 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
      for( i = 0; i < num_fields; i++)
      {
      	  mfield = mysql_fetch_field( mresult ) ;
-        hb_arrayNew( itemField, 8 );
+        hb_arrayNew( itemField, 9 );
         hb_arraySetC( itemField, 1, mfield->name );     
         hb_arraySetC( itemField, 2, mfield->table );
         hb_arraySetC( itemField, 3, mfield->def );
-        hb_arraySetC( itemField, 4, SQL2ClipType( ( long ) mfield->type ) );
+        hb_arraySetNL( itemField, 4, mfield->type );
         hb_arraySetNL( itemField, 5, mfield->length );
         hb_arraySetNL( itemField, 6, mfield->max_length );
         hb_arraySetNL( itemField, 7, mfield->flags );
-        hb_arraySetNL( itemField, 8, mfield->decimals );        	
+        hb_arraySetNL( itemField, 8, mfield->decimals );   
+        hb_arraySetC( itemField, 9, SQL2ClipType( ( long ) mfield->type ) );
      	  hb_arrayAddForward( itemReturn, itemField );
       }
   } else
@@ -471,10 +472,125 @@ char * SQL2ClipType( long lType ) //-> Clipper field type
 }
 
 //------------------------------------------------//
+// convert MySql field type to char
+char * SQLType2Char( long lType ) //-> Clipper field type 
+{
+	 char * sType;
+	 
+   switch ( lType ){
+
+      case FIELD_TYPE_DECIMAL     :
+      case FIELD_TYPE_NEWDECIMAL  :
+         sType = "DECIMAL";
+         break;
+
+      case FIELD_TYPE_TINY        :
+         sType = "TINY";
+         break;
+
+      case FIELD_TYPE_SHORT       :
+         sType = "SHORT";
+         break;
+         
+      case FIELD_TYPE_LONG        :
+         sType = "LONG";
+         break;
+         
+      case FIELD_TYPE_FLOAT       :
+         sType = "FLOAT";
+         break;
+         
+      case FIELD_TYPE_DOUBLE      :
+         sType = "DOUBLE";
+         break;
+         
+      case FIELD_TYPE_NULL        :
+         sType = "NULL";
+         break;
+         
+      case FIELD_TYPE_TIMESTAMP   :
+         sType = "TIME STAMP";
+         break;
+         
+      case FIELD_TYPE_LONGLONG    :
+         sType = "LONGLONG";
+         break;
+         
+      case FIELD_TYPE_INT24       :
+         sType = "INT24";
+         break;
+         
+      case FIELD_TYPE_DATE        :
+         sType = "DATE";
+         break;
+         
+      case FIELD_TYPE_TIME        :
+         sType = "TIME";
+         break;
+         
+      case FIELD_TYPE_DATETIME    :
+         sType = "DATETIME";
+         break;
+         
+      case FIELD_TYPE_YEAR        :
+         sType = "YEAR";
+         break;
+         
+      case FIELD_TYPE_MEDIUM_BLOB :
+         sType = "MEDIUM BLOB";
+         break;
+      	
+      case FIELD_TYPE_LONG_BLOB   :
+         sType = "LONG BLOB";
+         break;
+
+      case FIELD_TYPE_BLOB        :
+         sType = "BLOB";
+         break;
+
+      case FIELD_TYPE_STRING      :
+         sType = "STRING";
+         break;
+         
+      case FIELD_TYPE_BIT         :      	
+         sType = "TINYINT";
+         break;
+      case FIELD_TYPE_NEWDATE     :
+         sType = "NEW DATE";
+         break;
+
+      case FIELD_TYPE_ENUM        :
+         sType = "ENUM";
+         break;
+
+      case FIELD_TYPE_SET         :
+         sType = "SET";
+         break;
+
+      case FIELD_TYPE_TINY_BLOB   :         
+         sType = "TINY BLOB";
+         break;
+      	
+      default:
+      	sType = "U";
+
+ }
+
+   return sType;
+}
+
+//------------------------------------------------//
 
 HB_FUNC( SQL2CLIPTYPE )
 {
 	hb_retc( SQL2ClipType( hb_parnl( 1 ) ) );
+}
+
+//------------------------------------------------//
+
+HB_FUNC( SQLTYPE2CHAR )
+{
+	hb_retc( SQLType2Char( hb_parnl( 1 ) ) );
 }
 
 //------------------------------------------------//

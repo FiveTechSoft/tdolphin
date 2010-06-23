@@ -14,7 +14,9 @@
 #define ERR_EMPTYTABLE                   9008
 #define ERR_NOMATCHCOLUMNSVALUES         9009
 #define ERR_INVALIDCOLUMN                9010
-
+#define ERR_INVALIDFIELDNUM              9011
+#define ERR_INVALIDFIELDNAME             9012
+#define ERR_INVALIDFIELDGET              9013
 
 
 

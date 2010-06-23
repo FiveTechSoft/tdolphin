@@ -35,7 +35,7 @@
 #define  MYSQL_FS_MAXLEN         6     /* Max width of selected set */
 #define  MYSQL_FS_FLAGS          7     /* Div flags */
 #define  MYSQL_FS_DECIMALS       8     /* Number of decimals in field */
-
+#define  MYSQL_FS_CLIP_TYPE      9     /* Type of field. clipper field type */
 
 // MySQL field flags
 #define  NOT_NULL_FLAG           1        /* Field can't be NULL */

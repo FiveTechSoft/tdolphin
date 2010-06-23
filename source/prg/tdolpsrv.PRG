@@ -64,7 +64,7 @@ CLASS TDolphinSrv
                               /* Create Database in current active connection*/
 
                                 
-   METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( Lower( cDB ) ) ) > 0, .F. )
+   METHOD DBExist( cDB )      INLINE If( ! Empty( cDB ), Len( ::ListDBs( D_LowerCase( cDB ) ) ) > 0, .F. )
                               /* verify is Data Base exist, return logical value*/
 
    METHOD DeleteDB( cDB, lExists )
@@ -113,7 +113,7 @@ CLASS TDolphinSrv
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
 
-   METHOD RenameUser( cUser, cRename )  INLINE ::Execute( "RENAME USER " + Lower( AllTrim( cUser ) )+ "@ TO " + cRename )  
+   METHOD RenameUser( cUser, cRename )  INLINE ::Execute( "RENAME USER " + D_LowerCase( cUser )+ "@ TO " + cRename )  
                               /*Rename User*/
 
    METHOD RevokePrivileges( cHost, cUser, cDB, acPrivilegs )
@@ -132,7 +132,7 @@ CLASS TDolphinSrv
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
  
-   METHOD TableExist( cTable )      INLINE If( ! Empty( cTable ), Len( ::ListTables( Lower( cTable ) ) ) > 0, .F. )
+   METHOD TableExist( cTable )      INLINE If( ! Empty( cTable ), Len( ::ListTables( D_LowerCase( cTable ) ) ) > 0, .F. )
                               /* verify is table exist, return logical value*/ 
    
    METHOD TableStructure( cTable )  
@@ -276,9 +276,9 @@ METHOD CreateIndex( cName, cTable, aFNames, nCons, nType ) CLASS TDolphinSrv
    DEFAULT nType TO 0
    
 
-   cQuery += Lower( AllTrim( cTable ) ) + " ADD " 
+   cQuery += D_LowerCase( cTable ) + " ADD " 
    cQuery += If( nCons == 0, "INDEX ", aIDX_CONST[ nCons ] + " " ) 
-   cQuery += Lower( AllTrim( cName ) ) + " ("
+   cQuery += D_LowerCase( cName ) + " ("
 
    FOR EACH cField IN aFNames
       IF ValType( cField ) == "A"
@@ -315,30 +315,30 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    DEFAULT cExtra TO ""
    
 
-   cPrimaryKey = If( ! Empty( cPrimaryKey ), Lower( AllTrim( cPrimaryKey ) ), "" )
-   cAuto       = If( ! Empty( cAuto ), Lower( AllTrim( cAuto ) ), "" )
-   cUniqueKey  = If( ! Empty( cUniqueKey ), Lower( AllTrim( cUniqueKey ) ), "" )
-   cExtra      = If( ! Empty( cExtra ), Lower( AllTrim( cExtra ) ), "" )
+   cPrimaryKey = If( ! Empty( cPrimaryKey ), D_LowerCase( cPrimaryKey ), "" )
+   cAuto       = If( ! Empty( cAuto ), D_LowerCase( cAuto ), "" )
+   cUniqueKey  = If( ! Empty( cUniqueKey ), D_LowerCase( cUniqueKey ), "" )
+   cExtra      = If( ! Empty( cExtra ), D_LowerCase( cExtra ), "" )
 
    IF lVer .AND. nLenStruct > 0
       ::CheckError( VerifyStructure( aStruct ) )
 
       IF ! ::lError .AND. cPrimarykey != NIL
-         IF AScan( aStruct, {| aRow | AllTrim( Lower( aRow[ DBS_NAME ] ) ) == cPrimarykey } ) == 0
+         IF AScan( aStruct, {| aRow | AllTrim( D_LowerCase( aRow[ DBS_NAME ] ) ) == cPrimarykey } ) == 0
             ::nInternalError = ERR_INVALID_STRUCT_PRIKEY
             ::CheckError()
          ENDIF
       ENDIF
    
       IF ! ::lError .AND. cUniquekey != NIL 
-         IF AScan( aStruct, {| aRow | AllTrim( Lower( aRow[ DBS_NAME ] ) ) == cUniquekey } ) == 0
+         IF AScan( aStruct, {| aRow | AllTrim( D_LowerCase( aRow[ DBS_NAME ] ) ) == cUniquekey } ) == 0
             ::nInternalError = ERR_INVALID_STRUCT_UNIQUE
             ::CheckError()
          ENDIF
       ENDIF
       
       IF ! ::lError .AND. cAuto != NIL 
-         IF AScan( aStruct, {| aRow | AllTrim( Lower( aRow[ DBS_NAME ] ) ) == cAuto } ) == 0
+         IF AScan( aStruct, {| aRow | AllTrim( D_LowerCase( aRow[ DBS_NAME ] ) ) == cAuto } ) == 0
             ::nInternalError = ERR_INVALID_STRUCT_AUTO
             ::CheckError()
          ENDIF
@@ -349,7 +349,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
       ENDIF
    ENDIF
    
-   cQuery := "CREATE TABLE " + If( lIfNotExist, " IF NOT EXISTS ", "" ) + Lower( cTable ) + If( nLenStruct > 0, " (", " " )
+   cQuery := "CREATE TABLE " + If( lIfNotExist, " IF NOT EXISTS ", "" ) + D_LowerCase( cTable ) + If( nLenStruct > 0, " (", " " )
 
    IF nLenStruct > 0
    
@@ -365,7 +365,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
             EXIT
    
          CASE "N"
-            lAutoIncrement = Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto
+            lAutoIncrement = D_LowerCase( aField[ DBS_NAME ] ) == cAuto
             
             IF aField[ DBS_DEC ] == 0 .AND. aField[ DBS_LEN ] <= 18 
                IF lAutoIncrement
@@ -460,7 +460,7 @@ METHOD DBCreate( cName, lIfNotExist, cCharSet, cCollate ) CLASS TDolphinSrv
       cQuery += " IF NOT EXISTS"
    ENDIF
    
-   cQuery += " " + Lower( Alltrim(  cName ) )
+   cQuery += " " + D_LowerCase(  cName )
    
    IF ! Empty( cCharSet )
       cQuery += " CHARACTER SET " + cCharSet
@@ -480,7 +480,7 @@ METHOD DeleteDB( cDB, lExists ) CLASS TDolphinSrv
    
    DEFAULT lExists TO .F.
 
-   cDB = Lower( cDB )
+   cDB = D_LowerCase( cDB )
 
    IF lExists
       cQuery += " IF EXISTS "
@@ -497,7 +497,7 @@ METHOD DeleteIndex( cName, cTable, lPrimary ) CLASS TDolphinSrv
    LOCAL cQuery 
    DEFAULT lPrimary TO .F.
    
-   cQuery = "DROP INDEX" + If( lPrimary, " PRIMARY ", " " ) + cName + " ON " + Lower( cTable )
+   cQuery = "DROP INDEX" + If( lPrimary, " PRIMARY ", " " ) + cName + " ON " + D_LowerCase( cTable )
 
 RETURN ::SqlQuery( cQuery )
 
@@ -514,7 +514,7 @@ METHOD DeleteTables( acTables, lExists ) CLASS TDolphinSrv
    IF ValType( acTables ) == "A"
        cTables = SqlStringFromArray( acTables )
    ELSE 
-       cTables = Lower( acTables )
+       cTables = D_LowerCase( acTables )
    ENDIF 
 
    IF lExists
@@ -552,7 +552,7 @@ METHOD Insert( cTable, aColumns, aValues, lTransaction ) CLASS TDolphinSrv
       RETURN .F. 
    ENDIF 
    
-   cExecute := "INSERT INTO " + Lower( cTable ) + " SET "
+   cExecute := "INSERT INTO " + D_LowerCase( cTable ) + " SET "
    
    FOR n = 1 TO Len( aColumns )
       cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
@@ -584,8 +584,8 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
    LOCAL aStruct
    LOCAL hRes 
 
-   cField = Lower( Alltrim( cField ) )
-   cTable = Lower( Alltrim( cTable ) )
+   cField = D_LowerCase( cField )
+   cTable = D_LowerCase( cTable )
 
 
    hRes = MySqlListFields( ::hMysql, cTable, cField )
@@ -756,7 +756,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere, lTransaction ) CLASS TDolphinS
       RETURN .F. 
    ENDIF 
    
-   cExecute := "UPDATE " + Lower( cTable ) + " SET "
+   cExecute := "UPDATE " + D_LowerCase( cTable ) + " SET "
    aStruc = ::TableStructure( cTable )
    FOR n = 1 TO Len( aColumns )
       IF ValType( aValues[ n ] ) == "A"
@@ -874,12 +874,12 @@ FUNCTION SqlStringFromArray( aArray )
    
 
    FOR EACH cItem IN aArray
-      cString += Lower( cItem ) + ", "
+      cString += D_LowerCase( cItem ) + ", "
    NEXT
    
    cString = Left( cString, Len( cString ) - 2 )
    
-RETURN Lower( cString )
+RETURN cString
 
 //----------------------------------------------------//
 
@@ -909,7 +909,7 @@ STATIC FUNCTION fNotNull( aField, cPrimaryKey, cAuto )
    IF ValType( aField[ DBS_NOTNULL ] ) == "L" .AND. aField[ DBS_NOTNULL ]
       cRet = " NOT NULL "
    ELSE 
-      IF Lower( AllTrim( aField[ DBS_NAME ] ) ) == cPrimaryKey .OR. Lower( AllTrim( aField[ DBS_NAME ] ) ) == cAuto
+      IF D_LowerCase( aField[ DBS_NAME ] ) == cPrimaryKey .OR. D_LowerCase( aField[ DBS_NAME ] ) == cAuto
          cRet = " NOT NULL "
       ENDIF
    ENDIF
@@ -981,4 +981,33 @@ FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit,
    cQuery += cExt
 
 RETURN cQuery
+
+//----------------------------------------------------//  
+
+FUNCTION D_SetCaseSensitive( lOnOff )
+
+  LOCAL lOldStatus
+
+  STATIC lStatus := .F.
+
+  lOldStatus = lStatus
+
+  IF PCount() == 1 .AND. ValType( lOnOff ) == "L"
+     lStatus = lOnOff
+  ENDIF
+
+RETURN lOldStatus
+
+//----------------------------------------------------//  
+
+FUNCTION D_LowerCase( cText )
+
+   IF ! D_SetCaseSensitive()
+      cText = Lower( AllTrim( cText ) )
+   ELSE 
+      cText = AllTrim( cText )
+   ENDIF
+   
+RETURN cText
+   
 
