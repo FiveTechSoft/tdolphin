@@ -45,16 +45,32 @@ CLASS TDolphinQry
    
    METHOD New( cQuery, oServer )
    METHOD End()      INLINE MySqlFreeResult( ::hResult ), ::hResult := NIL 
+
+   METHOD Bof()        INLINE ::lBof  
    
    METHOD BuildDatas( cQuery )
    METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
                       cOrder, cLimit, cExt, lWithRoll )   
+
+   METHOD Eof()        INLINE ::lEof  
                       
    METHOD FCount()   INLINE    ::nFCount
                                /*returns the number of fields in the query, compatibility with dbf*/
+
+   METHOD FieldName( nNum )
+   METHOD FieldPos( cFieldName )
+   METHOD FieldGet( cnField )
                                
-   METHOD GetRow( nRow )   
+   METHOD GetRow( nRow )        /*Fill aRow and Hash with current data row selected*/
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
+                                /*Goto specific Row (RecNo) and fill aRow/Hash*/
+                                
+   METHOD GoBottom()   INLINE   ::GetRow( ::nNumRows ) 
+                                /*Goto BOTTOM of Query and fill aRow/Hash*/
+                                
+   METHOD GoTop()      INLINE   ::GetRow( 1 )
+                                /*Goto TOP of Query and fill aRow/Hash*/
+
                                
    METHOD LastRec()  INLINE     ::nRecCount
                                /*returns the number of rows in the current query, compatibility with dbf*/
