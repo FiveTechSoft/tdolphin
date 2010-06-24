@@ -889,7 +889,7 @@ FUNCTION ClipValue2SQL( Value, cType )
 
    DEFAULT cType to ValType( Value )
 
-   switch cType
+   SWITCH cType
       CASE "N"
          cValue := AllTrim( Str( Value ) )
          EXIT
@@ -938,6 +938,11 @@ FUNCTION ClipValue2SQL( Value, cType )
    END
 
 RETURN cValue
+
+//----------------------------------------------------//
+
+FUNCTION SqlDate2Clip( cField )
+RETURN  SToD( Left( cField, 4 ) + substr( cField, 6, 2 ) + right( cField, 2 ) )
 
 //----------------------------------------------------//
 // Return string from array separated with ","
@@ -1100,3 +1105,4 @@ FUNCTION D_SetHash( lOnOff )
   ENDIF
 
 RETURN lOldStatus
+
