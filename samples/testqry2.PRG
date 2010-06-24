@@ -18,6 +18,8 @@ PROCEDURE Main()
    LOCAL aStruc, aRow, uItem
    LOCAL oQry
    
+   D_SetHash( .T. )
+   
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
@@ -39,16 +41,28 @@ PROCEDURE Main()
       NEXT  
       ? "======================================================================================="
       oQry:Goto( 100 )
-      ? "ID (hash):" + Str( oQry:ID )
+      ? "ID:", oQry:ID
       ? "FieldGet( 'ID' ): " + Str( oQry:FieldGet( "ID" ) )
       ? "FieldGet( 1 ): " + Str( oQry:FieldGet( 1 ) )
       ? "Field Clipper Type BIRTH: " + oQry:FieldType( "birth" )
       ? "Field MySql Type BIRTH: " + Str( oQry:FieldMySqlType( "birth" ) )
       ? "Field MySql2Char Type BIRTH: " + SqlType2Char( oQry:FieldMySqlType( "birth" ) )
-      ? "FieldPos( 'name' ): " + Str( oQry:FieldPos( "name" ) )
-              
-      oQry:End() 
-             
+      ? "FieldPos( 'name' ): " + Str( oQry:FieldPos( "name" ) ) 
+      ? "======================================================================================="      
+      oQry:last = "dolphin"
+      ? "value changed: " + oQry:Last  
+      ? "Record no saved"
+      ? "======================================================================================="
+      ? "Current record:" + Str( oQry:RecNo() )
+      ? "Current values:", oQry:id, oQry:Name, oQry:last
+      ? "Skiping 30 Record"
+      oQry:Skip( 30 )
+      ? "Current record:" + Str( oQry:RecNo() )
+      ? "Current values:", oQry:id, oQry:Name, oQry:last    
+      oQry:Goto( 100 )
+      ? "Return record:" + Str( oQry:RecNo() )
+      ? "Current values:", oQry:id, oQry:Name, oQry:last    
+      
    ENDIF
    ?
    oServer:End()

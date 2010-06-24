@@ -14,19 +14,23 @@
 
 CLASS TDolphinQry
 
-   DATA aRow
-   DATA aStructure
+   DATA aColumns,;    // query active columns (select) 
+        aTables,;     // query active tables
+        aRow,;        // info currect record selected
+        aStructure    // type of each field, a copy is here a copy inside each row
+        
+   DATA bBof,;        //codeblock to evaluate if the value is the first row
+        bEof          //codeblock to evaluate if the value is the last row
    
-   DATA aColumns      
-   DATA aTables       
-   DATA cWhere        
-   DATA cGroup        
-   DATA cHaving       
-   DATA cOrder        
-   DATA cLimit      
-   DATA cExt        
-   
-   DATA cQuery
+   DATA cBuild,;        // Current server version
+        cQuery,;        // copy of query that generated this object
+        cWhere,;        // copy of WHERE command
+        cGroup,;        // copy of GROUP BY command
+        cHaving,;       // copy of HAVING command
+        cOrder,;        // copy of OREDER BY command
+        cLimit,;        // copy of LIMIT command
+        cExt            // Data for control other MySql commands
+
    
    DATA hOldRow                // Hash Last row selected
    DATA hResult                 
@@ -44,7 +48,7 @@ CLASS TDolphinQry
    
    
    METHOD New( cQuery, oServer )
-   METHOD End()      INLINE MySqlFreeResult( ::hResult ), ::hResult := NIL 
+   METHOD End()        INLINE MySqlFreeResult( ::hResult ), ::hResult := NIL 
 
    METHOD Bof()        INLINE ::lBof  
    
@@ -57,7 +61,7 @@ CLASS TDolphinQry
 
    METHOD Eof()        INLINE ::lEof  
                       
-   METHOD FCount()   INLINE    ::nFCount
+   METHOD FCount()     INLINE    ::nFCount
                                 /*returns the number of fields in the query, compatibility with dbf*/
 
    METHOD FieldName( nNum )     /*returns the name of the specified field as a character string.*/
@@ -67,6 +71,10 @@ CLASS TDolphinQry
    METHOD FieldType( cnField )  /*returns the field type of the specified field*/
    METHOD FieldMySqlType( cnField ) 
                                 /*returns the MySql field type of the specified field*/
+                                
+   METHOD FieldPut( cnField, uValue )
+                                /*Set the value of a field variable using the ordinal position of the field.
+                                  returns the value assigned to the designated field.*/                            
                                
    METHOD GetRow( nRow )        /*Fill aRow and Hash with current data row selected*/
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
@@ -79,11 +87,15 @@ CLASS TDolphinQry
                                 /*Goto TOP of Query and fill aRow/Hash*/
 
                                
-   METHOD LastRec()  INLINE     ::nRecCount
+   METHOD LastRec()    INLINE     ::nRecCount
                                /*returns the number of rows in the current query, compatibility with dbf*/
                                
-   METHOD RecNo()    INLINE    ::nRecNo
+   METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
+  
+   METHOD SetToHash( nNum ) HIDDEN
+   
+   METHOD Skip( nRecords )
 
    
    ERROR HANDLER ONERROR()   
@@ -118,7 +130,6 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    ::cOrder        := ""
    ::cLimit        := ""   
    
-   
    ::hRow      = Hash()
    ::hOldRow   = Hash()
 
@@ -134,7 +145,7 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    
    IF ! ( ::hResult == 0 )
 
-      ::aStructure = MySqlResultStructure( ::hResult ) 
+      ::aStructure = MySqlResultStructure( ::hResult, D_SetCaseSensitive() ) 
       
       ::nRecCount = MySqlNumRows( ::hResult )
       ::nRecNo    = 1
@@ -147,18 +158,19 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
          ::lEof      := .T.
          ::lBof      := .T.
       ENDIF   
-   
-      //Build Hash
-      //Enable case sensitive
-      hSetCaseMatch( ::hRow    , lCaseSen )
-      hSetCaseMatch( ::hOldRow , lCaseSen )
-      //set hash
-      FOR each aField in ::aStructure
-         aField[ MYSQL_FS_NAME ] = D_LowerCase( aField[ MYSQL_FS_NAME ] ) 
-         cCol = aField[ MYSQL_FS_NAME ]
-         HSet( ::hRow, "_" + cCol, NIL )
-         HSet( ::hOldRow, "_" + cCol, NIL )
-      NEXT
+
+      IF D_SetHash() 
+
+         //Build Hash
+         //Enable case sensitive
+         hSetCaseMatch( ::hRow    , lCaseSen )
+         hSetCaseMatch( ::hOldRow , lCaseSen )
+         //set hash
+         FOR each aField in ::aStructure
+            cCol = aField[ MYSQL_FS_NAME ]
+            ::SetToHash( cCol, NIL )
+         NEXT
+      ENDIF
       ::GetRow()
       ::BuildDatas()
       
@@ -312,16 +324,33 @@ RETURN cQuery
 METHOD FieldGet( cnField ) CLASS TDolphinQry
    
    LOCAL cFieldName
-   
-   IF ValType( cnField ) == "N"
-      cFieldName = "_" + ::FieldName( cnField )
-   ELSE 
-      cFieldName = "_" + D_LowerCase( cnField )
-   ENDIF
+   LOCAL nNum
+   LOCAL lError := .F.
 
-   IF hGetPos( ::hRow, cFieldName ) > 0
-      RETURN ::hRow[ cFieldName ]
+   IF D_SetHash()
+
+      IF ValType( cnField ) == "N"
+         cFieldName = "_" + ::FieldName( cnField )
+      ELSE 
+         cFieldName = "_" + D_LowerCase( cnField )
+      ENDIF
+      IF hGetPos( ::hRow, cFieldName ) > 0
+         RETURN ::hRow[ cFieldName ]
+      ELSE
+         lError = .T.
+      ENDIF
    ELSE 
+      IF ValType( cnField ) == "N"
+         nNum = cnField 
+      ELSE 
+         nNum = ::FieldPos( cnField )
+      ENDIF
+      IF nNum > 0
+         RETURN ::aRow[ nNum ]
+      ENDIF
+   ENDIF
+   
+   IF lError
       ::oServer:nInternalError = ERR_INVALIDFIELDGET
       ::oServer:CheckError()
    ENDIF   
@@ -400,6 +429,33 @@ METHOD FieldMySqlType( cnField ) CLASS TDolphinQry
 
 return cType
 
+//----------------------------------------------------//
+
+METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
+
+   LOCAL nNum
+
+   IF ValType( cnField ) == "C"
+      nNum := ::FieldPos( cnField )
+   ELSE
+      nNum := cnField
+   ENDIF
+
+   IF nNum > 0 .AND. nNum <= ::nFCount
+      IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL
+
+         IF ValType( uValue ) == "C"
+            uValue := MySqlEscape( AllTrim( uValue ) )
+         ENDIF
+
+         ::aRow[ nNum ] := uValue
+         ::SetToHash( nNum, uValue )
+         RETURN uValue
+      ENDIF
+   ENDIF
+
+RETURN NIL
+
 
 //----------------------------------------------------//
 
@@ -468,45 +524,129 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
                   xField := PadR( xField, ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ] ) 
                   EXIT
             ENDSWITCH
-            cCol := "_" + D_LowerCase( ::aStructure[ nIdx ][ MYSQL_FS_NAME ] )
-            HSet( ::hRow, cCol, xField )
-            HSet( ::hOldRow, cCol, xField )
+            ::SetToHash( nIdx, xField )
          NEXT
 
       ENDIF
-
+   ELSE 
+      ::oServer:nInternalError = ERR_FAILEDGETROW
+      ::nRecNo = 0
+      ::CheckError()
    ENDIF
 
 RETURN ::nRecNo
 
+//----------------------------------------------------//
+
+
+METHOD SetToHash( cnField, uValue )	CLASS TDolphinQry
+
+   LOCAL cCol
+   LOCAL nNum
+
+   IF D_SetHash()
+      IF ValType( cnField ) == "C"
+         nNum := ::FieldPos( cnField )
+      ELSE
+         nNum := cnField
+      ENDIF
+      cCol := "_" + D_LowerCase( ::aStructure[ nNum ][ MYSQL_FS_NAME ] )
+      HSet( ::hRow, cCol, uValue )
+      HSet( ::hOldRow, cCol, uValue )
+   ENDIF
+
+
+RETURN NIL
+
+
+//----------------------------------------------------//
+
+
+METHOD Skip( nRecords ) CLASS TDolphinQry
+
+   LOCAL n := ::nRecNo
+
+   DEFAULT nRecords TO 1
+
+   IF nRecords == 0
+      // No move
+
+   ELSEIF nRecords <= 1
+      // Negative movement
+      if ( ::nRecNo += nRecords ) <= 1
+         ::nRecNo = 1
+         ::lBof   = .T.
+         ::lEof   = ::nRecNo >= ::nRecCount
+      endif
+
+   ELSE
+      // positive movement
+      IF ( ::nRecNo += nRecords ) >= ::nRecCount
+         ::nRecNo = ::nRecCount
+         ::lEof   = .T.
+         ::lBof   = ::nRecNo <= 1
+      ENDIF
+
+   ENDIF
+
+   IF ::GetRow( ::nRecNo ) > 0
+
+      IF ::Eof()
+         IF ::bEoF != nil
+            Eval( ::bEoF, Self )
+         ENDIF
+      ENDIF
+   
+      IF ::BoF()
+         IF ::bBoF != nil
+            Eval( ::bBoF, Self )
+         ENDIF
+      ENDIF
+   ENDIF
+   
+RETURN ::nRecNo - n
 
 //----------------------------------------------------//
 
 #ifdef __HARBOUR__
-   METHOD ONERROR( uParam1, uParam2 ) CLASS TDolphinQry
+   METHOD ONERROR( uParam1 ) CLASS TDolphinQry
       LOCAL cCol   := __GetMessage()
+      LOCAL lAssign := .F., nCol
 #else
    METHOD ONERROR( cCol, nError ) CLASS TDolphinQry
       LOCAL uParam1
+      LOCAL lAssign
       IF Len( HB_AParams() ) > 0
          uParam1 = HB_AParams()[ 1 ]
       ENDIF
 #else
 
-   IF Substr( cCol, 1, 1 ) != "_"
-      cCol := "_" + D_LowerCase( cCol )
-   ELSE 
-      cCol = D_LowerCase( cCol )
-   ENDIF
-   
-   IF ! ( uParam1 == NIL )
-      ? cCol, uParam1
-      HSet( ::hRow, cCol, uParam1 )
-   ELSE
-      IF hGetPos( ::hRow, cCol ) > 0
-         RETURN ::hRow[ cCol ]
+
+   IF D_SetHash()      
+
+      IF Substr( cCol, 1, 1 ) != "_"
+         cCol := "_" + D_LowerCase( cCol )
+         lAssign = .T.
+      ELSE 
+         cCol = D_LowerCase( cCol )
       ENDIF
+      
+      IF ! ( uParam1 == NIL )         
+         HSet( ::hRow, cCol, uParam1 )
+      ELSE
+         IF hGetPos( ::hRow, cCol ) > 0
+            RETURN ::hRow[ cCol ]
+         ENDIF
+      ENDIF
+   ELSE 
+      cCol  := If( lAssign := ( Left( cCol, 1 ) == '_' ), SubStr( cCol, 2 ), cCol )
+
+      IF( nCol := ::FieldPos( cCol ) ) > 0
+         RETURN If( lAssign, ::FieldPut( nCol, uParam1 ), ::FieldGet( cCol ) )
+      ENDIF
+     
    ENDIF
+      
 
 RETURN NIL
 

@@ -593,7 +593,7 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
    IF hRes == 0 
       ::CheckError() 
    ELSE   
-      aStruct = MySqlResultStructure( hRes )
+      aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive() ) 
       MySqlFreeResult( hRes )
       lAuto = MyAnd( aStruct[ 1, MYSQL_FS_FLAGS ], AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
    ENDIF
@@ -713,7 +713,7 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
    IF hRes == 0 
       ::CheckError() 
    ELSE
-      aStruct = MySqlResultStructure( hRes )
+      aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive() ) 
       
       MySqlFreeResult( hRes )
       
@@ -983,7 +983,8 @@ FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit,
 RETURN cQuery
 
 //----------------------------------------------------//  
-
+// Turn On/Off case sensitive use
+// return Last Status
 FUNCTION D_SetCaseSensitive( lOnOff )
 
   LOCAL lOldStatus
@@ -999,7 +1000,7 @@ FUNCTION D_SetCaseSensitive( lOnOff )
 RETURN lOldStatus
 
 //----------------------------------------------------//  
-
+// Convert lower case if case sesitive is off
 FUNCTION D_LowerCase( cText )
 
    IF ! D_SetCaseSensitive()
@@ -1010,4 +1011,19 @@ FUNCTION D_LowerCase( cText )
    
 RETURN cText
    
+//----------------------------------------------------//  
+// Turn On/Off Hash
+// return Last Status
+FUNCTION D_SetHash( lOnOff )
+   
+  LOCAL lOldStatus
 
+  STATIC lStatus := .F.
+
+  lOldStatus = lStatus
+
+  IF PCount() == 1 .AND. ValType( lOnOff ) == "L"
+     lStatus = lOnOff
+  ENDIF
+
+RETURN lOldStatus

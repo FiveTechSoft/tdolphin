@@ -17,6 +17,7 @@
 #define ERR_INVALIDFIELDNUM              9011
 #define ERR_INVALIDFIELDNAME             9012
 #define ERR_INVALIDFIELDGET              9013
+#define ERR_FAILEDGETROW                 9014
 
 
 

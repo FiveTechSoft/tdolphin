@@ -49,7 +49,6 @@ HB_FUNC( MYSQLESCAPE )
    }
    if ( !bResult )
    {
-     // Should we raise a runtime error here????? or just return the original string
      hb_retclen( ( char * ) FromBuffer, iSize ) ;
    }
 }
@@ -335,6 +334,7 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
 	PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
 	PHB_ITEM itemField = hb_itemNew( NULL );
 	MYSQL_FIELD *mfield;
+	unsigned long ulLen;
 	
 	
 	if( mresult )
@@ -345,7 +345,10 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
      {
      	  mfield = mysql_fetch_field( mresult ) ;
         hb_arrayNew( itemField, 9 );
-        hb_arraySetC( itemField, 1, mfield->name );     
+        if( hb_parl( 2 ) )
+           hb_arraySetC( itemField, 1, mfield->name );  
+        else
+        	 hb_arraySetC( itemField, 1, hb_strLower( mfield->name, strlen( mfield->name ) ) ) ;          	   
         hb_arraySetC( itemField, 2, mfield->table );
         hb_arraySetC( itemField, 3, mfield->def );
         hb_arraySetNL( itemField, 4, mfield->type );
