@@ -20,6 +20,8 @@
 
 CLASS TDolphinSrv
 
+   CLASSDATA nQueryId
+
    DATA bOnError       /*Custom manager error message
                          ( Self, nError, lInternal ) */
                        
@@ -36,6 +38,8 @@ CLASS TDolphinSrv
    DATA nInternalError /*error manager, no come from MySQL*/
    DATA nPort          /*value is used as the port number for the TCP/IP connection*/
    
+   DATA aQueries       /*Array queries actives*/
+   
    METHOD New( cHost, cUser, cPassword, nPort, nFlags, bOnError, cDBName )
    
    METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOption )
@@ -44,10 +48,16 @@ CLASS TDolphinSrv
                                 connections and limits on access to server resources. 
                                 To use AddUser(), you must have the GRANT OPTION privilege, 
                                 and you must have the privileges that you are granting.*/
+                                
+   METHOD AddQuery( oQuery )          INLINE AAdd( ::aQueries, oQuery )
    
    METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )      
    
    METHOD CheckError( nError )
+   
+   METHOD CloseQuery( nId )
+   
+   METHOD CloseAllQuery()             
 
    METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
@@ -79,7 +89,7 @@ CLASS TDolphinSrv
    METHOD DropUser( cUser )             INLINE ::Execute( "DROP USER " + cUser )
                               /*Drop User*/
    
-   METHOD End()               INLINE  If( ::hMysql > 0, ( MySqlClose( ::hMysql ), ::hMysql := 0 ), )
+   METHOD End()               
    
    METHOD ErrorTxt()          INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
                               /* Returns a string containing the error message for 
@@ -91,6 +101,8 @@ CLASS TDolphinSrv
                                 A return value of zero means that no error occurred.*/
                                 
    METHOD Execute( cQuery )   INLINE ::SqlQuery( cQuery )  
+   
+   METHOD GetQueryId()
    
    METHOD Insert( cTable, aColumns, aValues, lTransaction )  
                               /*inserts new rows into an existing table.*/
@@ -155,6 +167,7 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TD
    ::bOnError       = bOnError
    ::nInternalError = 0
    ::cDBName        = cDBName
+   ::aQueries       = {}
 
    ::hMysql         = ::Connect() 
    
@@ -164,6 +177,7 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TD
    ENDIF
 
 RETURN Self
+
 
 //----------------------------------------------------//
 
@@ -243,8 +257,42 @@ METHOD CheckError( nError ) CLASS TDolphinSrv
 
 RETURN NIL
 
+
 //----------------------------------------------------//
 
+METHOD CloseQuery( nId ) CLASS TDolphinSrv
+
+   LOCAL nPos := AScan( ::aQueries, {| o | o:nQryId == nId } )
+   LOCAL oQry
+   
+   IF nPos > 0 
+      oQry = ::aQueries[ nPos ]
+      IF oQry:hResult != 0
+         MySqlFreeResult( oQry:hResult )
+         oQry:hResult = NIL 
+      ENDIF 
+      ADel( ::aQueries, nPos )
+      ASize( ::aQueries, Len( ::aQueries ) - 1 )
+   ENDIF
+
+RETURN NIL 
+
+
+//----------------------------------------------------//
+
+METHOD CloseAllQuery() CLASS TDolphinSrv           
+
+   LOCAL oQry 
+   
+   FOR EACH oQry IN ::aQueries
+    
+      ::CloseQuery( oQry:nQryId ) 
+      
+   NEXT
+   
+RETURN NIL
+
+//----------------------------------------------------//
 
 METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphinSrv
 
@@ -524,6 +572,31 @@ METHOD DeleteTables( acTables, lExists ) CLASS TDolphinSrv
    cQuery += cTables
 
 RETURN ::SqlQuery( cQuery ) 
+
+//----------------------------------------------------//
+
+
+METHOD End() CLASS TDolphinSrv
+
+   IF ::hMysql > 0
+      MySqlClose( ::hMysql )
+      ::hMysql = 0
+      AEval( ::aQueries, {| o | o:End() } )
+   ENDIF
+   
+RETURN NIL
+
+
+//----------------------------------------------------//
+
+METHOD GetQueryId() CLASS TDolphinSrv
+
+   DEFAULT ::nQueryId TO 0
+   
+   ::nQueryId++
+
+return ::nQueryId
+
 
 //----------------------------------------------------//
 

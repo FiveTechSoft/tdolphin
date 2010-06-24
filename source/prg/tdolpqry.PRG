@@ -43,12 +43,13 @@ CLASS TDolphinQry
    DATA nFCount                // number of fields in the query
    DATA nRecCount              // number of rows in the current query
    DATA nRecNo                 // Current query row position
+   DATA nQryId
    
    DATA oServer
    
    
    METHOD New( cQuery, oServer )
-   METHOD End()        INLINE MySqlFreeResult( ::hResult ), ::hResult := NIL 
+   METHOD End()        INLINE ::oServer:CloseQuery( ::nQryId )
 
    METHOD Bof()        INLINE ::lBof  
    
@@ -89,14 +90,15 @@ CLASS TDolphinQry
                                
    METHOD LastRec()    INLINE     ::nRecCount
                                /*returns the number of rows in the current query, compatibility with dbf*/
+
+   METHOD LoadQuery() 
                                
    METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
   
-   METHOD SetToHash( nNum ) HIDDEN
+   METHOD SetToHash( nNum, uValue ) HIDDEN
    
    METHOD Skip( nRecords )
-
    
    ERROR HANDLER ONERROR()   
    
@@ -108,8 +110,6 @@ ENDCLASS
 
 METHOD New( cQuery, oServer ) CLASS TDolphinQry
 
-   LOCAL aField, nIdx, cCol
-   LOCAL lCaseSen := D_SetCaseSensitive()
 
    IF oServer == NIL
       RETURN NIL 
@@ -117,6 +117,8 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
 
    ::oServer = oServer
    ::cQuery  = cQuery
+   ::nQryId  = oServer:GetQueryId()
+   oServer:AddQuery( Self )
 
    ::nRecCount = 0
    ::nRecNo    = 0
@@ -136,49 +138,14 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    ::lEof      := .T.
    ::lBof      := .T.   
 
-   IF cQuery == NIL .OR. ! oServer:SQLQuery( cQuery )
+   IF cQuery == NIL 
       RETURN Self 
    ENDIF 
    
+   ::LoadQuery()
    
-   ::hResult := MySqlStoreResult( oServer:hMysql )
    
-   IF ! ( ::hResult == 0 )
 
-      ::aStructure = MySqlResultStructure( ::hResult, D_SetCaseSensitive() ) 
-      
-      ::nRecCount = MySqlNumRows( ::hResult )
-      ::nRecNo    = 1
-      ::nFCount   = Len( ::aStructure )
-   
-      IF ::nRecCount > 0
-         ::lEof      := .F.
-         ::lBof      := .T.
-      ELSE
-         ::lEof      := .T.
-         ::lBof      := .T.
-      ENDIF   
-
-      IF D_SetHash() 
-
-         //Build Hash
-         //Enable case sensitive
-         hSetCaseMatch( ::hRow    , lCaseSen )
-         hSetCaseMatch( ::hOldRow , lCaseSen )
-         //set hash
-         FOR each aField in ::aStructure
-            cCol = aField[ MYSQL_FS_NAME ]
-            ::SetToHash( cCol, NIL )
-         NEXT
-      ENDIF
-      ::GetRow()
-      ::BuildDatas()
-      
-   ELSE
-      IF MySqlFieldCount( oServer:hMysql ) == 0
-         oServer:CheckError()
-      ENDIF    
-   ENDIF   
 
 RETURN Self
 
@@ -535,6 +502,64 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
    ENDIF
 
 RETURN ::nRecNo
+
+
+//----------------------------------------------------//
+
+
+METHOD LoadQuery() CLASS TDolphinQry
+
+   LOCAL oServer := ::oServer
+   LOCAL cQuery  := ::cQuery
+   LOCAL aField, nIdx, cCol
+   LOCAL lCaseSen := D_SetCaseSensitive()
+
+    
+
+    IF ! oServer:SQLQuery( cQuery )
+       RETURN NIL 
+    ENDIF
+    
+   ::hResult := MySqlStoreResult( oServer:hMysql )
+   
+   IF ! ( ::hResult == 0 )
+
+      ::aStructure = MySqlResultStructure( ::hResult, D_SetCaseSensitive() ) 
+      
+      ::nRecCount = MySqlNumRows( ::hResult )
+      ::nRecNo    = 1
+      ::nFCount   = Len( ::aStructure )
+   
+      IF ::nRecCount > 0
+         ::lEof      := .F.
+         ::lBof      := .T.
+      ELSE
+         ::lEof      := .T.
+         ::lBof      := .T.
+      ENDIF   
+
+      IF D_SetHash() 
+
+         //Build Hash
+         //Enable case sensitive
+         hSetCaseMatch( ::hRow    , lCaseSen )
+         hSetCaseMatch( ::hOldRow , lCaseSen )
+         //set hash
+         FOR each aField in ::aStructure
+            cCol = aField[ MYSQL_FS_NAME ]
+            ::SetToHash( cCol, NIL )
+         NEXT
+      ENDIF
+      ::GetRow()
+      ::BuildDatas()
+      
+   ELSE
+      IF MySqlFieldCount( oServer:hMysql ) == 0
+         oServer:CheckError()
+      ENDIF    
+   ENDIF  
+   
+RETURN NIL 
 
 //----------------------------------------------------//
 
