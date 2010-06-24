@@ -335,6 +335,7 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
 	PHB_ITEM itemField = hb_itemNew( NULL );
 	MYSQL_FIELD *mfield;
 	unsigned long ulLen;
+	BOOL bCase = hb_parl( 2 );
 	
 	
 	if( mresult )
@@ -345,11 +346,15 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
      {
      	  mfield = mysql_fetch_field( mresult ) ;
         hb_arrayNew( itemField, 9 );
-        if( hb_parl( 2 ) )
+        if( bCase ){
            hb_arraySetC( itemField, 1, mfield->name );  
-        else
-        	 hb_arraySetC( itemField, 1, hb_strLower( mfield->name, strlen( mfield->name ) ) ) ;          	   
-        hb_arraySetC( itemField, 2, mfield->table );
+           hb_arraySetC( itemField, 2, mfield->table );
+        }
+        else{
+        	 hb_arraySetC( itemField, 1, hb_strLower( mfield->name, strlen( mfield->name ) ) ) ;  
+        	 hb_arraySetC( itemField, 2, hb_strLower( mfield->table, strlen( mfield->table ) ) ) ;  
+        }
+        	         	   
         hb_arraySetC( itemField, 3, mfield->def );
         hb_arraySetNL( itemField, 4, mfield->type );
         hb_arraySetNL( itemField, 5, mfield->length );
