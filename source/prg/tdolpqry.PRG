@@ -23,8 +23,8 @@ CLASS TDolphinQry
    DATA aColumns,;    // query active columns (select) 
         aTables,;     // query active tables
         aRow,;        // info currect record selected
-        aStructure,;  // type of each field, a copy is here a copy inside each row
-        aOldRow       // Value copy
+        aStructure    // type of each field, a copy is here a copy inside each row
+   DATA aOldRow        PROTECTED// Value copy
         
    DATA bBof,;        //codeblock to evaluate if the value is the first row
         bEof          //codeblock to evaluate if the value is the last row
@@ -105,6 +105,8 @@ CLASS TDolphinQry
                                
    METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
+
+   METHOD Save()
                                
    METHOD SetData( nNum, uValue ) HIDDEN
   
@@ -665,6 +667,91 @@ METHOD LoadQuery() CLASS TDolphinQry
    ENDIF  
    
 RETURN NIL 
+
+//----------------------------------------------------//
+
+
+/* Creates an update query for changed fields and submits it to server */
+METHOD Save() CLASS TDolphinQry
+
+   LOCAL cTable
+   LOCAL aField
+   LOCAL cQry := ""
+   LOCAL uValue  
+   LOCAL uOldValue
+   LOCAL nIdx
+   LOCAL lSaveOk := .F.
+   
+   
+   IF ! ::IsSingleTable()
+      ::oServer:nInternalError = ERR_INVALIDSAVE
+      ::oServer:CheckError()
+      RETURN NIL 
+   ENDIF
+   
+   cTable = ::aTables[ 1 ]
+
+   IF ! ::lAppend
+      cQry += "UPDATE " + Lower( cTable ) + " SET "
+   ELSE
+      cQry += "INSERT INTO " + Lower( cTable ) + " SET "
+   ENDIF
+
+   FOR EACH aField IN ::aStructure
+      
+      IF ::lAppend
+         lSaveOk = .T.
+         uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
+      ELSE
+#ifdef USE_HASH
+         uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
+         uOldValue = ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ]
+#else 
+#ifdef __XHARBOUR__
+         nIdx = HB_EnumIndex()
+#else
+         nIdx = aField:__EnumIndex()
+#endif /*__XHARBOUR__*/ 
+         uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
+         uOldValue = ::aOldRow[ nIdx ]
+#endif /*USE_HASH*/
+         IF uValue != uOldValue
+            lSaveOk = .T.
+         ENDIF
+      ENDIF
+      IF lSaveOk
+         cQry += aField[ MYSQL_FS_NAME ] + "=" + ClipValue2SQL( uValue ) + ","
+      ENDIF
+   NEXT
+   
+   IF lSaveOk
+   // remove last comma
+      cQry = Left( cQry, Len( cQry ) - 1 )
+      
+      ? cQry
+/*      
+      IF !::lAppend
+            cUpdateQuery   += ::MakePrimaryKeyWhere()
+         ENDIF
+      
+         ::cQueryAction := cUpdateQuery              // wmormar - 20080514
+      
+         if sqlQuery( ::nSocket, cUpdateQuery ) == 0
+            ::refresh()
+         else
+            ::lError := .T.
+            ::CheckError()
+         endif
+         
+      ELSE 
+         ::CheckError()   
+      ENDIF*/
+   ELSE 
+      ::oServer:nInternalError = ERR_NOTHINGTOSAVE
+   ENDIF
+
+
+RETURN nil
 
 //----------------------------------------------------//
 

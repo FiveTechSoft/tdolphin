@@ -59,6 +59,8 @@ PROCEDURE Main()
       FOR n = 1 TO oQry:FCount()
          ?? oQry:FieldGet( n ), "   "
       NEXT
+      oQry:Birth = Date()
+      oQry:Save()
 
       oQry:End() 
              
