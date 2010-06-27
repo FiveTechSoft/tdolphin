@@ -16,7 +16,8 @@
 #define USE_HASH /* use hash of fields for faster FieldPos
                     If hash code breaks in any build of (x)Harbour ( can happen )
                     uncomment and recompile to use standard array scan*/
-
+#define IS_PRIMARY_KEY( uValue )  MyAND( uValue, PRI_KEY_FLAG ) == PRI_KEY_FLAG 
+#define IS_MULTIPLE_KEY( uValue ) MyAND( uValue, MULTIPLE_KEY_FLAG ) == MULTIPLE_KEY_FLAG
 
 CLASS TDolphinQry
 
@@ -88,11 +89,13 @@ CLASS TDolphinQry
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
                                 /*Goto specific Row (RecNo) and fill aRow/Hash*/
                                 
-   METHOD GoBottom()   INLINE   ::GetRow( ::nNumRows ) 
+   METHOD GoBottom()   INLINE   ::GetRow( ::nRecCount ) 
                                 /*Goto BOTTOM of Query and fill aRow/Hash*/
                                 
    METHOD GoTop()      INLINE   ::GetRow( 1 )
                                 /*Goto TOP of Query and fill aRow/Hash*/
+                                
+   METHOD IsEqual( nIdx )                                
 
    METHOD IsSingleTable() INLINE Len( ::aTables ) == 1  
    METHOD IsCommand()    INLINE ( ::IsSingleTable() .AND. Len( ::aColumns ) == 0 ) .OR. ;
@@ -102,6 +105,8 @@ CLASS TDolphinQry
                                /*returns the number of rows in the current query, compatibility with dbf*/
 
    METHOD LoadQuery() 
+                               
+   METHOD MakePrimaryKeyWhere() 
                                
    METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
@@ -486,7 +491,7 @@ METHOD GetBlankRow() CLASS TDolphinQry
       CASE "N"
       CASE "I"
          IF ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL
-            uValue = ::aStructure[ nIdx ][ MYSQL_FS_DEF ]
+            uValue = Val( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] )
          ELSE 
             uValue = 0
          ENDIF 
@@ -608,6 +613,15 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 
 RETURN ::nRecNo
 
+//----------------------------------------------------//
+
+METHOD IsEqual( cnField ) CLASS TDolphinQry
+#ifdef USE_HASH
+RETURN ::hRow( "_" + cnField ) == ::hOldRow( "_" + cnField ) 
+#else 
+RETURN ::aRow( cnField ) == ::aOldRow( cnField ) 
+#endif /*USE_HASH*/
+
 
 //----------------------------------------------------//
 
@@ -670,6 +684,50 @@ RETURN NIL
 
 //----------------------------------------------------//
 
+METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
+
+   LOCAL cWhere := " WHERE ", aField
+   LOCAL nIdx
+
+   FOR EACH aField IN ::aStructure
+
+      // search for fields part of a primary key
+      IF IS_PRIMARY_KEY( aField[ MYSQL_FS_FLAGS ] ) .OR.;
+         IS_MULTIPLE_KEY( aField[ MYSQL_FS_FLAGS ] )
+
+         cWhere += aField[ MYSQL_FS_NAME ] + "="
+
+         // if a part of a primary key has been changed, use original value
+#ifdef __XHARBOUR__         
+         nIdx = HB_EnumIndex()
+#else 
+         nIdx = aField:__EnumIndex()
+#endif /*__XHARBOUR__*/   
+
+#ifdef USE_HASH
+         IF ! ::IsEqual( aField[ MYSQL_FS_NAME ] )
+            cWhere += ClipValue2SQL( ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+         ELSE
+            cWhere += ClipValue2SQL( ::hRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+         ENDIF
+#else          
+         IF ! ::IsEqual( nIdx )
+            cWhere += ClipValue2SQL( ::aOldRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+         ELSE
+            cWhere += ClipValue2SQL( ::aRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] )
+         ENDIF         
+#endif /*USE_HASH*/
+         cWhere += " AND "
+      ENDIF
+
+   NEXT
+
+   // remove last " AND "
+   cWhere := Left( cWhere, Len( cWhere ) - 5 )
+
+RETURN cWhere
+
+//----------------------------------------------------//
 
 /* Creates an update query for changed fields and submits it to server */
 METHOD Save() CLASS TDolphinQry
@@ -723,31 +781,23 @@ METHOD Save() CLASS TDolphinQry
          cQry += aField[ MYSQL_FS_NAME ] + "=" + ClipValue2SQL( uValue ) + ","
       ENDIF
    NEXT
-   
+
    IF lSaveOk
    // remove last comma
+      
       cQry = Left( cQry, Len( cQry ) - 1 )
       
-      ? cQry
-/*      
       IF !::lAppend
-            cUpdateQuery   += ::MakePrimaryKeyWhere()
-         ENDIF
-      
-         ::cQueryAction := cUpdateQuery              // wmormar - 20080514
-      
-         if sqlQuery( ::nSocket, cUpdateQuery ) == 0
-            ::refresh()
-         else
-            ::lError := .T.
-            ::CheckError()
-         endif
-         
-      ELSE 
-         ::CheckError()   
-      ENDIF*/
+         cQry   += ::MakePrimaryKeyWhere()
+      ENDIF
+
+      IF ::oServer:SqlQuery( cQry )
+         ::LoadQuery()
+      ENDIF         
+      ::lAppend = .F.
    ELSE 
       ::oServer:nInternalError = ERR_NOTHINGTOSAVE
+      ::CheckError()
    ENDIF
 
 
@@ -777,7 +827,6 @@ METHOD SetData( cnField, uValue )	CLASS TDolphinQry
 #endif /*USE_HASH*/    
 
 RETURN NIL
-
 
 //----------------------------------------------------//
 
@@ -844,18 +893,18 @@ RETURN ::nRecNo - n
       ENDIF
 #endif
 
+   IF Substr( cCol, 1, 1 ) != "_"
+      cCol := "_" + D_LowerCase( cCol )
+      lAssign = .T.
+   ELSE 
+      cCol = D_LowerCase( cCol )
+   ENDIF
 
 #ifdef USE_HASH    
 
-      IF Substr( cCol, 1, 1 ) != "_"
-         cCol := "_" + D_LowerCase( cCol )
-         lAssign = .T.
-      ELSE 
-         cCol = D_LowerCase( cCol )
-      ENDIF
-      
       IF ! ( uParam1 == NIL )         
          HSet( ::hRow, cCol, uParam1 )
+         RETURN uParam1
       ELSE
          IF hGetPos( ::hRow, cCol ) > 0
             RETURN ::hRow[ cCol ]

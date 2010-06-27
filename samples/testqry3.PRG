@@ -29,7 +29,7 @@ PROCEDURE Main()
    
    IF ! oServer:lError 
 
-      oQry = TDolphinQry():New( "SELECT * FROM testman", oServer )
+      oQry = TDolphinQry():New( "SELECT * FROM test", oServer )
       ? "Table created correctly test"
       ?
       aStruc = oQry:aStructure
@@ -61,7 +61,14 @@ PROCEDURE Main()
       NEXT
       oQry:Birth = Date()
       oQry:Save()
-
+      ?
+      oQry:GoBottom()
+      oQry:name = "Name " + Str( oQry:ID )
+      oQry:Save()
+      oQry:GoBottom()
+      FOR n = 1 TO oQry:FCount()
+         ?? oQry:FieldGet( n ), "   "
+      NEXT      
       oQry:End() 
              
    ENDIF

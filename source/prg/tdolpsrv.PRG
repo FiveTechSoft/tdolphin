@@ -27,7 +27,7 @@ CLASS TDolphinSrv
                        
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
-   DATA cHost        /*Host name, may be either a host name or an IP address */
+   DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
                        
    DATA hMysql         /*MySQL connection handle*/
