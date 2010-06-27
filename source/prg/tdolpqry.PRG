@@ -98,8 +98,9 @@ CLASS TDolphinQry
    METHOD IsEqual( nIdx )                                
 
    METHOD IsSingleTable() INLINE Len( ::aTables ) == 1  
-   METHOD IsCommand()    INLINE ( ::IsSingleTable() .AND. Len( ::aColumns ) == 0 ) .OR. ;
-                                ( Len( ::aTables ) < 1 .AND. Len( ::aColumns ) >= 1 )
+   METHOD IsCommand()     INLINE ( ::IsSingleTable() .AND. Len( ::aColumns ) == 0 ) .OR. ;
+                                 ( Len( ::aTables ) < 1 .AND. Len( ::aColumns ) >= 1 )
+
                                   
    METHOD LastRec()    INLINE     ::nRecCount
                                /*returns the number of rows in the current query, compatibility with dbf*/
@@ -114,6 +115,13 @@ CLASS TDolphinQry
    METHOD Save()
                                
    METHOD SetData( nNum, uValue ) HIDDEN
+   
+   METHOD SetNewFilter( nType, cFilter, lRefresh )
+   METHOD SetWhere( cWhere, lRefresh )   INLINE ::SetNewFilter( SET_WHERE, cWhere, lRefresh )
+   METHOD SetGroup( cGroup, lRefresh )   INLINE ::SetNewFilter( SET_GROUP, cGroup, lRefresh )
+   METHOD SetHaving( cHaving, lRefresh ) INLINE ::SetNewFilter( SET_HAVING, cHaving, lRefresh )
+   METHOD SetOrder( cOrder, lRefresh )   INLINE ::SetNewFilter( SET_ORDER, cOrder, lRefresh )
+   METHOD SetLimit( cLimit, lRefresh )   INLINE ::SetNewFilter( SET_LIMIT, cLimit, lRefresh )
   
    METHOD Skip( nRecords )
    
@@ -627,20 +635,28 @@ RETURN ::aRow( cnField ) == ::aOldRow( cnField )
 //----------------------------------------------------//
 
 
-METHOD LoadQuery() CLASS TDolphinQry
+METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
 
    LOCAL oServer := ::oServer
    LOCAL cQuery  := ::cQuery
    LOCAL aField, nIdx, cCol
    LOCAL lCaseSen := D_SetCaseSensitive()
 
-    
+   DEFAULT lBuildData TO .T.
 
-    IF ! oServer:SQLQuery( cQuery )
-       RETURN NIL 
-    ENDIF
-    
-   ::BuildDatas()
+   IF ! oServer:SQLQuery( cQuery )
+      RETURN NIL 
+   ENDIF
+   
+   IF lBuildData
+      ::BuildDatas()
+   ENDIF
+   
+   IF ::hResult != 0
+      MySqlFreeResult( ::hResult )
+      ::hResult = 0
+   ENDIF
+   
    ::hResult := MySqlStoreResult( oServer:hMysql )
    
    IF ! ( ::hResult == 0 )
@@ -828,6 +844,50 @@ METHOD SetData( cnField, uValue )	CLASS TDolphinQry
 #endif /*USE_HASH*/    
 
 RETURN NIL
+
+
+//----------------------------------------------------//
+
+
+METHOD SetNewFilter( nType, cFilter, lRefresh ) CLASS TDolphinQry 
+   LOCAL cOldFilter
+
+   DEFAULT lRefresh TO .T.
+   
+   
+   SWITCH nType
+      CASE SET_WHERE
+         cOldFilter = ::cWhere
+         ::cWhere = cFilter
+         EXIT
+      CASE SET_GROUP
+         cOldFilter = ::cGroup
+         ::cGroup = cFilter 
+         EXIT
+      CASE SET_HAVING
+         cOldFilter = ::cHaving      
+         ::cHaving = cFilter
+         EXIT
+      CASE SET_ORDER
+         cOldFilter = ::cOrder      
+         ::cOrder = cFilter 
+         EXIT
+      CASE SET_LIMIT
+         cOldFilter = ::cLimit  
+         IF ValType( cFilter ) == "C"
+            ::cLimit = cFilter
+         ELSEIF ValType( cFilter ) == "N"
+            ::cLimit = AllTrim( Str( cFilter ) )
+         ENDIF
+         EXIT
+   ENDSWITCH
+ 
+   IF lRefresh 
+      ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit )
+      ::LoadQuery( .F. )
+   ENDIF
+
+RETURN cOldFilter
 
 //----------------------------------------------------//
 

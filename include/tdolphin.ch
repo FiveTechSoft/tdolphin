@@ -74,3 +74,10 @@
 #define IS_PRIMARY_KEY( uValue )  MyAND( uValue, PRI_KEY_FLAG ) == PRI_KEY_FLAG 
 #define IS_MULTIPLE_KEY( uValue ) MyAND( uValue, MULTIPLE_KEY_FLAG ) == MULTIPLE_KEY_FLAG
 #define IS_AUTO_INCREMENT( uValue ) MyAND( uValue, AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
+
+// SET NEW FILTER
+#define SET_WHERE    1
+#define SET_GROUP    2
+#define SET_HAVING   3
+#define SET_ORDER    4
+#define SET_LIMIT    5
