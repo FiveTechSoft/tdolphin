@@ -16,8 +16,7 @@
 #define USE_HASH /* use hash of fields for faster FieldPos
                     If hash code breaks in any build of (x)Harbour ( can happen )
                     uncomment and recompile to use standard array scan*/
-#define IS_PRIMARY_KEY( uValue )  MyAND( uValue, PRI_KEY_FLAG ) == PRI_KEY_FLAG 
-#define IS_MULTIPLE_KEY( uValue ) MyAND( uValue, MULTIPLE_KEY_FLAG ) == MULTIPLE_KEY_FLAG
+
 
 CLASS TDolphinQry
 
@@ -84,6 +83,7 @@ CLASS TDolphinQry
    METHOD FieldPut( cnField, uValue )
                                 /*Set the value of a field variable using the ordinal position of the field.
                                   returns the value assigned to the designated field.*/                            
+
    METHOD GetBlankRow()                       
    METHOD GetRow( nRow )        /*Fill aRow and Hash with current data row selected*/
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
@@ -162,12 +162,13 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    IF cQuery == NIL 
       RETURN Self 
    ENDIF 
-   
+
    ::LoadQuery()
    
 
 
 RETURN Self
+
 
 //----------------------------------------------------//
 
@@ -571,7 +572,7 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 #else
             nIdx = cField:__EnumIndex()
 #endif
-            cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ]
+            cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ] //, ::aStructure[ nIdx ][ MYSQL_FS_TYPE ]
 
             SWITCH cType
                CASE "L"

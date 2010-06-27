@@ -18,6 +18,7 @@
 #endif/*__HARBOUR__*/
 
 
+
 CLASS TDolphinSrv
 
    CLASSDATA nQueryId
@@ -50,7 +51,7 @@ CLASS TDolphinSrv
                                 and you must have the privileges that you are granting.*/
                                 
    METHOD AddQuery( oQuery )          INLINE AAdd( ::aQueries, oQuery )
-   
+
    METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )      
    
    METHOD CheckError( nError )
@@ -101,13 +102,18 @@ CLASS TDolphinSrv
                                 A return value of zero means that no error occurred.*/
                                 
    METHOD Execute( cQuery )   INLINE ::SqlQuery( cQuery )  
+
+   METHOD GetAutoIncrement( cTable )
+                                /*Retrieve next Auto increment value in specified table;
+                                 in current database selected*/   
    
-   METHOD GetQueryId()
+   METHOD GetQueryId()        
    
    METHOD Insert( cTable, aColumns, aValues, lTransaction )  
                               /*inserts new rows into an existing table.*/
 
    METHOD IsAutoIncrement( cField, cTable )
+                              /* Verify is a field is Auto Increment*/
    
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
@@ -230,6 +236,7 @@ METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOptio
    lReturn := ::Execute( cQuery )
 
 RETURN lReturn
+
 
 //----------------------------------------------------//
 
@@ -589,6 +596,50 @@ RETURN NIL
 
 //----------------------------------------------------//
 
+METHOD GetAutoIncrement( cTable ) CLASS TDolphinSrv
+   LOCAL nId    := 0
+   LOCAL oQuery := NIL
+   LOCAL cQuery := ""
+   LOCAL cOldDB := ""
+
+   DEFAULT cTable TO ""
+
+   IF Empty( cTable )
+      RETURN( nId )
+   ENDIF
+   
+   IF !Empty( ::cDBName )
+      cOldDB = ::cDBName
+   ELSE 
+      ::nInternalError = ERR_NODATABASESELECTED
+      ::CheckError()
+      RETURN nId
+   ENDIF
+      
+   ::SelectDB( "information_schema" )
+
+   cQuery := "SELECT auto_increment "
+   cQuery += "FROM tables "
+   cQuery += "WHERE table_schema = '"
+   cQuery += cOldDB + "'"
+   cQuery += " AND table_name = '"
+   cQuery += cTable + "'"
+
+   oQuery := TDolphinQry():New( cQuery, Self )
+   IF oQuery:LastRec() > 0
+      nId := oQuery:FieldGet( 1 )
+   ENDIF
+
+   ::SelectDB( cOldDB )
+   
+   oQuery:End()
+   oQuery := NIL
+
+RETURN nId
+
+
+//----------------------------------------------------//
+
 METHOD GetQueryId() CLASS TDolphinSrv
 
    DEFAULT ::nQueryId TO 0
@@ -668,7 +719,7 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
    ELSE   
       aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive() ) 
       MySqlFreeResult( hRes )
-      lAuto = MyAnd( aStruct[ 1, MYSQL_FS_FLAGS ], AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
+      lAuto = IS_AUTO_INCREMENT( aStruct[ 1, MYSQL_FS_FLAGS ] )
    ENDIF
    
 return( lAuto )

@@ -69,3 +69,8 @@
 #define IDX_BTREE       1
 #define IDX_HASH        2
 #define IDX_RTREE       3
+
+// 
+#define IS_PRIMARY_KEY( uValue )  MyAND( uValue, PRI_KEY_FLAG ) == PRI_KEY_FLAG 
+#define IS_MULTIPLE_KEY( uValue ) MyAND( uValue, MULTIPLE_KEY_FLAG ) == MULTIPLE_KEY_FLAG
+#define IS_AUTO_INCREMENT( uValue ) MyAND( uValue, AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG

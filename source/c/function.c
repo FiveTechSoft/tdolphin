@@ -462,6 +462,10 @@ char * SQL2ClipType( long lType ) //-> Clipper field type
       case FIELD_TYPE_STRING      :
          sType = "C";
          break;
+
+      case MYSQL_TYPE_VAR_STRING  :
+         sType = "N";
+         break;
          
       case FIELD_TYPE_BIT         :      	
          sType = "L";
@@ -559,6 +563,10 @@ char * SQLType2Char( long lType ) //-> Clipper field type
       case FIELD_TYPE_STRING      :
          sType = "STRING";
          break;
+      
+      case MYSQL_TYPE_VAR_STRING  :
+      	 sType = "BIGINT";
+      	 break;
          
       case FIELD_TYPE_BIT         :      	
          sType = "TINYINT";
