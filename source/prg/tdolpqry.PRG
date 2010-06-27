@@ -27,7 +27,8 @@ CLASS TDolphinQry
    DATA aOldRow        PROTECTED// Value copy
         
    DATA bBof,;        //codeblock to evaluate if the value is the first row
-        bEof          //codeblock to evaluate if the value is the last row
+        bEof,;        //codeblock to evaluate if the value is the last row
+        bOnFillArray  //codeblock to evaluate while is filling array
    
    DATA cBuild,;        // Current server version
         cQuery,;        // copy of query that generated this object
@@ -83,7 +84,9 @@ CLASS TDolphinQry
    METHOD FieldPut( cnField, uValue )
                                 /*Set the value of a field variable using the ordinal position of the field.
                                   returns the value assigned to the designated field.*/                            
-
+   
+   METHOD FillArray()           /*Fill and return a array with all query information*/
+   
    METHOD GetBlankRow()                       
    METHOD GetRow( nRow )        /*Fill aRow and Hash with current data row selected*/
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
@@ -449,6 +452,33 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
    ENDIF
 
 RETURN NIL
+
+//---------------------------------------
+
+METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
+
+   LOCAL aTable := {}, aRow
+   LOCAL n, aGet
+
+   DEFAULT bOnFillArray TO ::bOnFillArray
+
+   IF ::nRecCount > 0
+         
+      WHILE ! ::lEof
+         aRow = {}
+         FOR n = 1 to ::nFCount
+            AAdd( aRow, ::FieldGet( n ) )
+         NEXT 
+         IF bOnFillArray != NIL 
+            Eval( bOnFillArray, aRow )
+         ENDIF
+         AAdd( aTable, aRow )
+         ::Skip()
+      END 
+   ENDIF
+   
+RETURN aTable 
+
 
 //----------------------------------------------------//
 
@@ -963,9 +993,11 @@ RETURN ::nRecNo - n
 
 #ifdef USE_HASH    
 
-      IF ! ( uParam1 == NIL )         
-         HSet( ::hRow, cCol, uParam1 )
-         RETURN uParam1
+      IF ! ( uParam1 == NIL ) 
+         IF hGetPos( ::hRow, cCol ) > 0        
+            HSet( ::hRow, cCol, uParam1 )
+            RETURN uParam1
+         ENDIF
       ELSE
          IF hGetPos( ::hRow, cCol ) > 0
             RETURN ::hRow[ cCol ]
