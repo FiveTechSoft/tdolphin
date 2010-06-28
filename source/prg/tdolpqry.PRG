@@ -73,6 +73,9 @@ CLASS TDolphinQry
    METHOD FCount()     INLINE    ::nFCount
                                 /*returns the number of fields in the query, compatibility with dbf*/
 
+   METHOD FieldLen( cnField )
+   METHOD FieldDec( cnField )
+
    METHOD FieldName( nNum )     /*returns the name of the specified field as a character string.*/
    METHOD FieldPos( cFieldName )
                                 /*returns the position of the specified field*/
@@ -108,18 +111,24 @@ CLASS TDolphinQry
    METHOD LastRec()    INLINE     ::nRecCount
                                /*returns the number of rows in the current query, compatibility with dbf*/
 
-   METHOD LoadQuery() 
+   METHOD LoadQuery()          /*Load anf fill current query*/
                                
    METHOD MakePrimaryKeyWhere() 
+                               /*Build Make Primary key if exist*/
                                
    METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
+                               
+   METHOD 	RecCount() INLINE ::LastRec()                               
 
-   METHOD Save()
+   METHOD Save()               /*Save current data*/
                  
-   METHOD Seek( cSeek, cnField, nStart, nEnd ) 
+   METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft ) 
+                               /*Move to the record having the specified cSeek value, in selected field
+                                from nStart to nEnd with SoftSeek*/
                  
    METHOD SetData( nNum, uValue ) HIDDEN
+                               /*set value into array or hash*/
    
    METHOD SetNewFilter( nType, cFilter, lRefresh )
    METHOD SetWhere( cWhere, lRefresh )   INLINE ::SetNewFilter( SET_WHERE, cWhere, lRefresh )
@@ -374,6 +383,41 @@ RETURN cName
 
 //----------------------------------------------------//
 
+METHOD FieldLen( cnField ) CLASS TDolphinQry
+   LOCAL nNum
+
+   IF ValType( cnField ) == "C"
+      nNum := ::FieldPos( cnField )
+   ELSE
+      nNum := cnField
+   ENDIF
+
+   IF nNum >= 1 .AND. nNum <= Len( ::aStructure )
+      RETURN ::aStructure[ nNum ][ MYSQL_FS_LENGTH ]
+   ENDIF
+
+RETURN 0
+
+
+//----------------------------------------------------//
+
+METHOD FieldDec( cnField ) CLASS TDolphinQry
+   LOCAL nNum
+
+   IF ValType( cnField ) == "C"
+      nNum := ::FieldPos( cnField )
+   ELSE
+      nNum := cnField
+   ENDIF
+
+   IF nNum >= 1 .AND. nNum <= Len( ::aStructure )
+      RETURN ::aStructure[ nNum ][ MYSQL_FS_DECIMALS ]
+   ENDIF
+
+RETURN 0
+
+//----------------------------------------------------//
+
 METHOD FieldPos( cFieldName ) CLASS TDolphinQry
    LOCAL nPos := 0
 
@@ -577,6 +621,7 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
    LOCAL cType, uValue, cField
    LOCAL cCol
    LOCAL nIdx
+   LOCAL aRow
 
    DEFAULT nRow  TO ::nRecNo
 
@@ -599,13 +644,19 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 
       nRow  = ::nRecNo
       MySqlDataSeek( ::hResult, nRow - 1 )
-      ::aRow    = MySqlFetchRow( ::hResult )
-      ::aOldRow = Array( Len( ::aRow ) )
+
+      aRow    = MySqlFetchRow( ::hResult )
+      
+#ifndef USE_HASH
+      ::aRow    = Array( Len( aRow ) )
+      ::aOldRow = Array( Len( aRow ) )
+#endif /*USE_HASH*/
+      
 
       //fill ::aRow Info
-      IF ::aRow != NIL .AND. ::nRecCount > 0
+      IF aRow != NIL .AND. ::nRecCount > 0
          // Convert answer from text field to correct clipper types
-         FOR EACH cField IN ::aRow
+         FOR EACH cField IN aRow
 
 #ifdef __XHARBOUR__
             nIdx = HB_EnumIndex()
@@ -854,10 +905,13 @@ RETURN nil
 
 //----------------------------------------------------//
 
-METHOD Seek( cSeek, cnField, nStart, nEnd ) CLASS TDolphinQry
+METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
 
    LOCAL nNum
    LOCAL nSeek
+   
+   DEFAULT lSoft TO .F.
+   DEFAULT lRefresh TO .T.
 
    IF ValType( cnField ) == "C"
       nNum := ::FieldPos( cnField )
@@ -865,12 +919,15 @@ METHOD Seek( cSeek, cnField, nStart, nEnd ) CLASS TDolphinQry
       nNum := cnField
    ENDIF
    
-   nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( cSeek ), nStart, nEnd )
+   nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( cSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
    
    IF nSeek > 0 
-      ::GetRow( nSeek )
+      IF lRefresh
+         ::GetRow( nSeek )
+      ENDIF
    ELSE 
       ::Goto( ::nRecNo )
+      nSeek = ::nRecNo
    ENDIF
 
 RETURN nSeek
@@ -890,6 +947,7 @@ METHOD SetData( cnField, uValue )	CLASS TDolphinQry
       nNum := cnField
    ENDIF
 #ifdef USE_HASH
+
    cCol := "_" + D_LowerCase( ::aStructure[ nNum ][ MYSQL_FS_NAME ] )
    HSet( ::hRow, cCol, uValue )
    HSet( ::hOldRow, cCol, uValue )

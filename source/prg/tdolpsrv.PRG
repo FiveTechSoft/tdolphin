@@ -934,11 +934,17 @@ RETURN lRet
 //----------------------------------------------------//
 
 // Returns an SQL string with clipper value converted ie. Date() -> "'YYYY-MM-DD'"
-FUNCTION ClipValue2SQL( Value, cType )
+FUNCTION ClipValue2SQL( Value, cType, lTxt )
+
+   
 
    LOCAL cValue := ""
-
+   LOCAL cTxt   
+   
+   DEFAULT lTxt TO .T.
    DEFAULT cType to ValType( Value )
+
+   cTxt   := If( lTxt, "'", "" )
 
    SWITCH cType
       CASE "N"
@@ -951,23 +957,23 @@ FUNCTION ClipValue2SQL( Value, cType )
       CASE "D"
          if ! Empty( Value )
             // MySQL dates are like YYYY-MM-DD or YYYYMMDD
-            cValue := "'" + Transform( Dtos( Value ), "@R 9999-99-99" ) + "'"
+            cValue := cTxt + Transform( Dtos( Value ), "@R 9999-99-99" ) + cTxt
          else
             cValue := "NULL"
          endif
          EXIT
 
       CASE "C"
-         cValue := "'" + AllTrim( Value ) + "'"
+         cValue := cTxt + AllTrim( Value ) + cTxt
          EXIT
       CASE "M"
-         cValue := "'" + AllTrim( Value ) + "'"
+         cValue := cTxt + AllTrim( Value ) + cTxt
          EXIT
       CASE "B"
          IF Empty( Value)
-            cValue := "''"
+            cValue := "" + cTxt + cTxt + ""
          ELSE
-            cValue := "'" + MySqlEscape( value ) + "'"
+            cValue := cTxt + MySqlEscape( value ) + cTxt
          ENDIF
          EXIT
 
@@ -984,7 +990,7 @@ FUNCTION ClipValue2SQL( Value, cType )
 #else 
       OTHERWISE
 #endif
-         cValue := "''"       // NOTE: Here we lose values we cannot convert
+         cValue := "" + cTxt + cTxt + ""       // NOTE: Here we lose values we cannot convert
 
    END
 
