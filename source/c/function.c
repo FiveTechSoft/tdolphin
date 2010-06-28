@@ -85,7 +85,7 @@ HB_FUNC( MYSEEK )
       	   pulFieldLengths[ uiField ] = strlen( cSearch );
       	
       	if( row )
-      		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( HB_SIZE ) pulFieldLengths[ uiField ] );
+      		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( long ) pulFieldLengths[ uiField ] );
 
         if( uii == 0 )
         { 
