@@ -116,7 +116,9 @@ CLASS TDolphinQry
                                /*returns the identity found at the position of the row pointer.*/
 
    METHOD Save()
-                               
+                 
+   METHOD Seek( cSeek, cnField, nStart, nEnd ) 
+                 
    METHOD SetData( nNum, uValue ) HIDDEN
    
    METHOD SetNewFilter( nType, cFilter, lRefresh )
@@ -849,6 +851,30 @@ METHOD Save() CLASS TDolphinQry
 
 
 RETURN nil
+
+//----------------------------------------------------//
+
+METHOD Seek( cSeek, cnField, nStart, nEnd ) CLASS TDolphinQry
+
+   LOCAL nNum
+   LOCAL nSeek
+
+   IF ValType( cnField ) == "C"
+      nNum := ::FieldPos( cnField )
+   ELSE
+      nNum := cnField
+   ENDIF
+   
+   nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( cSeek ), nStart, nEnd )
+   
+   IF nSeek > 0 
+      ::GetRow( nSeek )
+   ELSE 
+      ::Goto( ::nRecNo )
+   ENDIF
+
+RETURN nSeek
+
 
 //----------------------------------------------------//
 

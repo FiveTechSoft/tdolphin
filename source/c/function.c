@@ -54,6 +54,47 @@ HB_FUNC( MYSQLESCAPE )
 }
 
 //------------------------------------------------//
+// mysql_result, field pos, cSearch, nStart, nEnd
+HB_FUNC( MYSEEK ) 
+{
+   MYSQL_RES * result = ( MYSQL_RES * ) hb_parnl( 1 );
+   MYSQL_ROW row;
+   unsigned int uii;
+   unsigned int uiStart = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) - 1 : 0 ;
+   unsigned int uiEnd, uiOk = 0;
+   unsigned int uiField = hb_parni( 2 ) - 1;
+   char * cSearch = ( char *) hb_parc( 3 );
+   unsigned long * pulFieldLengths;
+   
+   
+   if (result > 0)
+   {
+      if( ! ISNUM( 5 ) )
+         uiEnd = mysql_num_rows( result );
+      else 
+      	 uiEnd = hb_parni( 5 ); 
+      	 
+      while( uiStart < uiEnd )
+      {
+      	mysql_data_seek(result, uiStart);
+      	row = mysql_fetch_row( result );
+      	pulFieldLengths = mysql_fetch_lengths( result ) ;
+      	if( row )
+      		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( HB_SIZE ) pulFieldLengths[ uiField ] );
+        if( uii == 0 )
+        { 
+        	 uiOk = uiStart;
+        	 break;
+        }
+        uiStart++;
+      }      	 
+   }
+   uiOk = uiOk > 0 ? uiOk + 1 : 0;
+   hb_retnl( ( long ) uiOk  );
+}
+
+
+//------------------------------------------------//
 // my_bool mysql_commit(MYSQL *mysql)
 HB_FUNC( MYSQLCOMMIT )
 {
