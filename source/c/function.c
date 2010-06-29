@@ -20,6 +20,34 @@ LPSTR LToStr( long w )
 }  
 
 //------------------------------------------------//
+//
+HB_FUNC( VAL2ESCAPE )
+{
+   char *FromBuffer ;
+   ULONG iSize, iFromSize ;
+   char *ToBuffer;
+   BOOL bResult = FALSE ;
+   iSize= hb_parclen( 1 ) ;
+
+   FromBuffer = ( CHAR * )hb_parc( 1 ) ;
+   if ( iSize )
+   {
+     ToBuffer = ( char * ) hb_xgrab( ( iSize*2 ) + 1 );
+     if ( ToBuffer )
+     {
+       iSize = mysql_escape_string( ToBuffer, FromBuffer, iSize );
+       hb_retclenAdopt( ( char * ) ToBuffer, iSize ) ;
+       bResult = TRUE ;
+     }
+   }
+   if ( !bResult )
+   {
+     hb_retclen( ( char * ) FromBuffer, iSize ) ;
+   }
+}
+
+
+//------------------------------------------------//
 // returns parameter bitwise 
 HB_FUNC( MYAND )
 {
@@ -52,6 +80,8 @@ HB_FUNC( MYSQLESCAPE )
      hb_retclen( ( char * ) FromBuffer, iSize ) ;
    }
 }
+
+
 
 //------------------------------------------------//
 // mysql_result, field pos, cSearch, nStart, nEnd
@@ -511,7 +541,7 @@ char * SQL2ClipType( long lType ) //-> Clipper field type
          break;
 
       case MYSQL_TYPE_VAR_STRING  :
-         sType = "N";
+         sType = "C";
          break;
          
       case FIELD_TYPE_BIT         :      	
@@ -663,4 +693,62 @@ HB_FUNC( GETTICKCOUNT )
 }
 
 //------------------------------------------------//
+// Function taked from mysql.c (xHarbour)
+ULONG getfilelength( int handle )
+{
+    ULONG nEnd = hb_fsSeek( handle, 0 , 2 );
+    ULONG nStart = hb_fsSeek( handle , 0 , 0 );
+    return ( nEnd - nStart ) ;
+}
+
+//------------------------------------------------//
+// Function taked from mysql.c (xHarbour)
+HB_FUNC( FILETOSQLBINARY )
+{
+   BOOL bResult = FALSE ;
+   char *szFile = ( char * )hb_parc( 1 );
+   int fHandle;
+   ULONG iSize;
+   char *ToBuffer;
+   char *FromBuffer;
+   if ( szFile && hb_parclen( 1 ) )
+   {
+     fHandle    = hb_fsOpen( ( BYTE * ) szFile,2 );
+     if ( fHandle > 0 )
+     {
+       iSize      = getfilelength( fHandle );
+       if ( iSize > 0 )
+       {
+         FromBuffer = ( char * ) hb_xgrab( iSize );
+         if ( FromBuffer )
+         {
+           iSize      = hb_fsReadLarge( fHandle , ( BYTE * ) FromBuffer , iSize );
+           if ( iSize > 0 )
+           {
+             ToBuffer   = ( char * ) hb_xgrab( ( iSize*2 ) + 1 );
+             if ( ToBuffer )
+             {
+               if ISNUM( 2 )
+               {
+                 iSize = mysql_real_escape_string( ( MYSQL * ) hb_parnl( 2 ), ToBuffer, FromBuffer, iSize );
+               }
+               else
+               {
+                 iSize = mysql_escape_string( ToBuffer, FromBuffer, iSize );
+               }
+               hb_retclenAdopt( ( char * ) ToBuffer, iSize );
+               bResult = TRUE ;
+             }
+           }
+           hb_xfree( FromBuffer );
+         }
+       }
+       hb_fsClose( fHandle );
+     }
+   }
+   if ( !bResult )
+   {
+     hb_retc( "" ) ;
+   }
+}
 

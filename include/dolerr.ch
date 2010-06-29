@@ -23,6 +23,8 @@
 #define ERR_NOTHINGTOSAVE                9017
 #define ERR_NODATABASESELECTED           9018
 #define ERR_MISSINGQRYOBJECT             9019
+#define ERR_INVALIDBACKUPFILE            9020
+#define ERR_NOTABLESSELECTED             9021
 
 
 

@@ -81,3 +81,16 @@
 #define SET_HAVING   3
 #define SET_ORDER    4
 #define SET_LIMIT    5
+
+//Privileges type
+#define PRIV_ADMIN      1
+#define PRIV_DATA       2
+#define PRIV_TABLE      3
+#define PRIV_ALL        4
+
+//Backup Status process
+#define ST_STARTBACKUP   1
+#define ST_LOADINGTABLE  2
+#define ST_ENDBACKUP     3
+#define ST_BACKUPCANCEL  0
+

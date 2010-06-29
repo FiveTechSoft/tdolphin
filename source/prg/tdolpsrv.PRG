@@ -25,7 +25,8 @@ CLASS TDolphinSrv
 
    DATA bOnError       /*Custom manager error message
                          ( Self, nError, lInternal ) */
-                       
+   DATA bOnBackUp                   
+   
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
    DATA cHost          /*Host name, may be either a host name or an IP address */
@@ -51,8 +52,15 @@ CLASS TDolphinSrv
                                 and you must have the privileges that you are granting.*/
                                 
    METHOD AddQuery( oQuery )          INLINE AAdd( ::aQueries, oQuery )
+                              /*used internally*/
 
-   METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )      
+   METHOD Backup( aTables, cFile, lDrop, lOver, nStep, cHeader, cFooter, lCancel )  
+
+   METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )    
+   
+   METHOD ChangeEngine( cTable, cType )  INLINE ::Execute( "ALTER TABLE " + D_LowerCase( cTable ) + " ENGINE = " + D_LowerCase( cType ) )
+      
+   METHOD ChangeEngineAll( cType )  
    
    METHOD CheckError( nError )
    
@@ -67,6 +75,8 @@ CLASS TDolphinSrv
                               /*Commits the current transaction.*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
+   
+   METHOD CreateInfo( cTable )
                               
    METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra )
                               /*creates a table with the cTable name*/
@@ -107,10 +117,17 @@ CLASS TDolphinSrv
                                 /*Retrieve next Auto increment value in specified table;
                                  in current database selected*/   
    
+   METHOD GetPrivileges()
+   
    METHOD GetQueryId()   
    
-   METHOD GetTotalRows( cTable )
+   
+   METHOD GetRowsFromTable( cTable )
                                /*Retrieve total row avalaible in  specified table;
+                                in current database selected*/    
+
+   METHOD GetRowsFromQry( oQuery )
+                               /*Retrieve total row avalaible in  specified query;
                                 in current database selected*/    
    
    METHOD Insert( cTable, aColumns, aValues, lTransaction )  
@@ -135,7 +152,9 @@ CLASS TDolphinSrv
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
 
-   METHOD RenameUser( cUser, cRename )  INLINE ::Execute( "RENAME USER " + D_LowerCase( cUser )+ "@ TO " + cRename )  
+   METHOD Query( cQuery )   INLINE 	TDolphinQry():New( cQuery, Self )
+
+   METHOD RenameUser( cFromUser, cServer, cRename )  
                               /*Rename User*/
 
    METHOD RevokePrivileges( cHost, cUser, cDB, acPrivilegs )
@@ -241,6 +260,202 @@ METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOptio
 
 RETURN lReturn
 
+//----------------------------------------------------//
+
+METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCancel ) CLASS TDolphinSrv
+   LOCAL hFile  := 0
+   LOCAL oQry   := NIL
+   LOCAL cQry   := ""
+   LOCAL cText  := ""
+   LOCAL cCol   := ""
+   LOCAL nCol   := 0
+   LOCAL cTable := ""
+   LOCAL nTotTable := 0
+   LOCAL nCurrTable := 0
+   LOCAL nTRow  := 0
+   LOCAL nRecno := 0
+   LOCAL nPage  := 0
+   LOCAL nError := 0
+
+   DEFAULT lOverwrite TO .F.
+   DEFAULT lDrop TO .F.
+   DEFAULT nStep TO 500
+   DEFAULT lCancel TO .F.
+   DEFAULT cFooter TO ""
+   DEFAULT cHeader TO;
+    "-- CLASS TDolphin, for [x]Harbour" + CRLF +;
+    "---------------------------------" + CRLF
+
+   IF Empty( ::cDBName )
+      ::nInternalError = ERR_NODATABASESELECTED
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+
+   IF File( cFile ) .AND. !lOverwrite
+      ::nInternalError = ERR_INVALIDBACKUPFILE
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+
+   IF len( aTables ) == 0
+      ::nInternalError = ERR_NOTABLESSELECTED
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+   
+   IF ::bOnBackUp != NIL
+      Eval( ::bOnBackUp, ST_STARTBACKUP )
+   ENDIF
+   
+   cText += cHeader
+
+   FOR EACH cTable IN aTables
+      cText += "** Table: " + cTable + CRLF
+   NEXT
+
+   cText += CRLF
+   cText += CRLF
+
+   IF lDrop
+      cText += "** Create database **"
+      cText += CRLF
+      cText += "CREATE DATABASE IF NOT EXISTS " + ::cDBName
+      cText += CRLF
+      cText += CRLF
+   ENDIF
+
+
+   nTotTable = Len( aTables )
+
+   FOR EACH cTable IN aTables
+   
+      IF lCancel
+         EXIT
+      ENDIF
+      cTable = D_LowerCase( cTable )
+   
+      IF ::bOnBackUp != NIL
+#ifdef __XHARBOUR__      
+         nCurrTable = HB_EnumIndex()
+#else 
+         nCurrTable =  cTable:__EnumIndex()
+#endif   
+         Eval( ::bOnBackUp, ST_LOADINGTABLE, cTable, nTotTable, nCurrTable )      
+      ENDIF      
+      
+      nTRow := ::GetRowsFromTable( cTable )
+      cText  += "** BEGIN " + cTable + CRLF
+      IF lDrop
+         cText  += "DROP TABLE IF EXISTS " + cTable + CRLF
+         cText  += ::CreateInfo( cTable ) + CRLF
+      ENDIF
+
+      IF nTRow > 0
+         cQry := "SELECT * FROM " + cTable + " LIMIT 1"
+         oQry := ::Query( cQry )
+         cText += CRLF
+         cText += CRLF
+         cText += "--" + CRLF
+         cText += "-- Dumping data for table " + cTable + CRLF
+         cText += "--" + CRLF
+         cText += CRLF
+         cText += CRLF
+         cText += "LOCK TABLES " + cTable + " WRITE;" + CRLF
+         cText  += "INSERT INTO " + cTable + " ("
+         FOR nCol := 1 TO oQry:FCount()
+            cText += oQry:FieldName( nCol ) + ","
+         NEXT
+         cText := Left( cText, len( cText ) - 1 )
+         cText += ") VALUES "
+         oQry:End()
+         oQry  := NIL
+      ENDIF
+
+      nPage := 0
+      
+      FOR nRecno := 0 TO nTRow STEP nStep
+
+         IF lCancel
+            EXIT
+         ENDIF
+
+         cQry := "SELECT * FROM " + cTable + " LIMIT " 
+         cQry += AllTrim( Str( nRecno ) ) + ", "
+         cQry += AllTrim( Str( nStep ) )
+         oQry := ::Query( cQry )
+
+         WHILE !oQry:eof() .AND. ! lCancel
+         
+            cText    += "("
+            FOR nCol := 1 TO oQry:FCount()
+               IF oQry:FieldType( nCol ) == "D"
+                  cText += "'"
+                  cText += dtos(oQry:FieldGet( nCol ))
+                  cText += "',"
+               ELSEIF oQry:FieldType( nCol ) == "N"
+                  cText += AllTrim( Str( oQry:FieldGet( nCol ) ) ) + ","
+               ELSEIF oQry:FieldType( nCol ) == "L"
+                  cText += If( oQry:FieldGet( nCol ), "1", "0" ) + ","
+               ELSE
+                  cText += "'"
+                  cText += MySqlEscape( D_LowerCase( oQry:FieldGet( nCol ) ), ::hMysql )
+                  cText += "',"
+               ENDIF
+            NEXT
+            cText := Left( cText, len( cText ) - 1 )
+            cText += "),"
+            oQry:Skip()
+         ENDDO
+         oQry:End()
+         oQry  := NIL
+      NEXT
+      IF nTRow > 0
+         cText := Left( cText, len( cText ) - 1 ) + CRLF
+      ENDIF
+      cText += CRLF
+      cText += "UNLOCK TABLES"
+      cText += CRLF
+      cText += CRLF
+      cText += "** END " + cTable + CRLF
+      cText += CRLF
+      cText += CRLF
+   NEXT
+
+   IF ! lCancel
+
+      IF Empty( cFooter )
+         cFooter = "-- Dump completed on " + DToC( Date() ) + " " + Time() + CRLF
+      ENDIF
+      cText += cFooter
+       
+      IF ::bOnBackUp != NIL
+         Eval( ::bOnBackUp, ST_ENDBACKUP, cFile )
+      ENDIF   
+   
+      hFile := FCreate( cFile )
+      FWrite( hFile, cText )
+      FClose( hFile )
+      RETURN .F.
+   ELSE
+      IF ::bOnBackUp != NIL
+         Eval( ::bOnBackUp, ST_BACKUPCANCEL )
+      ENDIF   
+   ENDIF
+
+RETURN .T.
+
+
+//---------------------------------------------//
+
+METHOD ChangeEngineAll( cType ) CLASS TDolphinSrv
+   LOCAL cTable
+
+   FOR EACH cTable IN ::ListTables()
+      ::Execute( "ALTER TABLE " + cTable + " ENGINE = " + D_LowerCase( cType ) )
+   NEXT
+
+RETURN NIL
 
 //----------------------------------------------------//
 
@@ -352,6 +567,26 @@ METHOD CreateIndex( cName, cTable, aFNames, nCons, nType ) CLASS TDolphinSrv
    cQuery += If( nType == 0, "", aIDX_TYPE[ nType ] ) 
 
 RETURN ::SqlQuery( cQuery )
+
+//----------------------------------------------------//
+
+METHOD CreateInfo( cTable ) CLASS TDolphinSrv
+   LOCAL oQry   := NIL
+   LOCAL cInfo  := ""
+   LOCAL aTable := {}
+   LOCAL cItem  := ""
+
+   DEFAULT cTable TO ""
+   oQry = ::Query( "SHOW CREATE TABLE " + D_LowerCase( cTable ) )
+   cInfo := oQry:FieldGet( 2 )
+   oQry:End()
+   oQry  := NIL
+
+   cInfo := AllTrim( cInfo )
+   cInfo := AtRepl( Chr( 10 ), cInfo, "" )
+   cInfo := AtRepl( "`", cInfo, "" )
+
+RETURN cInfo
 
 
 //----------------------------------------------------//
@@ -629,9 +864,9 @@ METHOD GetAutoIncrement( cTable ) CLASS TDolphinSrv
    cQuery += " AND table_name = '"
    cQuery += cTable + "'"
 
-   oQuery := TDolphinQry():New( cQuery, Self )
+   oQuery := ::Query( cQuery )
    IF oQuery:LastRec() > 0
-      nId := oQuery:FieldGet( 1 )
+      nId := Val( oQuery:FieldGet( 1 ) )
    ENDIF
 
    ::SelectDB( cOldDB )
@@ -641,6 +876,49 @@ METHOD GetAutoIncrement( cTable ) CLASS TDolphinSrv
 
 RETURN nId
 
+//----------------------------------------------------//
+
+METHOD GetPrivileges( nType ) CLASS TDolphinSrv
+
+   LOCAL oQry 
+   LOCAL cQuery := "SHOW PRIVILEGES"
+   LOCAL aPrivilegs := {}
+   LOCAL cPriv, lAdd := .F.
+   
+   DEFAULT nType TO PRIV_DATA
+   
+   oQry = Query( cQuery )
+   
+   WHILE ! oQry:Eof() 
+      
+      SWITCH nType
+         CASE PRIV_ADMIN
+            IF "ADMIN" $ Upper( oQry:CONTEXT )
+               lAdd = .T.
+            ENDIF 
+            EXIT 
+         CASE PRIV_DATA
+            IF !( "SERVER" $ Upper( oQry:CONTEXT ) )
+               lAdd = .T.
+            ENDIF 
+            EXIT 
+         CASE PRIV_TABLE
+            IF "TABLE" $ Upper( oQry:CONTEXT )
+               lAdd = .T.
+            ENDIF 
+            EXIT 
+            
+        CASE PRIV_ALL 
+           lAdd = .T.
+     ENDSWITCH
+     IF lAdd
+        AAdd( aPrivilegs, Upper( oQry:FieldGet( 1 ) ) )
+        lAdd = .F.
+     ENDIF
+     oQry:Skip()
+   END
+
+RETURN aPrivilegs
 
 //----------------------------------------------------//
 
@@ -654,8 +932,22 @@ RETURN ::nQueryId
 
 //----------------------------------------------------//
 
+METHOD GetRowsFromTable( cTable ) CLASS TDolphinSrv
+   LOCAL nTotal := 0
+   LOCAL oQry
+   
+   oQry = Query( "SELECT COUNT(*) FROM " + D_LowerCase( cTable ) )
+   
+   nTotal = oQry:FieldGet( 1 )
+   
+   oQry:End() 
+   
+RETURN nTotal 
 
-METHOD GetTotalRows( oQry ) CLASS TDolphinSrv
+
+//----------------------------------------------------//
+
+METHOD GetRowsFromQry( oQry ) CLASS TDolphinSrv
 
    LOCAL nTotal := 0
    LOCAL aOldColumns
@@ -667,7 +959,7 @@ METHOD GetTotalRows( oQry ) CLASS TDolphinSrv
       ::CheckError()
       RETURN nTotal 
    ENDIF
-   
+
    aOldColumns = AClone( oQry:aColumns )
    
    cQuery := oQry:BuildQuery( { "COUNT(*)" }, ;
@@ -688,7 +980,7 @@ METHOD GetTotalRows( oQry ) CLASS TDolphinSrv
                     oQry:cLimit, ;
                     oQry:cExt )
    
-   oQryAux = TDolphinQry():New( cQuery, Self )
+   oQryAux = ::Query( cQuery )
    
    nTotal  = oQryAux:FieldGet( 1 )
    
@@ -794,6 +1086,23 @@ METHOD ListTables( cWild ) CLASS TDolphinSrv
 
 RETURN aList
 
+
+//---------------------------------------------//
+
+
+METHOD RenameUser( cFromUser, cServer, cRename )  
+
+   LOCAL cQry := ""
+
+   cQry += "RENAME USER " 
+   cQry += D_LowerCase( ClipValue2SQL( cFromUser ) )
+   cQry += "@" + D_LowerCase( ClipValue2SQL( cServer ) )
+   cQry += " TO " 
+   cQry += D_LowerCase( ClipValue2SQL( cRename ) )
+   cQry += "@" + D_LowerCase( ClipValue2SQL( cServer ) )
+
+
+RETURN ::Execute( cQry )
 
 //---------------------------------------------//
 
@@ -980,10 +1289,8 @@ RETURN lRet
 //----------------------------------------------------//
 //----------------------------------------------------//
 
-// Returns an SQL string with clipper value converted ie. Date() -> "'YYYY-MM-DD'"
-FUNCTION ClipValue2SQL( Value, cType, lTxt )
+FUNCTION ClipValue2SQL( Value, cType, lTxt ) // Compatibility wint TMysql
 
-   
 
    LOCAL cValue := ""
    LOCAL cTxt   
@@ -1003,7 +1310,6 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt )
 
       CASE "D"
          if ! Empty( Value )
-            // MySQL dates are like YYYY-MM-DD or YYYYMMDD
             cValue := cTxt + Transform( Dtos( Value ), "@R 9999-99-99" ) + cTxt
          else
             cValue := "NULL"
@@ -1020,7 +1326,7 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt )
          IF Empty( Value)
             cValue := "" + cTxt + cTxt + ""
          ELSE
-            cValue := cTxt + MySqlEscape( value ) + cTxt
+            cValue := cTxt + Val2Escape( value ) + cTxt
          ENDIF
          EXIT
 
@@ -1037,7 +1343,7 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt )
 #else 
       OTHERWISE
 #endif
-         cValue := "" + cTxt + cTxt + ""       // NOTE: Here we lose values we cannot convert
+         cValue := "" + cTxt + cTxt + ""
 
    END
 

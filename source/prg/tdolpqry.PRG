@@ -172,7 +172,7 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    IF oServer == NIL
       RETURN NIL 
    ENDIF   
-
+   
    ::oServer = oServer
    ::cQuery  = cQuery
    ::nQryId  = oServer:GetQueryId()
@@ -479,7 +479,7 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
       IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL
 
          IF ValType( uValue ) == "C"
-            uValue := MySqlEscape( AllTrim( uValue ) )
+            uValue := MySqlEscape( AllTrim( uValue ), ::oServer:hMySql )
          ENDIF
          ::SetData( nNum, uValue )
          RETURN uValue
@@ -638,11 +638,15 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
          CASE nRow > 0 .and. nRow <= ::nRecCount
             ::lBof    = .F.
             ::lEof    = .F.//nRow == ::nRecCount
-            ::nRecNo  = nRow
+            ::nRecNo  = Max( nRow, 1 )
          CASE nRow > ::nRecCount
             ::lBof    = .F.
             ::lEof    = .T.
             ::nRecNo  = ::nRecCount
+         CASE nRow < 1 
+            ::lBof    = .T.
+            ::lEof    = .F.
+            ::nRecNo  = 1
       ENDCASE
 
       nRow  = ::nRecNo
@@ -660,14 +664,13 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
       IF aRow != NIL .AND. ::nRecCount > 0
          // Convert answer from text field to correct clipper types
          FOR EACH cField IN aRow
-
 #ifdef __XHARBOUR__
             nIdx = HB_EnumIndex()
 #else
             nIdx = cField:__EnumIndex()
 #endif
             cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ] //, ::aStructure[ nIdx ][ MYSQL_FS_TYPE ]
-
+        
             SWITCH cType
                CASE "L"
                   uValue := !( Val( cField ) == 0 )
@@ -687,7 +690,8 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 
                CASE "T"
                CASE "C"
-                  uValue := PadR( cField, ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ] ) 
+                  uValue := PadR( cField, If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
+                                              ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ) ) 
                   EXIT
 #ifdef __XHARBOUR__
                DEFAULT
@@ -751,7 +755,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
       ELSE
          ::aStructure = MySqlResultStructure( ::hResult, D_SetCaseSensitive() ) 
       ENDIF
-      
+
       ::nRecCount := MySqlNumRows( ::hResult )
       ::nRecNo    = 1
       ::nFCount   = Len( ::aStructure )
@@ -841,7 +845,7 @@ METHOD NextPage( nSkip, lRefresh ) CLASS TDolphinQry
 
    IF ::lPagination
 
-      ::nTotalRows    := ::oServer:GetTotalRows( Self )
+      ::nTotalRows    := ::oServer:GetRowsFromQry( Self )
       ::nMaxPages     = Int( ::nTotalRows / ::nPageStep ) + If( ::nTotalRows % ::nPageStep > 0, 1, 0 )
    
       IF ::nCurrentPage + nSkip < ::nMaxPages
@@ -874,7 +878,7 @@ METHOD PrevPage( nSkip, lRefresh ) CLASS TDolphinQry
 
    IF ::lPagination
 
-      ::nTotalRows    := ::oServer:GetTotalRows( Self )
+      ::nTotalRows    := ::oServer:GetRowsFromQry( Self )
       ::nMaxPages     = Int( ::nTotalRows / ::nPageStep ) + If( ::nTotalRows % ::nPageStep > 0, 1, 0 )
    
       IF ::nCurrentPage - nSkip > 0
@@ -1010,6 +1014,7 @@ METHOD SetData( cnField, uValue )	CLASS TDolphinQry
    ELSE
       nNum := cnField
    ENDIF
+   
 #ifdef USE_HASH
 
    cCol := "_" + D_LowerCase( ::aStructure[ nNum ][ MYSQL_FS_NAME ] )
@@ -1080,7 +1085,7 @@ METHOD SetPages( nLimit ) CLASS TDolphinQry
    ::nCurrentLimit = 0
    ::nCurrentPage  = 1 
    
-   ::nTotalRows    = ::oServer:GetTotalRows( Self )
+   ::nTotalRows    = ::oServer:GetRowsFromQry( Self )
    
    ::nMaxPages     = Int( ::nTotalRows / nLimit ) + If( ::nTotalRows % nLimit > 0, 1, 0 )
    
@@ -1096,32 +1101,13 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
 
    LOCAL n := ::nRecNo
    LOCAL lNeedRefresh := .F.
-   LOCAL lPrev  := .F.
+   LOCAL lNoMove  := .F.
 
    DEFAULT nRecords TO 1
 
-   IF nRecords == 0
-      // No move
+   ::nRecNo += nRecords 
 
-   ELSEIF nRecords < 1
-      // Negative movement
-      IF ( ::nRecNo += nRecords ) <= 1
-         ::nRecNo = 1
-         ::lBof   = .T.
-         ::lEof   = ::nRecNo >= ::nRecCount
-      ENDIF
-
-   ELSE
-      IF ( ::nRecNo += nRecords ) >= ::nRecCount
-         ::nRecNo = ::nRecCount
-         ::lEof   = .T.
-         ::lBof   = ::nRecNo <= 1
-      ENDIF
-      
-
-   ENDIF
-
-   IF ::GetRow( ::nRecNo ) > 0
+   IF ::GetRow( ::nRecNo ) > 0  .AND. nRecords != 0
 
       IF ::Eof()
          IF ::bEoF != nil
@@ -1136,8 +1122,7 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
       ENDIF
       
    ENDIF
-   
-   lNeedRefresh = .F.
+  
    
 RETURN ::nRecNo - n
 

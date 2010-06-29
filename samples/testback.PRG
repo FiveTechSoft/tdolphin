@@ -24,27 +24,9 @@ PROCEDURE Main()
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
 
    IF ! oServer:lError 
-   
-      //we can use array or list in privileges
-      IF oServer:AddUser( , "usertest", "123456", "test03", , "CREATE,DELETE,SELECT,UPDATE, DROP" )
-         ? "User created successful"
-      ENDIF
-      IF oServer:RevokePrivileges( , "usertest", "test03", "DROP" )
-         ? "revoke DROP provileges: successful"
-      ENDIF
-      IF oServer:RenameUser( "usertest", cServer, "testuser" )
-         ? "Rename user usertest ->testuser: successful"
-      ENDIF
-
-      aPriv = oServer:GetPrivileges( PRIV_TABLE )
-
-      ? "TABLE PRIVILEGES"
-      ? "================="
-      FOR EACH uItem IN aPriv
-        ? uItem
-      NEXT        
-      
-      ?
+      oServer:bOnbackup = {| nStatus, cTable, nTotTable, nCurrTable | OnBackup( nStatus, cTable, nTotTable, nCurrTable  ) }
+      oServer:Backup( { "testman" }, "bcktest.txt", .T., .T., 500, "Custom header backup process", "Custom footer backup process" )  
+      ? 
    ENDIF 
 
    oServer:end()
@@ -65,3 +47,21 @@ PROCEDURE GetError( oServer, nError, lInternal )
    
    
 RETURN
+
+PROCEDURE OnBackup( nStatus, cTable, nTotTable, nCurrTable  )
+
+   SWITCH nStatus
+      CASE ST_STARTBACKUP
+         ? "Backup started"
+         EXIT 
+      CASE ST_LOADINGTABLE
+         ? "Backup Table: " + cTable 
+         EXIT 
+      CASE ST_ENDBACKUP
+         ? "Backup finished"
+   ENDSWITCH 
+
+RETURN
+      
+         
+      
