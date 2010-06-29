@@ -3,7 +3,7 @@
 #include "tdolphin.ch"
 #include "xbrowse.ch"
 
-#define CRLF Chr( 13 ) + Chr( 10 )
+//#define CRLF Chr( 13 ) + Chr( 10 )
 
 PROCEDURE Main()
    
@@ -34,11 +34,9 @@ PROCEDURE Main()
    IF ! oServer:lError 
       cTime := time()
       oQry = TDolphinQry():New( "SELECT * FROM testman LIMIT 100", oServer )
-//      ? "load finished, Time " + elaptime( cTime, time() )
+      ? "load finished, Time " + elaptime( cTime, time() )
       oQry:SetPages( 100 )
       oQry:bOnChangePage = {||oBrw:Refresh() }
-//      oQry:bOnChangePage = {|| oWnd:cTitle := Str( oQry:RecNo() ) }
-//      ? oQry:nRecCount
 
       DEFINE WINDOW oWnd TITLE "Testing TDOLPHIN"
       
@@ -88,7 +86,15 @@ PROCEDURE SetDolphin( oBrw, oQry)
    WITH OBJECT oBrw
       :bGoTop    := {|| If( oQry:LastRec() > 0, oQry:GoTop(), NIL ) }
       :bGoBottom := {|| If( oQry:LastRec() > 0, oQry:GoBottom(), nil )  }
-      :bSkip     := {| n | oQry:Skip( n ) }
+      IF oQry:lPagination
+         :bSkip     := {| n | If ( n != NIL, If( n + oQry:nRecNo < 1 .AND. oQry:nCurrentPage > 1,;
+                                                 ( oQry:PrevPage(, .T. ), 0 ), ;
+                                                 If( n + oQry:nRecNo > oQry:nRecCount .AND. oQry:nCurrentPage < oQry:nTotalRows,;
+                                                     ( oQry:NextPage( , .T. ), 0 ), oQry:Skip( n ) ) ), oQry:Skip( n ) )  }
+      ELSE 
+         :bSkip     := {| n | oQry:Skip( n ) }
+      ENDIF
+      
       :bBof      := {|| oQry:Bof() }
       :bEof      := {|| oQry:Eof() }
       :bBookMark := {| n | If( n == nil,;

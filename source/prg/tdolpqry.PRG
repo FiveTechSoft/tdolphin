@@ -104,7 +104,7 @@ CLASS TDolphinQry
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
                                 /*Goto specific Row (RecNo) and fill aRow/Hash*/
                                 
-   METHOD GoBottom()   INLINE   ::GetRow( ::nRecCount ) 
+   METHOD GoBottom()   INLINE   ::GetRow( ::nRecCount  ) 
                                 /*Goto BOTTOM of Query and fill aRow/Hash*/
                                 
    METHOD GoTop()      INLINE   ::GetRow( 1 )
@@ -659,7 +659,6 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
             ::lBof    = .F.
             ::lEof    = .T.
             ::nRecNo  = ::nRecCount
-            MsgInfo( "ok" )
       ENDCASE
 
       nRow  = ::nRecNo
@@ -870,6 +869,12 @@ METHOD NextPage( nSkip, lRefresh ) CLASS TDolphinQry
       ENDIF
 
       ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( ::nPageStep ) ), lRefresh ) 
+
+
+      IF ::lPagination .AND. ::bOnChangePage != NIL .AND. lRefresh
+         Eval( ::bOnChangePage, .F. )
+      ENDIF     
+
       
    ENDIF
 
@@ -897,6 +902,10 @@ METHOD PrevPage( nSkip, lRefresh ) CLASS TDolphinQry
       ENDIF
 
       ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( ::nPageStep ) ), lRefresh ) 
+
+      IF ::lPagination .AND. ::bOnChangePage != NIL .AND. lRefresh
+         Eval( ::bOnChangePage, .T. )
+      ENDIF     
    
    ENDIF
 
@@ -1116,11 +1125,6 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
 
    ELSEIF nRecords < 1
       // Negative movement
-      IF ::lPagination .AND. ( ::nRecNo + nRecords ) < 1
-         ::PrevPage( , .F.) // no refresh MsgBeep()
-         lNeedRefresh = .T.
-         lPrev = .T.
-      ENDIF
       IF ( ::nRecNo += nRecords ) <= 1
          ::nRecNo = 1
          ::lBof   = .T.
@@ -1128,11 +1132,6 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
       ENDIF
 
    ELSE
-      // positive movement
-      IF ::lPagination .AND. ( ::nRecNo + nRecords ) > ::nRecCount
-         ::NextPage( , .F.) // no refresh   MsgBeep()
-         lNeedRefresh = .T.
-      ENDIF      
       IF ( ::nRecNo += nRecords ) >= ::nRecCount
          ::nRecNo = ::nRecCount
          ::lEof   = .T.
@@ -1140,10 +1139,6 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
       ENDIF
       
 
-   ENDIF
-   
-   IF ::lPagination .AND. lNeedRefresh
-      ::LoadQuery( .F. )
    ENDIF
 
    IF ::GetRow( ::nRecNo ) > 0
@@ -1158,10 +1153,6 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
          IF ::bBoF != nil
             Eval( ::bBoF, Self )
          ENDIF
-      ENDIF
-      
-      IF ::lPagination .AND. ::bOnChangePage != NIL .AND. lNeedRefresh
-         Eval( ::bOnChangePage, lPrev )
       ENDIF
       
    ENDIF
