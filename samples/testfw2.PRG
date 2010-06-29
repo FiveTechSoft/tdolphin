@@ -34,9 +34,9 @@ PROCEDURE Main()
    IF ! oServer:lError 
       cTime := time()
       oQry = TDolphinQry():New( "SELECT * FROM testman LIMIT 100", oServer )
-      ? "load finished, Time " + elaptime( cTime, time() )
+//      ? "load finished, Time " + elaptime( cTime, time() )
       oQry:SetPages( 100 )
-      oQry:bOnChangePage = {||oBrw:Refresh() }
+      oQry:bOnChangePage = {| lPrev | oBrw:Refresh(), If( lPrev, oBrw:GoBottom(), ) }
 
       DEFINE WINDOW oWnd TITLE "Testing TDOLPHIN"
       

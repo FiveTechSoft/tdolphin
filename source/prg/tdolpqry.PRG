@@ -95,7 +95,9 @@ CLASS TDolphinQry
                                 
    METHOD FieldPut( cnField, uValue )
                                 /*Set the value of a field variable using the ordinal position of the field.
-                                  returns the value assigned to the designated field.*/                            
+                                  returns the value assigned to the designated field.*/  
+                                  
+   METHOD FieldToNum( cnField ) HIDDEN                                                            
    
    METHOD FillArray()           /*Fill and return a array with all query information*/
    
@@ -368,11 +370,9 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
       lError = .T.
    ENDIF
 #else      
-   IF ValType( cnField ) == "N"
-      nNum = cnField 
-   ELSE 
-      nNum = ::FieldPos( cnField )
-   ENDIF
+
+   nNum := ::FieldToNum( cnField )
+   
    IF nNum > 0
       RETURN ::aRow[ nNum ]
    ENDIF
@@ -403,13 +403,7 @@ RETURN cName
 //----------------------------------------------------//
 
 METHOD FieldLen( cnField ) CLASS TDolphinQry
-   LOCAL nNum
-
-   IF ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   ELSE
-      nNum := cnField
-   ENDIF
+   LOCAL nNum := ::FieldToNum( cnField )
 
    IF nNum >= 1 .AND. nNum <= Len( ::aStructure )
       RETURN ::aStructure[ nNum ][ MYSQL_FS_LENGTH ]
@@ -421,13 +415,7 @@ RETURN 0
 //----------------------------------------------------//
 
 METHOD FieldDec( cnField ) CLASS TDolphinQry
-   LOCAL nNum
-
-   IF ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   ELSE
-      nNum := cnField
-   ENDIF
+   LOCAL nNum := ::FieldToNum( cnField )
 
    IF nNum >= 1 .AND. nNum <= Len( ::aStructure )
       RETURN ::aStructure[ nNum ][ MYSQL_FS_DECIMALS ]
@@ -455,55 +443,37 @@ RETURN nPos
 
 
 METHOD FieldType( cnField ) CLASS TDolphinQry
-   local cType := "U"
-   LOCAL nNum
+   LOCAL cType := "U"
+   LOCAL nNum := ::FieldToNum( cnField )
 
-   if ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   else
-      nNum := cnField
-   endif
-
-   if nNum >= 0 .AND. nNum <= ::nFCount
+   IF nNum >= 0 .AND. nNum <= ::nFCount
 
       cType := ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ]
 
-   endif
+   ENDIF
 
-return cType
+RETURN cType
 
 //----------------------------------------------------//
 
 
 METHOD FieldMySqlType( cnField ) CLASS TDolphinQry
-   local cType := "U"
-   LOCAL nNum
+   LOCAL cType := "U"
+   LOCAL nNum := ::FieldToNum( cnField )
 
-   if ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   else
-      nNum := cnField
-   endif
-
-   if nNum >= 0 .AND. nNum <= ::nFCount
+   IF nNum >= 0 .AND. nNum <= ::nFCount
 
       cType := ::aStructure[ nNum ][ MYSQL_FS_TYPE ]
 
-   endif
+   ENDIF
 
-return cType
+RETURN cType
 
 //----------------------------------------------------//
 
 METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
 
-   LOCAL nNum
-
-   IF ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   ELSE
-      nNum := cnField
-   ENDIF
+   LOCAL nNum := ::FieldToNum( cnField )
 
    IF nNum > 0 .AND. nNum <= ::nFCount
       IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL
@@ -517,6 +487,20 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
    ENDIF
 
 RETURN NIL
+
+//---------------------------------------
+
+METHOD FieldToNum( cnField ) CLASS TDolphinQry
+   LOCAL nNum
+
+   IF ValType( cnField ) == "C"
+      nNum := ::FieldPos( cnField )
+   ELSE
+      nNum := cnField
+   ENDIF
+   
+RETURN nNum
+
 
 //---------------------------------------
 
@@ -997,11 +981,7 @@ METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
    DEFAULT lSoft TO .F.
    DEFAULT lRefresh TO .T.
 
-   IF ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   ELSE
-      nNum := cnField
-   ENDIF
+   nNum := ::FieldToNum( cnField )
    
    nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( cSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
    
