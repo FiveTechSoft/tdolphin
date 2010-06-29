@@ -28,7 +28,8 @@ CLASS TDolphinQry
         
    DATA bBof,;        //codeblock to evaluate if the value is the first row
         bEof,;        //codeblock to evaluate if the value is the last row
-        bOnFillArray  //codeblock to evaluate while is filling array
+        bOnFillArray,;//codeblock to evaluate while is filling array
+        bOnChangePage
    
    DATA cBuild,;        // Current server version
         cQuery,;        // copy of query that generated this object
@@ -47,11 +48,19 @@ CLASS TDolphinQry
    DATA lBof                   // Begin of query, compatibility with dbf*/
    DATA lEof                   // End of Query, compatibility with dbf*/
    DATA lAppend
+   DATA lPagination
 
    DATA nFCount                // number of fields in the query
    DATA nRecCount              // number of rows in the current query
    DATA nRecNo                 // Current query row position
    DATA nQryId
+   
+   DATA nCurentPage
+   DATA nTotalRows
+   DATA nPageStep
+   DATA nMaxPages
+   DATA nCurrentLimit
+   DATA nCurrentPage
    
    DATA oServer
    
@@ -115,12 +124,18 @@ CLASS TDolphinQry
                                
    METHOD MakePrimaryKeyWhere() 
                                /*Build Make Primary key if exist*/
-                               
+   
+   
+   METHOD NextPage( nSkip )
+   
+   METHOD PrevPage( nSkip )
+                              
    METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
                                
-   METHOD 	RecCount() INLINE ::LastRec()                               
-
+   METHOD RecCount()   INLINE ::LastRec()
+                               /*Compatibility with TMysql*/
+   
    METHOD Save()               /*Save current data*/
                  
    METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft ) 
@@ -136,6 +151,8 @@ CLASS TDolphinQry
    METHOD SetHaving( cHaving, lRefresh ) INLINE ::SetNewFilter( SET_HAVING, cHaving, lRefresh )
    METHOD SetOrder( cOrder, lRefresh )   INLINE ::SetNewFilter( SET_ORDER, cOrder, lRefresh )
    METHOD SetLimit( cLimit, lRefresh )   INLINE ::SetNewFilter( SET_LIMIT, cLimit, lRefresh )
+   
+   METHOD SetPages( nLimit )
   
    METHOD Skip( nRecords )
    
@@ -173,6 +190,8 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    
    ::aRow          = {}
    ::aOldRow       = {}
+   
+   ::lPagination   = .F.
    
 #ifdef USE_HASH     
    ::hRow      = Hash()
@@ -628,18 +647,19 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
    
    IF ::hResult <> NIL
       DO CASE
-         CASE ::nRecCount <= 1
+         CASE ::nRecCount < 1
             ::lBof    = .T.
             ::lEof    = .T.
             ::nRecNo  = 1
          CASE nRow > 0 .and. nRow <= ::nRecCount
             ::lBof    = .F.
-            ::lEof    = .F.
+            ::lEof    = .F.//nRow == ::nRecCount
             ::nRecNo  = nRow
          CASE nRow > ::nRecCount
             ::lBof    = .F.
             ::lEof    = .T.
             ::nRecNo  = ::nRecCount
+            MsgInfo( "ok" )
       ENDCASE
 
       nRow  = ::nRecNo
@@ -827,6 +847,61 @@ METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
 
 RETURN cWhere
 
+
+//----------------------------------------------------//
+
+METHOD NextPage( nSkip, lRefresh ) CLASS TDolphinQry
+
+   DEFAULT nSkip TO 1
+   DEFAULT lRefresh TO .T.
+
+
+   IF ::lPagination
+
+      ::nTotalRows    := ::oServer:GetTotalRows( Self )
+      ::nMaxPages     = Int( ::nTotalRows / ::nPageStep ) + If( ::nTotalRows % ::nPageStep > 0, 1, 0 )
+   
+      IF ::nCurrentPage + nSkip < ::nMaxPages
+         ::nCurrentLimit += ( ::nPageStep * nSkip ) 
+         ::nCurrentPage  += nSkip    
+      ELSE 
+         ::nCurrentLimit = ::nTotalRows - ::nPageStep
+         ::nCurrentPage  = ::nMaxPages
+      ENDIF
+
+      ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( ::nPageStep ) ), lRefresh ) 
+      
+   ENDIF
+
+RETURN NIL
+
+//----------------------------------------------------//
+
+METHOD PrevPage( nSkip, lRefresh ) CLASS TDolphinQry
+
+   DEFAULT nSkip TO 1
+   DEFAULT lRefresh TO .T.
+
+
+   IF ::lPagination
+
+      ::nTotalRows    := ::oServer:GetTotalRows( Self )
+      ::nMaxPages     = Int( ::nTotalRows / ::nPageStep ) + If( ::nTotalRows % ::nPageStep > 0, 1, 0 )
+   
+      IF ::nCurrentPage - nSkip > 0
+         ::nCurrentLimit -= ( ::nPageStep * nSkip ) 
+         ::nCurrentPage  -= nSkip    
+      ELSE 
+         ::nCurrentLimit = 0
+         ::nCurrentPage  = 1
+      ENDIF
+
+      ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( ::nPageStep ) ), lRefresh ) 
+   
+   ENDIF
+
+RETURN NIL
+
 //----------------------------------------------------//
 
 /* Creates an update query for changed fields and submits it to server */
@@ -995,9 +1070,10 @@ METHOD SetNewFilter( nType, cFilter, lRefresh ) CLASS TDolphinQry
          ENDIF
          EXIT
    ENDSWITCH
+
+   ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit, ::cExt )
  
    IF lRefresh 
-      ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit )
       ::LoadQuery( .F. )
    ENDIF
 
@@ -1005,32 +1081,69 @@ RETURN cOldFilter
 
 //----------------------------------------------------//
 
+METHOD SetPages( nLimit ) CLASS TDolphinQry
+
+   DEFAULT nLimit TO 100
+
+   ::lPagination = .T. 
+   
+   ::nPageStep     = nLimit
+   ::nCurrentLimit = 0
+   ::nCurrentPage  = 1 
+   
+   ::nTotalRows    = ::oServer:GetTotalRows( Self )
+   
+   ::nMaxPages     = Int( ::nTotalRows / nLimit ) + If( ::nTotalRows % nLimit > 0, 1, 0 )
+   
+   ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( nLimit ) ) ) 
+   
+
+RETURN NIL
+
+//----------------------------------------------------//
+
 
 METHOD Skip( nRecords ) CLASS TDolphinQry
 
    LOCAL n := ::nRecNo
+   LOCAL lNeedRefresh := .F.
+   LOCAL lPrev  := .F.
 
    DEFAULT nRecords TO 1
 
    IF nRecords == 0
       // No move
 
-   ELSEIF nRecords <= 1
+   ELSEIF nRecords < 1
       // Negative movement
-      if ( ::nRecNo += nRecords ) <= 1
+      IF ::lPagination .AND. ( ::nRecNo + nRecords ) < 1
+         ::PrevPage( , .F.) // no refresh MsgBeep()
+         lNeedRefresh = .T.
+         lPrev = .T.
+      ENDIF
+      IF ( ::nRecNo += nRecords ) <= 1
          ::nRecNo = 1
          ::lBof   = .T.
          ::lEof   = ::nRecNo >= ::nRecCount
-      endif
+      ENDIF
 
    ELSE
       // positive movement
+      IF ::lPagination .AND. ( ::nRecNo + nRecords ) > ::nRecCount
+         ::NextPage( , .F.) // no refresh   MsgBeep()
+         lNeedRefresh = .T.
+      ENDIF      
       IF ( ::nRecNo += nRecords ) >= ::nRecCount
          ::nRecNo = ::nRecCount
          ::lEof   = .T.
          ::lBof   = ::nRecNo <= 1
       ENDIF
+      
 
+   ENDIF
+   
+   IF ::lPagination .AND. lNeedRefresh
+      ::LoadQuery( .F. )
    ENDIF
 
    IF ::GetRow( ::nRecNo ) > 0
@@ -1046,7 +1159,14 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
             Eval( ::bBoF, Self )
          ENDIF
       ENDIF
+      
+      IF ::lPagination .AND. ::bOnChangePage != NIL .AND. lNeedRefresh
+         Eval( ::bOnChangePage, lPrev )
+      ENDIF
+      
    ENDIF
+   
+   lNeedRefresh = .F.
    
 RETURN ::nRecNo - n
 

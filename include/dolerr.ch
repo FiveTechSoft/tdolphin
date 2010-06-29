@@ -22,6 +22,7 @@
 #define ERR_INVALIDSAVE                  9016
 #define ERR_NOTHINGTOSAVE                9017
 #define ERR_NODATABASESELECTED           9018
+#define ERR_MISSINGQRYOBJECT             9019
 
 
 

@@ -107,7 +107,11 @@ CLASS TDolphinSrv
                                 /*Retrieve next Auto increment value in specified table;
                                  in current database selected*/   
    
-   METHOD GetQueryId()        
+   METHOD GetQueryId()   
+   
+   METHOD GetTotalRows( cTable )
+                               /*Retrieve total row avalaible in  specified table;
+                                in current database selected*/    
    
    METHOD Insert( cTable, aColumns, aValues, lTransaction )  
                               /*inserts new rows into an existing table.*/
@@ -646,8 +650,51 @@ METHOD GetQueryId() CLASS TDolphinSrv
    
    ::nQueryId++
 
-return ::nQueryId
+RETURN ::nQueryId
 
+//----------------------------------------------------//
+
+
+METHOD GetTotalRows( oQry ) CLASS TDolphinSrv
+
+   LOCAL nTotal := 0
+   LOCAL aOldColumns
+   LOCAL cQuery
+   LOCAL oQryAux
+   
+   IF ! oQry != NIL .AND. oQry:IsKindOf( "TDOLPHINQRY" )
+      ::nInternalError = ERR_MISSINGQRYOBJECT
+      ::CheckError()
+      RETURN nTotal 
+   ENDIF
+   
+   aOldColumns = AClone( oQry:aColumns )
+   
+   cQuery := oQry:BuildQuery( { "COUNT(*)" }, ;
+                                oQry:aTables, ;
+                                oQry:cWhere, ;
+                                oQry:cGroup, ;
+                                oQry:cHaving,;
+                                oQry:cOrder, ;
+                                NIL, ;
+                                oQry:cExt )
+   
+   oQry:BuildQuery( aOldColumns, ;
+                    oQry:aTables,;
+                    oQry:cWhere, ;
+                    oQry:cGroup, ;
+                    oQry:cHaving,; 
+                    oQry:cOrder, ;
+                    oQry:cLimit, ;
+                    oQry:cExt )
+   
+   oQryAux = TDolphinQry():New( cQuery, Self )
+   
+   nTotal  = oQryAux:FieldGet( 1 )
+   
+   oQryAux:End()   
+
+RETURN nTotal
 
 //----------------------------------------------------//
 
