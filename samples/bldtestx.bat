@@ -36,6 +36,7 @@ echo %hdir%\lib\libmisc.lib + >> b32.bc
 echo %hdir%\lib\CodePage.lib + >> b32.bc
 echo %hdir%\lib\DbfFpt.lib + >> b32.bc
 echo %hdir%\lib\pcrepos.lib + >> b32.bc
+echo %hdir%\lib\ct.lib + >> b32.bc
 
 rem Uncomment these two lines to use Advantage RDD
 rem echo %hdir%\lib\rddads.lib + >> b32.bc 

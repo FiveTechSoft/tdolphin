@@ -24,11 +24,12 @@ PROCEDURE Main()
                                 cPassword, ;
                                 nPort, nFlags, cDBName,;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
+   
 
    IF ! oServer:lError 
       cTime := time()
-      oServer:bOnbackup = {| nStatus, cTable, nTotTable, nCurrTable | OnBackup( nStatus, cTable, nTotTable, nCurrTable  ) }
-      oServer:Backup( { "testman" }, "bcktest.txt", .T., .T., 500, "Custom header backup process", "Custom footer backup process" )  
+      oServer:bOnRestore = {| nStatus, cTable, nTotLine, nIdx | OnRestore( nStatus, cTable, nTotLine, nIdx ) }
+      oServer:Restore( "bcktest.txt" )
       ? "finished, Time " + elaptime( cTime, time() )
    ENDIF 
    ?
@@ -51,17 +52,20 @@ PROCEDURE GetError( oServer, nError, lInternal )
    
 RETURN
 
-PROCEDURE OnBackup( nStatus, cTable, nTotTable, nCurrTable  )
+PROCEDURE OnRestore( nStatus, cTable, nTotLine, nIdx  )
 
    SWITCH nStatus
-      CASE ST_STARTBACKUP
-         ? "Backup started"
+      CASE ST_STARTRESTORE
+         ? "Restore started"
          EXIT 
-      CASE ST_LOADINGTABLE
-         ? "Backup Table: " + cTable 
+      CASE ST_LOADING
+         ? "Loading... " 
          EXIT 
+      CASE ST_RESTORING
+         ? "Restoring...: " + cTable 
+         EXIT       
       CASE ST_ENDBACKUP
-         ? "Backup finished"
+         ? "Restore finished"
    ENDSWITCH 
 
 RETURN

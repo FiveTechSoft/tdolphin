@@ -752,3 +752,44 @@ HB_FUNC( FILETOSQLBINARY )
    }
 }
 
+
+// Function taked from mysql.c (xHarbour)
+HB_FUNC( D_READFILE )
+{
+   char *szFile = ( char * )hb_parc( 1 );
+   int fHandle;
+   ULONG iSize;
+   char *ToBuffer;
+   char *FromBuffer;
+   BOOL bError = FALSE;
+   
+   if ( szFile && hb_parclen( 1 ) )
+   {
+     fHandle    = hb_fsOpen( ( BYTE * ) szFile, HB_FA_ALL );
+     if ( fHandle > 0 )
+     {
+       iSize      = hb_fsFSize( szFile, FALSE );//getfilelength( fHandle );
+       if ( iSize > 0 )
+       {
+         FromBuffer = ( char * ) hb_xgrab( iSize );
+         if ( FromBuffer )
+         {
+           iSize      = hb_fsReadLarge( fHandle , ( BYTE * ) FromBuffer , iSize );
+         }else
+         	   bError = TRUE;
+       }else
+          bError = TRUE;
+     }else 
+        bError = TRUE;
+   }else 
+      bError = TRUE;
+    
+   hb_fsClose( fHandle );
+   
+   if( bError )
+      hb_retc( "" ) ;
+   else
+      hb_retclenAdopt( ( char * ) FromBuffer, iSize );
+  
+}
+

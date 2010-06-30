@@ -25,7 +25,8 @@ CLASS TDolphinSrv
 
    DATA bOnError       /*Custom manager error message
                          ( Self, nError, lInternal ) */
-   DATA bOnBackUp                   
+   DATA bOnBackUp       
+   DATA bOnRestore            
    
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
@@ -156,6 +157,8 @@ CLASS TDolphinSrv
 
    METHOD RenameUser( cFromUser, cServer, cRename )  
                               /*Rename User*/
+                              
+   METHOD Restore( cFile, lCancel )                              
 
    METHOD RevokePrivileges( cHost, cUser, cDB, acPrivilegs )
                               /*The RevokePrivileges() enables system administrators to revoke privileges from MySQL accounts.*/
@@ -308,7 +311,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       Eval( ::bOnBackUp, ST_STARTBACKUP )
    ENDIF
    
-   cText += cHeader
+   cText += cHeader + CRLF
 
    FOR EACH cTable IN aTables
       cText += "** Table: " + cTable + CRLF
@@ -887,7 +890,7 @@ METHOD GetPrivileges( nType ) CLASS TDolphinSrv
    
    DEFAULT nType TO PRIV_DATA
    
-   oQry = Query( cQuery )
+   oQry = ::Query( cQuery )
    
    WHILE ! oQry:Eof() 
       
@@ -936,7 +939,7 @@ METHOD GetRowsFromTable( cTable ) CLASS TDolphinSrv
    LOCAL nTotal := 0
    LOCAL oQry
    
-   oQry = Query( "SELECT COUNT(*) FROM " + D_LowerCase( cTable ) )
+   oQry = ::Query( "SELECT COUNT(*) FROM " + D_LowerCase( cTable ) )
    
    nTotal = oQry:FieldGet( 1 )
    
@@ -1103,6 +1106,95 @@ METHOD RenameUser( cFromUser, cServer, cRename )
 
 
 RETURN ::Execute( cQry )
+
+
+//---------------------------------------------//
+
+METHOD Restore( cFile, lCancel ) CLASS TDolphinSrv
+   LOCAL aLine  := {}
+   LOCAL cLine  := ""
+   LOCAL cText  := ""
+   LOCAL cTable := ""
+   LOCAL nTLine := 0
+   LOCAL hFile  := 0
+   LOCAL lBegin := .f.
+   LOCAL nCurLine := 0
+   LOCAL nTotLine := 0
+   LOCAL nIdx
+   
+   DEFAULT lCancel TO .F.
+   
+
+   IF ! File( cFile )
+      ::nInternalError = ERR_INVALIDBACKUPFILE
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+   
+   IF ::bOnRestore != NIL 
+      Eval( ::bOnRestore, ST_STARTRESTORE )
+   ENDIF
+
+   cText  = D_ReadFile( cFile )
+
+   aLine := hb_ATokens( cText, CRLF )
+   
+   IF ! lCancel
+      nTotLine = Len( aLine )
+      FOR EACH cLine IN aLine
+      
+         IF lCancel
+            EXIT
+         ENDIF
+#ifdef __XHARBOUR__             
+         nIdx = HB_EnumIndex()
+#else 
+         nIdx = cLine:__EnumIndex()
+#endif                 
+         IF ::bOnRestore != NIL
+            Eval( ::bOnRestore, ST_RESTORING, cTable, nTotLine, nIdx )
+         ENDIF
+
+         IF "CREATE DATABASE IF NOT EXISTS" $ cLine 
+            ::Execute( cLine )
+            ::SelectDB( SubStr( cLine, RAt( " ", cLine ) + 1 ) )
+            LOOP
+         ENDIF
+         IF "** BEGIN" $ cLine 
+            cTable = SubStr( cLine, 9, Len( cLine ) - 9 ) 
+         ENDIF
+         IF Right( cLine, 1 ) == ";"
+            cLine = SubStr( cLine, 1, Len( cLine ) - 1 )
+         ENDIF
+         
+         IF "DROP TABLE" $ cLine
+            ::Execute( cLine )
+         ENDIF
+         IF "CREATE TABLE" $ cLine
+            ::Execute( cLine )
+         ENDIF
+         IF "LOCK TABLES" $ cLine
+            ::Execute( cLine )
+         ENDIF
+         IF "INSERT INTO" $ cLine
+            ::Execute( cLine )
+         ENDIF
+         IF "UNLOCK TABLES" $ cLine
+            ::Execute( cLine )
+         ENDIF
+
+      NEXT
+
+   ENDIF
+   
+   IF ::bOnRestore != NIL
+      Eval( ::bOnRestore, IIf( lCancel, ST_RSTCANCEL, ST_ENDRESTORE ) )
+   ENDIF
+   
+
+RETURN ! lCancel
+
+
 
 //---------------------------------------------//
 

@@ -94,3 +94,9 @@
 #define ST_ENDBACKUP     3
 #define ST_BACKUPCANCEL  0
 
+//Restore Process 
+#define ST_STARTRESTORE  1
+#define ST_LOADING       2
+#define ST_RESTORING     3
+#define ST_ENDRESTORE    4
+#define ST_RSTCANCEL     0
