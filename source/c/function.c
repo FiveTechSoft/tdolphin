@@ -694,15 +694,6 @@ HB_FUNC( GETTICKCOUNT )
 
 //------------------------------------------------//
 // Function taked from mysql.c (xHarbour)
-ULONG getfilelength( int handle )
-{
-    ULONG nEnd = hb_fsSeek( handle, 0 , 2 );
-    ULONG nStart = hb_fsSeek( handle , 0 , 0 );
-    return ( nEnd - nStart ) ;
-}
-
-//------------------------------------------------//
-// Function taked from mysql.c (xHarbour)
 HB_FUNC( FILETOSQLBINARY )
 {
    BOOL bResult = FALSE ;
@@ -716,7 +707,7 @@ HB_FUNC( FILETOSQLBINARY )
      fHandle    = hb_fsOpen( ( BYTE * ) szFile,2 );
      if ( fHandle > 0 )
      {
-       iSize      = getfilelength( fHandle );
+       iSize      = hb_fsFSize( szFile, FALSE );
        if ( iSize > 0 )
        {
          FromBuffer = ( char * ) hb_xgrab( iSize );
@@ -768,7 +759,7 @@ HB_FUNC( D_READFILE )
      fHandle    = hb_fsOpen( ( BYTE * ) szFile, HB_FA_ALL );
      if ( fHandle > 0 )
      {
-       iSize      = hb_fsFSize( szFile, FALSE );//getfilelength( fHandle );
+       iSize      = hb_fsFSize( szFile, FALSE );
        if ( iSize > 0 )
        {
          FromBuffer = ( char * ) hb_xgrab( iSize );
@@ -793,3 +784,70 @@ HB_FUNC( D_READFILE )
   
 }
 
+//
+HB_FUNC( MYSQLEMBEDDED )  
+{
+   MYSQL *mysql;
+   const char *szDataBase = hb_parc( 1 );
+	 PHB_ITEM pArrayOption  = hb_param( 2, HB_IT_ARRAY );
+	 PHB_ITEM pArrayGroup   = hb_param( 3, HB_IT_ARRAY );
+	 PHB_ITEM pItem;
+	 INT j, argc, iGroups;
+	 char *server_options, *server_groups;
+	 INT iError = 0; 
+
+   //build server options
+	 argc           = hb_arrayLen( pArrayOption );
+   if( argc > 0 ){
+   	  server_options = ( char * )hb_xgrab( sizeof( char ) * argc );
+      for( j = 0; j < argc; j++ )
+      {
+   	    pItem = hb_itemArrayGet( pArrayOption, j + 1 );
+       	server_options[ j ] = *hb_itemGetC( pItem );
+      }
+      hb_itemRelease( pItem );
+   }
+   
+   //build groups
+   iGroups       = hb_arrayLen( pArrayGroup );
+   if( iGroups > 0 ) {
+      server_groups = ( char * )hb_xgrab( sizeof( char * )* iGroups  );
+      for( j = 0; j < iGroups; j++ )
+      {
+   	    pItem = hb_itemArrayGet( pArrayOption, j + 1 );
+       	server_groups[ j ] = *hb_itemGetC( pItem );
+      }
+      hb_itemRelease( pItem );
+   }
+   
+
+   //Initialize MySQL Embedded libmysqld.
+   if( mysql_library_init(argc, &server_options, &server_groups ) == 0 )
+   { 
+      //Initialize MySQL Library. */
+      if( ( mysql = mysql_init( NULL ) ) != NULL )
+      {
+         //Force use of embedded libmysqld. */
+         mysql_options(mysql, MYSQL_OPT_USE_EMBEDDED_CONNECTION, NULL);
+         
+         //Connect to MySQL.
+        if(mysql_real_connect(mysql, NULL, NULL, NULL, szDataBase, 0, NULL, 0) == NULL)
+        {
+            mysql_close(mysql);
+            mysql_library_end();
+            iError = 1;
+        }
+      }
+    }
+
+    if( iError == 1 )
+    {
+    	 if( server_options )
+          hb_xfree( ( void * ) server_options );
+       if( server_groups )
+          hb_xfree( ( void * ) server_groups );
+       hb_retnl( ( long ) 0 );
+    }
+
+   hb_retnl((long) mysql );
+}

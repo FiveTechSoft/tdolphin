@@ -137,6 +137,8 @@ CLASS TDolphinQry
                                
    METHOD RecCount()   INLINE ::LastRec()
                                /*Compatibility with TMysql*/
+                               
+   METHOD Refresh( lBuildData )    
    
    METHOD Save()               /*Save current data*/
                  
@@ -199,8 +201,9 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    ::hRow      = Hash()
    ::hOldRow   = Hash()
 #endif /*USE_HASH*/
-   ::lEof      := .T.
-   ::lBof      := .T.   
+   ::lEof      = .T.
+   ::lBof      = .T.   
+   ::lAppend   = .F.
 
    IF cQuery == NIL 
       RETURN Self 
@@ -737,7 +740,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    IF ! oServer:SQLQuery( cQuery )
       RETURN NIL 
    ENDIF
-   
+
    IF lBuildData
       ::BuildDatas()
    ENDIF
@@ -750,11 +753,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    ::hResult := MySqlStoreResult( oServer:hMysql )
    
    IF ! ( ::hResult == 0 )
-      IF ::IsSingleTable() .AND. ! ::IsCommand()
-         ::aStructure = ::oServer:TableStructure( ::aTables[ 1 ] )
-      ELSE
-         ::aStructure = MySqlResultStructure( ::hResult, D_SetCaseSensitive() ) 
-      ENDIF
+      ::aStructure = MySqlResultStructure( ::hResult, lCaseSen ) 
 
       ::nRecCount := MySqlNumRows( ::hResult )
       ::nRecNo    = 1
@@ -901,6 +900,16 @@ RETURN NIL
 
 //----------------------------------------------------//
 
+METHOD Refresh() CLASS TDolphinQry
+
+   ::cQuery = BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit, ::cExt )
+
+   ::LoadQuery() 
+
+RETURN ::cQuery
+
+//----------------------------------------------------//
+
 /* Creates an update query for changed fields and submits it to server */
 METHOD Save() CLASS TDolphinQry
 
@@ -998,7 +1007,7 @@ METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
       nSeek = ::nRecNo
    ENDIF
 
-RETURN nSeek
+RETURN nSeek 
 
 
 //----------------------------------------------------//

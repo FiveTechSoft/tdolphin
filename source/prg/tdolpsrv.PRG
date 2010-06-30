@@ -69,6 +69,8 @@ CLASS TDolphinSrv
    
    METHOD CloseAllQuery()             
 
+   METHOD Compact( cTable )
+ 
    METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
 
@@ -100,6 +102,8 @@ CLASS TDolphinSrv
                               
    METHOD DropUser( cUser )             INLINE ::Execute( "DROP USER " + cUser )
                               /*Drop User*/
+   
+   METHOD Embedded( cDataBase, aOptions, aGroups )
    
    METHOD End()               
    
@@ -137,6 +141,8 @@ CLASS TDolphinSrv
    METHOD IsAutoIncrement( cField, cTable )
                               /* Verify is a field is Auto Increment*/
    
+   METHOD LastDownData( cTable, cCol, uDef )
+   
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
                                  wild may contain the wildcard characters “%” or “_”, 
@@ -170,6 +176,10 @@ CLASS TDolphinSrv
    METHOD SelectDB( cDBName ) 
                               /*Select data base in current active connection*/
    
+   
+   METHOD SelectTable( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, lWithRoll )
+   
+   
    METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
                               you should not add a terminating semicolon (“;”) or \g to the statement. 
@@ -190,7 +200,7 @@ ENDCLASS
 
 METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TDolphinSrv
 
-   ::cHost        = cHost
+   ::cHost          = cHost
    ::cUser          = cUser
    ::cPassword      = cPassword
    ::nPort          = nPort
@@ -210,8 +220,28 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TD
 
 RETURN Self
 
+//----------------------------------------------------//
+
+METHOD Embedded( cDataBase, aOptions, aGroups, bOnError ) CLASS TDolphinSrv
+   
+   ::lError    := .F.
+   ::bOnError  := bOnError
+   
+   DEFAULT aGroups TO {}
+   DEFAULT aOptions TO {}
+
+   ::hMysql   :=  MysqlEmbedded( cDataBase, aOptions, aGroups )
+
+   ::CheckError()
+   IF ::lError
+      ::End()
+   ENDIF
+
+RETURN Self
+
 
 //----------------------------------------------------//
+
 
 METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOption ) CLASS TDolphinSrv
    LOCAL lReturn := .f.
@@ -523,6 +553,27 @@ RETURN NIL
 
 //----------------------------------------------------//
 
+METHOD Compact( cTable ) CLASS TDolphinSrv
+   LOCAL aTables := {}
+
+   DEFAULT cTable TO ""
+
+   cTable := lower( cTable )
+
+   IF ! Empty( cTable )
+      AAdd( aTables, cTable )
+   ELSE
+      aTables := ::ListTables()
+   ENDIF
+
+   FOR EACH cTable IN aTables
+      ::Execute( "OPTIMIZE TABLE " + cTable )
+   NEXT
+
+RETURN NIL
+
+//----------------------------------------------------//
+
 METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphinSrv
 
    
@@ -822,6 +873,7 @@ METHOD DeleteTables( acTables, lExists ) CLASS TDolphinSrv
 
 RETURN ::SqlQuery( cQuery ) 
 
+
 //----------------------------------------------------//
 
 
@@ -1064,7 +1116,34 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
       lAuto = IS_AUTO_INCREMENT( aStruct[ 1, MYSQL_FS_FLAGS ] )
    ENDIF
    
-return( lAuto )
+RETURN lAuto 
+
+//----------------------------------------------------//
+
+
+METHOD LastDownData( cTable, cCol, uDef ) CLASS TDolphinSrv
+   LOCAL xData  := uDef
+   LOCAL oQuery := NIL
+   LOCAL cQuery := ""
+
+   DEFAULT cTable TO ""
+   DEFAULT cCol   TO ""
+   
+
+   IF ! Empty( cTable ) .AND. ! Empty( cCol )
+      cQuery := "SELECT " + D_LowerCase( cCol ) + " "
+      cQuery += "FROM " + D_LowerCase( cTable ) + " "
+      cQuery += "ORDER BY " + cCol + " DESC LIMIT 1"
+      oQuery := ::Query( cQuery )
+      IF oQuery:LastRec() > 0
+         xData = oQuery:FieldGet( 1 )
+      ENDIF
+
+      oQuery:End()
+      oQuery := NIL
+   ENDIF
+
+RETURN xData
 
 
 //----------------------------------------------------//
@@ -1251,6 +1330,21 @@ METHOD SelectDB( cDBName ) CLASS TDolphinSrv
    ENDIF
 
 RETURN .F.
+
+//----------------------------------------------------//
+
+
+METHOD SelectTable( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, lWithRoll ) CLASS TDolphinSrv
+
+   LOCAL oQuery
+   LOCAL cColumns, cTables
+   LOCAL cQuery
+
+   cQuery := BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, ,lWithRoll ) 
+
+   oQuery = ::Query( cQuery )
+
+RETURN oQuery
 
 //----------------------------------------------------//
 
