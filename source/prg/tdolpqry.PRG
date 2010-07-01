@@ -851,7 +851,7 @@ METHOD NextPage( nSkip, lRefresh ) CLASS TDolphinQry
          ::nCurrentLimit += ( ::nPageStep * nSkip ) 
          ::nCurrentPage  += nSkip    
       ELSE 
-         ::nCurrentLimit = ::nTotalRows - ::nPageStep
+         ::nCurrentLimit = Max( ::nTotalRows - ::nPageStep, 0 )
          ::nCurrentPage  = ::nMaxPages
       ENDIF
 
@@ -900,11 +900,13 @@ RETURN NIL
 
 //----------------------------------------------------//
 
-METHOD Refresh() CLASS TDolphinQry
+METHOD Refresh( lBuild ) CLASS TDolphinQry
+
+   DEFAULT lBuild TO .F.
 
    ::cQuery = BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit, ::cExt )
 
-   ::LoadQuery() 
+   ::LoadQuery( lBuild ) 
 
 RETURN ::cQuery
 
