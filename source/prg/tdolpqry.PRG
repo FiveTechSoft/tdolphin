@@ -160,6 +160,8 @@ CLASS TDolphinQry
   
    METHOD Skip( nRecords )
    
+   METHOD VerifyValue( nIdx, cField ) HIDDEN
+   
    ERROR HANDLER ONERROR()   
    
 ENDCLASS
@@ -360,6 +362,8 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
    LOCAL cFieldName
    LOCAL nNum
    LOCAL lError := .F.
+   
+   nNum := ::FieldToNum( cnField )
 
 #ifdef USE_HASH
    IF ValType( cnField ) == "N"
@@ -368,16 +372,14 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
       cFieldName = "_" + D_LowerCase( cnField )
    ENDIF
    IF hGetPos( ::hRow, cFieldName ) > 0
-      RETURN ::hRow[ cFieldName ]
+      RETURN ::VerifyValue( nNum, ::hRow[ cFieldName ] )
    ELSE
       lError = .T.
    ENDIF
 #else      
-
-   nNum := ::FieldToNum( cnField )
    
    IF nNum > 0
-      RETURN ::aRow[ nNum ]
+      RETURN ::VerifyValue( nIdx, ::aRow[ nNum ] )       
    ENDIF
 
 #endif /*USE_HASH*/
@@ -672,37 +674,9 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 #else
             nIdx = cField:__EnumIndex()
 #endif
-            cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ] //, ::aStructure[ nIdx ][ MYSQL_FS_TYPE ]
+
+            uValue = ::VerifyValue( nIdx, cField )
         
-            SWITCH cType
-               CASE "L"
-                  uValue := !( Val( cField ) == 0 )
-                  EXIT
-
-               CASE "N"
-                  uValue = Val( cField )
-                  EXIT
-
-               CASE "D"
-                  IF Empty( cField )
-                     uValue := CToD( "" )
-                  ELSE
-                     uValue := SqlDate2Clip( cField )
-                  ENDIF
-                  EXIT
-
-               CASE "T"
-               CASE "C"
-                  uValue := PadR( cField, If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
-                                              ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ) ) 
-                  EXIT
-#ifdef __XHARBOUR__
-               DEFAULT
-#else
-               OTHERWISE 
-#endif
-               uValue = cField
-            ENDSWITCH
             ::SetData( nIdx, uValue )
          NEXT
 
@@ -714,6 +688,7 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
    ENDIF
 
 RETURN ::nRecNo
+
 
 //----------------------------------------------------//
 
@@ -1136,6 +1111,58 @@ METHOD Skip( nRecords ) CLASS TDolphinQry
   
    
 RETURN ::nRecNo - n
+
+//----------------------------------------------------//
+
+METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
+
+   LOCAL cType, uValue
+
+   cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ] //, ::aStructure[ nIdx ][ MYSQL_FS_TYPE ]
+   SWITCH cType
+      CASE "L"
+         IF cField == NIL
+            cField = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], .F. )
+         ELSE
+            uValue := !( Val( cField ) == 0 )
+         ENDIF
+         EXIT
+
+      CASE "N"
+         IF cField == NIL
+            cField = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], 0 )
+         ELSE
+            uValue = Val( cField )
+         ENDIF               
+         EXIT
+
+      CASE "D"
+         IF Empty( cField )
+            uValue := If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, SqlDate2Clip( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), CToD( "" ) )
+         ELSE
+            uValue := SqlDate2Clip( cField )
+         ENDIF
+         EXIT
+      CASE "M"
+      CASE "T"
+      CASE "C"
+         IF Empty( cField )
+            uValue := If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], "")
+         ELSE
+            uValue := PadR( cField, If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
+                                     ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ) ) 
+         ENDIF
+         
+         EXIT
+#ifdef __XHARBOUR__
+      DEFAULT
+#else
+      OTHERWISE 
+#endif
+         uValue = cField
+      ENDSWITCH
+
+RETURN uValue
 
 //----------------------------------------------------//
 
