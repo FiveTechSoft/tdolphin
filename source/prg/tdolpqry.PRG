@@ -1122,7 +1122,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
    SWITCH cType
       CASE "L"
          IF cField == NIL
-            cField = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], .F. )
+            uValue = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], .F. )
          ELSE
             uValue := !( Val( cField ) == 0 )
          ENDIF
@@ -1130,7 +1130,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
 
       CASE "N"
          IF cField == NIL
-            cField = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], 0 )
+            uValue = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, Val( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), 0 )
          ELSE
             uValue = Val( cField )
          ENDIF               
