@@ -1124,7 +1124,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
          IF cField == NIL
             uValue = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], .F. )
          ELSE
-            uValue := !( Val( cField ) == 0 )
+            uValue := If( ValType( cField ) == "L", cField, !( Val( cField ) == 0 ) )
          ENDIF
          EXIT
 
@@ -1132,7 +1132,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
          IF cField == NIL
             uValue = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, Val( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), 0 )
          ELSE
-            uValue = Val( cField )
+            uValue = If( ValType( cField ) == "N", cField, Val( cField ) )
          ENDIF               
          EXIT
 
@@ -1140,7 +1140,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
          IF Empty( cField )
             uValue := If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, SqlDate2Clip( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), CToD( "" ) )
          ELSE
-            uValue := SqlDate2Clip( cField )
+            uValue := If( ValType( cField ) == "L", cField, SqlDate2Clip( cField ) )
          ENDIF
          EXIT
       CASE "M"
