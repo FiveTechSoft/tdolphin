@@ -1,5 +1,54 @@
-// CLASS TDolphinSrv
-// Manager MySql server connection
+/*
+ * $Id: tdolphinsrv.prg 70 2010-07-03 16:33:27Z dgarciagil $
+ */
+
+/*
+ * TDOLPHIN PROJECT source code:
+ * Manager MySql server connection
+ *
+ * Copyright 2010 Daniel Garcia-Gil<danielgarciagil@gmail.com>
+ * www - http://harbour-project.org
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this software; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
+ * Boston, MA 02111-1307 USA (or visit the web site http://www.gnu.org/).
+ *
+ * As a special exception, the Harbour Project gives permission for
+ * additional uses of the text contained in its release of Harbour.
+ *
+ * The exception is that, if you link the Harbour libraries with other
+ * files to produce an executable, this does not by itself cause the
+ * resulting executable to be covered by the GNU General Public License.
+ * Your use of that executable is in no way restricted on account of
+ * linking the Harbour library code into it.
+ *
+ * This exception does not however invalidate any other reasons why
+ * the executable file might be covered by the GNU General Public License.
+ *
+ * This exception applies only to the code released by the Harbour
+ * Project under the name Harbour.  If you copy code from other
+ * Harbour Project or Free Software Foundation releases into a copy of
+ * Harbour, as the General Public License permits, the exception does
+ * not apply to the code that you add in this way.  To avoid misleading
+ * anyone as to the status of such modified files, you must delete
+ * this exception notice from them.
+ *
+ * If you write modifications of your own for Harbour, it is your choice
+ * whether to permit this exception to apply to your modifications.
+ * If you do not wish that, delete this exception notice.
+ *
+ */
 
 
 #include "hbclass.ch"
@@ -77,7 +126,7 @@ CLASS TDolphinSrv
    METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
 
-   METHOD CommitTransaction()         INLINE MySqlCommit( ::hMySql )
+   METHOD CommitTransaction()       INLINE MySqlCommit( ::hMySql )
                               /*Commits the current transaction.*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
@@ -521,6 +570,8 @@ METHOD CheckError( nError ) CLASS TDolphinSrv
       ELSE
          IF ::bOnError != nil
             Eval( ::bOnError, Self, nError, lInternal )
+         ELSE 
+            Dolphin_DefError( Self, nError, lInternal )
          ENDIF
       ENDIF
    ENDIF
@@ -1711,19 +1762,17 @@ FUNCTION D_LowerCase( cText )
 RETURN cText
    
 //----------------------------------------------------//  
-// Turn On/Off Hash
-// return Last Status
-FUNCTION D_SetHash( lOnOff )
+
+PROCEDURE Dolphin_DefError( oServer, nError, lInternal )
+   LOCAL cText := ""
+   LOCAL oError
+
+   oError := ErrorNew()
+   oError:SubSystem   = If( lInternal, "TDOLPHIN", "MYSQL" )
+   oError:SubCode     = nError
+   oError:Severity    = 2
+   oError:Description = If( lInternal, "Internal Error", oServer:ErrorTxt() )
    
-  LOCAL lOldStatus
+   Eval( ErrorBlock(), oError )   
 
-  STATIC lStatus := .F.
-
-  lOldStatus = lStatus
-
-  IF PCount() == 1 .AND. ValType( lOnOff ) == "L"
-     lStatus = lOnOff
-  ENDIF
-
-RETURN lOldStatus
-
+RETURN 
