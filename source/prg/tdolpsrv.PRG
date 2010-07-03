@@ -25,8 +25,9 @@ CLASS TDolphinSrv
 
    DATA bOnError       /*Custom manager error message
                          ( Self, nError, lInternal ) */
-   DATA bOnBackUp       
-   DATA bOnRestore            
+   DATA bOnBackUp      /*codeblock to evaluate in backup process*/
+             
+   DATA bOnRestore     /*codeblock to evaluate in restore process*/       
    
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
@@ -34,6 +35,8 @@ CLASS TDolphinSrv
    DATA cUser          /*DAta contains the user's MySQL login ID*/
                        
    DATA hMysql         /*MySQL connection handle*/
+                       
+   DATA lReConnect                       
                        
    DATA lError         /*Error detection switch*/
                   
@@ -160,6 +163,8 @@ CLASS TDolphinSrv
                                  ::ping() returns an error.*/
 
    METHOD Query( cQuery )   INLINE 	TDolphinQry():New( cQuery, Self )
+   
+   METHOD ReConnect()
 
    METHOD RenameUser( cFromUser, cServer, cRename )  
                               /*Rename User*/
@@ -210,6 +215,8 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TD
    ::nInternalError = 0
    ::cDBName        = cDBName
    ::aQueries       = {}
+   
+   ::lReConnect     = .T.
 
    ::hMysql         = ::Connect() 
    
@@ -509,10 +516,15 @@ METHOD CheckError( nError ) CLASS TDolphinSrv
    ENDIF
    
    IF ::lError
-      IF ::bOnError != nil
-         Eval( ::bOnError, Self, nError, lInternal )
+      IF nError == CR_SERVER_GONE_ERROR .AND. ::lReConnect
+         ::ReConnect()
+      ELSE
+         IF ::bOnError != nil
+            Eval( ::bOnError, Self, nError, lInternal )
+         ENDIF
       ENDIF
    ENDIF
+
 
 RETURN NIL
 
@@ -577,7 +589,7 @@ RETURN NIL
 METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphinSrv
 
    
-   DEFAULT cHost   TO ::cHost
+   DEFAULT cHost     TO ::cHost
    DEFAULT cUser     TO ::cUser
    DEFAULT cPassword TO ::cPassword
    DEFAULT nPort     TO ::nPort
@@ -1168,6 +1180,19 @@ METHOD ListTables( cWild ) CLASS TDolphinSrv
 
 RETURN aList
 
+//---------------------------------------------//
+
+METHOD ReConnect() CLASS TDolphinSrv
+
+   LOCAL oQrs
+      
+   ::hMysql = ::Connect()
+   FOR EACH oQrs IN ::aQueries
+      oQrs:oServer = Self 
+      oQrs:Refresh()
+   NEXT
+
+RETURN NIL
 
 //---------------------------------------------//
 

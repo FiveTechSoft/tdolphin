@@ -70,12 +70,16 @@ CLASS TDolphinQry
 
    METHOD Bof()        INLINE ::lBof  
    
-   METHOD BuildDatas( cQuery )
+   METHOD BuildDatas( cQuery ) 
+   METHOD BuildDataWhere()     /* build a where with oldrow values */
+   
    METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
                       cOrder, cLimit, cExt, lWithRoll )   
                       
    METHOD CheckError( nError )  INLINE ::oServer:CheckError( nError )
                                /*Compatibility with CheckError from TDolphinSrv*/
+
+   METHOD Delete( lAll )
 
    METHOD Eof()        INLINE ::lEof  
                       
@@ -161,6 +165,8 @@ CLASS TDolphinQry
    METHOD Skip( nRecords )
    
    METHOD VerifyValue( nIdx, cField ) HIDDEN
+
+   METHOD Zap() INLINE ::Delete( .T. )
    
    ERROR HANDLER ONERROR()   
    
@@ -336,6 +342,35 @@ RETURN NIL
 
 //----------------------------------------------------//
 
+METHOD BuildDataWhere() CLASS TDolphinQry
+
+   LOCAL uValue
+   LOCAL aField
+   LOCAL cWhere := ""
+   LOCAL nIdx
+   
+   FOR EACH aField IN ::aStructure 
+#ifdef USE_HASH 
+      uValue = ::hOldRow[ "_" + D_LowerCase( aField[ MYSQL_FS_NAME ] ) ]
+#else 
+#ifdef __HARBOUR__
+      nIdx = aField:__EnumIndex()
+#else 
+      nIdx = HB_EnumINdex()
+#endif /*__HARBOUR__*/
+      uValue = ::aOldRow[ nIdx ]
+#endif /*USE_HASH*/
+      cWhere += aField[ MYSQL_FS_NAME ] + " = " + ClipValue2Sql( uValue ) + " AND "
+   NEXT
+   
+   //Delete last AND 
+   
+   cWhere = Left( cWhere, Len( cWhere ) - 5 )
+
+RETURN cWhere
+
+//----------------------------------------------------//
+
 METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
                    cOrder, cLimit, cExt, lWithRoll ) CLASS TDolphinQry
 
@@ -354,6 +389,41 @@ METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
    
 
 RETURN cQuery
+
+//----------------------------------------------------//
+
+
+METHOD Delete( lAll ) CLASS TDolphinQry
+
+   LOCAL cTable
+   LOCAL cQry := ""
+   LOCAL cPrimary
+   
+   DEFAULT lAll TO .F.
+
+   IF !::IsSingleTable()
+      ::oServer:nInternalError = ERR_INVALIDDELETE
+      ::oServer:CheckError()
+      RETURN .F. 
+   ENDIF
+   
+   cTable := ::aTables[ 1 ]
+   cQry   := "DELETE FROM " + cTable
+
+   If ! lAll
+      cPrimary = ::MakePrimaryKeyWhere()
+      cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
+   EndIf
+
+   If ::oServer:SqlQuery( cQry )
+      ::LoadQuery()
+   Else 
+      ::oServer:nInternalError = ERR_DELETING
+      ::CheckError()
+   EndIf
+
+RETURN .T.
+
 
 //----------------------------------------------------//
 
@@ -479,6 +549,7 @@ RETURN cType
 METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
 
    LOCAL nNum := ::FieldToNum( cnField )
+   LOCAL cCol
 
    IF nNum > 0 .AND. nNum <= ::nFCount
       IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL
@@ -486,7 +557,13 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
          IF ValType( uValue ) == "C"
             uValue := MySqlEscape( AllTrim( uValue ), ::oServer:hMySql )
          ENDIF
-         ::SetData( nNum, uValue )
+  
+#ifdef USE_HASH
+         cCol := "_" + D_LowerCase( ::aStructure[ nNum ][ MYSQL_FS_NAME ] )
+         HSet( ::hRow, cCol, uValue )
+#else 
+         ::aRow[ nNum ]    = uValue
+#endif /*USE_HASH*/             
          RETURN uValue
       ENDIF
    ENDIF
@@ -767,44 +844,51 @@ RETURN NIL
 
 METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
 
-   LOCAL cWhere := " WHERE ", aField
-   LOCAL nIdx
+   LOCAL cWhere := "", aField
+   LOCAL nIdx, lPrimary := .F.
 
-   FOR EACH aField IN ::aStructure
+   IF ::LastRec() > 0
 
-      // search for fields part of a primary key
-      IF IS_PRIMARY_KEY( aField[ MYSQL_FS_FLAGS ] ) .OR.;
-         IS_MULTIPLE_KEY( aField[ MYSQL_FS_FLAGS ] )
-
-         cWhere += aField[ MYSQL_FS_NAME ] + "="
-
-         // if a part of a primary key has been changed, use original value
+      FOR EACH aField IN ::aStructure
+   
+         // search for fields part of a primary key
+         IF IS_PRIMARY_KEY( aField[ MYSQL_FS_FLAGS ] ) .OR.;
+            IS_MULTIPLE_KEY( aField[ MYSQL_FS_FLAGS ] )
+   
+            cWhere += aField[ MYSQL_FS_NAME ] + "="
+   
+            // if a part of a primary key has been changed, use original value
 #ifdef __XHARBOUR__         
-         nIdx = HB_EnumIndex()
+            nIdx = HB_EnumIndex()
 #else 
-         nIdx = aField:__EnumIndex()
+            nIdx = aField:__EnumIndex()
 #endif /*__XHARBOUR__*/   
-
+   
 #ifdef USE_HASH
-         IF ! ::IsEqual( aField[ MYSQL_FS_NAME ] )
-            cWhere += ClipValue2SQL( ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
-         ELSE
-            cWhere += ClipValue2SQL( ::hRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
-         ENDIF
+            IF ! ::IsEqual( aField[ MYSQL_FS_NAME ] )
+               cWhere += ClipValue2SQL( ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+            ELSE
+               cWhere += ClipValue2SQL( ::hRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+            ENDIF
 #else          
-         IF ! ::IsEqual( nIdx )
-            cWhere += ClipValue2SQL( ::aOldRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
-         ELSE
-            cWhere += ClipValue2SQL( ::aRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] )
-         ENDIF         
+            IF ! ::IsEqual( nIdx )
+               cWhere += ClipValue2SQL( ::aOldRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+            ELSE
+               cWhere += ClipValue2SQL( ::aRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] )
+            ENDIF         
 #endif /*USE_HASH*/
-         cWhere += " AND "
+            cWhere += " AND "
+            lPrimary = .T.
+         ENDIF
+   
+      NEXT
+   
+      IF lPrimary
+      // remove last " AND "
+         cWhere := Left( cWhere, Len( cWhere ) - 5 )
       ENDIF
-
-   NEXT
-
-   // remove last " AND "
-   cWhere := Left( cWhere, Len( cWhere ) - 5 )
+      
+   ENDIF
 
 RETURN cWhere
 
@@ -897,6 +981,7 @@ METHOD Save() CLASS TDolphinQry
    LOCAL uOldValue
    LOCAL nIdx
    LOCAL lSaveOk := .F.
+   LOCAL cPrimary
    
    
    IF ! ::IsSingleTable()
@@ -946,9 +1031,9 @@ METHOD Save() CLASS TDolphinQry
       cQry = Left( cQry, Len( cQry ) - 1 )
       
       IF !::lAppend
-         cQry   += ::MakePrimaryKeyWhere()
+         cPrimary = ::MakePrimaryKeyWhere()
+         cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
       ENDIF
-
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         
@@ -993,13 +1078,7 @@ RETURN nSeek
 METHOD SetData( cnField, uValue )	CLASS TDolphinQry
 
    LOCAL cCol
-   LOCAL nNum
-
-   IF ValType( cnField ) == "C"
-      nNum := ::FieldPos( cnField )
-   ELSE
-      nNum := cnField
-   ENDIF
+   LOCAL nNum := ::FieldToNum( cnField )
    
 #ifdef USE_HASH
 
@@ -1205,7 +1284,7 @@ RETURN uValue
       cCol  := If( lAssign := ( Left( cCol, 1 ) == '_' ), SubStr( cCol, 2 ), cCol )
 
       IF( nCol := ::FieldPos( cCol ) ) > 0
-         RETURN If( lAssign, ::FieldPut( nCol, uParam1 ), ::FieldGet( cCol ) )
+         RETURN If( lAssign, ::aRow[ nCol ] := uParam1, ::FieldGet( cCol ) )
       ENDIF
      
 #endif /*USE_HASH*/

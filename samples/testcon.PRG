@@ -16,13 +16,14 @@ PROCEDURE Main()
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
-                                nPort, nFlags, ;
+                                nPort, nFlags, cDBName,;
                                 {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
    
    IF ! oServer:lError 
       cText += "Connection OK" + CRLF
-      oServer:SelectDB( cDBName )
-      ? cText
+      cText += "Host: " + oServer:cHost +CRLF
+      cText += "Database: " + +oServer:cDBName + CRLF
+      ? cText 
    ENDIF
 
    oServer:End()
@@ -40,7 +41,7 @@ PROCEDURE GetError( oServer, nError, lInternal )
    cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
    
    ? cText + CRLF
-      wait "presiona una tecla"
+   wait "presiona una tecla"
    
 RETURN
    
