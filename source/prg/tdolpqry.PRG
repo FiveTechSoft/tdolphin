@@ -410,6 +410,13 @@ METHOD BuildDataWhere() CLASS TDolphinQry
 #endif /*__HARBOUR__*/
       uValue = ::aOldRow[ nIdx ]
 #endif /*USE_HASH*/
+      IF ValType( uValue ) == "C"
+         IF Len( uValue ) < 65536
+            uValue = Val2Escape( uValue )
+         ELSE 
+            uValue = MySqlEscape( uValue )
+         ENDIF
+      ENDIF
       cWhere += aField[ MYSQL_FS_NAME ] + " = " + ClipValue2Sql( uValue ) + " AND "
    NEXT
    

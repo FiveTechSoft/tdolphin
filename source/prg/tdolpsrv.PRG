@@ -186,7 +186,7 @@ CLASS TDolphinSrv
                                /*Retrieve total row avalaible in  specified query;
                                 in current database selected*/    
    
-   METHOD Insert( cTable, aColumns, aValues, lTransaction )  
+   METHOD Insert( cTable, aColumns, aValues )  
                               /*inserts new rows into an existing table.*/
 
    METHOD IsAutoIncrement( cField, cTable )
@@ -203,6 +203,8 @@ CLASS TDolphinSrv
                                  that match the simple regular expression specified by the wild parameter. 
                                  wild may contain the wildcard characters “%” or “_”, 
                                  or may be a "" to match all tables.*/
+                                 
+   METHOD MultiQuery( aQuery, lTransaction )
    
    METHOD Ping()                  INLINE If( MySqlPing( ::hMysql ) > 0, ( ::CheckError(), .F.), .T. )
                               /* Checks whether the connection to the server is working. 
@@ -244,7 +246,7 @@ CLASS TDolphinSrv
    
    METHOD TableStructure( cTable )  
    
-   METHOD Update( cTable, aColumns, aValues, cWhere, lAddSelf, lTransaction )
+   METHOD Update( cTable, aColumns, aValues, cWhere )
                              /*inserts new rows into an existing table.*/
                                  
 ENDCLASS
@@ -1107,17 +1109,15 @@ RETURN nTotal
 
 //----------------------------------------------------//
 
-METHOD Insert( cTable, aColumns, aValues, lTransaction ) CLASS TDolphinSrv
+METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n
-   
-   DEFAULT lTransaction TO .F.
-   
+
    IF Empty( aColumns ) .AND. Empty( aValues ) 
       ::nInternalError = ERR_EMPTYVALUES
       ::CheckError()
-      RETURN .F. 
+      RETURN .F.
    ENDIF    
    
    IF Empty( cTable ) 
@@ -1131,28 +1131,10 @@ METHOD Insert( cTable, aColumns, aValues, lTransaction ) CLASS TDolphinSrv
       ::CheckError()
       RETURN .F. 
    ENDIF 
-   
-   cExecute := "INSERT INTO " + D_LowerCase( cTable ) + " SET "
-   
-   FOR n = 1 TO Len( aColumns )
-      cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
-   NEXT 
-   IF lTransaction
-      ::BeginTransaction()
-   ENDIF   
-   //Delete last coma 
-   cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
+
+   cExecute = BuildInsert( cTable, aColumns, aValues )
 
    lRet = ::Execute( cExecute )  
-   
-   IF lTransaction
-      IF lRet
-         ::CommitTransaction()
-      ELSE 
-         ::RollBack()
-      ENDIF
-   ENDIF   
-   
   
 RETURN lRet
 
@@ -1229,6 +1211,46 @@ METHOD ListTables( cWild ) CLASS TDolphinSrv
    ::CheckError()
 
 RETURN aList
+
+//---------------------------------------------//
+
+METHOD MultiQuery( aQueries, lTransaction ) CLASS TDolphinSrv
+
+   LOCAL oError
+   LOCAL cQuery
+
+   DEFAULT lTransaction TO .T.
+
+   IF Empty( aQueries ) 
+      ::nInternalError = ERR_INVALIDQUERYARRAY
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+
+   TRY
+      IF lTransaction
+         ::BeginTransaction()
+      ENDIF
+      
+      
+      FOR EACH cQuery IN aQueries
+         ::Execute( cQuery )
+      NEXT
+      
+      IF lTransaction
+         ::CommitTransaction()
+      ENDIF
+   
+   CATCH oError
+      MySqlRollBack( ::hMysql )
+      ::RollBack()
+      ::nInternalError = ERR_MULTIQUERYFAULIRE
+      ::CheckError()
+      RETURN .F.
+      
+   END 
+
+RETURN .T.
 
 //---------------------------------------------//
 
@@ -1467,7 +1489,7 @@ RETURN aStruct
    
 //----------------------------------------------------//   
    
-METHOD Update( cTable, aColumns, aValues, cWhere, lTransaction ) CLASS TDolphinSrv
+METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n
@@ -1475,7 +1497,6 @@ METHOD Update( cTable, aColumns, aValues, cWhere, lTransaction ) CLASS TDolphinS
    LOCAL lAddSelf := .F.
    LOCAL cValue
    
-   DEFAULT lTransaction TO .F.   
    DEFAULT cWhere       TO ""
    
    IF Empty( aColumns ) .OR. Empty( aValues )
@@ -1534,14 +1555,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere, lTransaction ) CLASS TDolphinS
       lRet = .F.
       ::CheckError()
    ENDIF
-   
-   IF lTransaction
-      IF lRet
-         ::CommitTransaction()
-      ELSE 
-         ::RollBack()
-      ENDIF
-   ENDIF   
+
 
 RETURN lRet   
    
@@ -1732,6 +1746,36 @@ FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit,
 RETURN cQuery
 
 //----------------------------------------------------//  
+
+FUNCTION BuildInsert( cTable, aColumns, aValues )  
+
+   LOCAL cExecute
+   LOCAL uValue
+   LOCAL n
+   
+   cExecute := "INSERT INTO " + D_LowerCase( cTable ) + " SET "
+   
+   FOR n = 1 TO Len( aColumns )
+      IF ValType( aValues[ n ] ) == "C"
+         IF Len( aValues[ n ] ) > 65535 
+            uValue = MySqlEscape( aValues[ n ] )
+         ELSE 
+            uValue = Val2Escape( aValues[ n ] ) 
+         ENDIF
+      ELSE 
+         uValue = aValues[ n ]
+      ENDIF
+      cExecute += aColumns[ n ] + " = " + ClipValue2SQL( uValue ) + ","
+   NEXT 
+   
+   //Delete last coma 
+   cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
+
+
+RETURN cExecute
+
+//----------------------------------------------------//  
+
 // Turn On/Off case sensitive use
 // return Last Status
 FUNCTION D_SetCaseSensitive( lOnOff )

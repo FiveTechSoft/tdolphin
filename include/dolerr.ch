@@ -27,6 +27,8 @@
 #define ERR_NOTABLESSELECTED             9021
 #define ERR_INVALIDDELETE                9022 
 #define ERR_DELETING                     9023
+#define ERR_INVALIDQUERYARRAY            9024
+#define ERR_MULTIQUERYFAULIRE            9025
 
 //MySql Errort
 
