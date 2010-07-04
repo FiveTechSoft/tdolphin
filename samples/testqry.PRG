@@ -1,3 +1,4 @@
+#include "hbcompat.ch" // is necesary form compatibility with xharbour
 #include "tdolphin.ch"
 
 

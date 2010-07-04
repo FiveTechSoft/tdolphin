@@ -75,7 +75,8 @@ CLASS TDolphinSrv
                          ( Self, nError, lInternal ) */
    DATA bOnBackUp      /*codeblock to evaluate in backup process*/
              
-   DATA bOnRestore     /*codeblock to evaluate in restore process*/       
+   DATA bOnRestore     /*codeblock to evaluate in restore process*/      
+   DATA bOnMultiQry    /*codeblock to evaluate for each Query in METHOD MultiQuery*/      
    
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
@@ -549,7 +550,7 @@ RETURN NIL
 
 //----------------------------------------------------//
 
-METHOD CheckError( nError ) CLASS TDolphinSrv
+METHOD CheckError( nError, cExtra ) CLASS TDolphinSrv
 
    LOCAL lInternal := .F.
 
@@ -570,9 +571,9 @@ METHOD CheckError( nError ) CLASS TDolphinSrv
          ::ReConnect()
       ELSE
          IF ::bOnError != nil
-            Eval( ::bOnError, Self, nError, lInternal )
+            Eval( ::bOnError, Self, nError, lInternal, cExtra )
          ELSE 
-            Dolphin_DefError( Self, nError, lInternal )
+            Dolphin_DefError( Self, nError, lInternal, cExtra )
          ENDIF
       ENDIF
    ENDIF
@@ -714,7 +715,9 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
 
    LOCAL aField
    LOCAL cQuery   
-   LOCAL bDefault := { | aRow | " DEFAULT " + If( ! ValType( aRow[ DBS_DEFAULT ] ) == "U", ClipValue2SQL( aRow[ DBS_DEFAULT ] ), " NULL" ) }
+   LOCAL bDefault := { | aRow | If( ! ValType( aRow[ DBS_DEFAULT ] ) == "U", ;
+   	                             " DEFAULT " + ClipValue2SQL( aRow[ DBS_DEFAULT ] ), ;
+   	                             "" ) }
      
    LOCAL lAutoIncrement
    LOCAL lRet := .T.
@@ -734,22 +737,21 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
 
    IF lVer .AND. nLenStruct > 0
       ::CheckError( VerifyStructure( aStruct ) )
-
-      IF ! ::lError .AND. cPrimarykey != NIL
+       IF ! ::lError .AND. ! Empty( cPrimarykey ) 
          IF AScan( aStruct, {| aRow | AllTrim( D_LowerCase( aRow[ DBS_NAME ] ) ) == cPrimarykey } ) == 0
             ::nInternalError = ERR_INVALID_STRUCT_PRIKEY
             ::CheckError()
          ENDIF
       ENDIF
    
-      IF ! ::lError .AND. cUniquekey != NIL 
+      IF ! ::lError .AND. ! Empty( cUniquekey )
          IF AScan( aStruct, {| aRow | AllTrim( D_LowerCase( aRow[ DBS_NAME ] ) ) == cUniquekey } ) == 0
             ::nInternalError = ERR_INVALID_STRUCT_UNIQUE
             ::CheckError()
          ENDIF
       ENDIF
       
-      IF ! ::lError .AND. cAuto != NIL 
+      IF ! ::lError .AND. ! Empty( cAuto )
          IF AScan( aStruct, {| aRow | AllTrim( D_LowerCase( aRow[ DBS_NAME ] ) ) == cAuto } ) == 0
             ::nInternalError = ERR_INVALID_STRUCT_AUTO
             ::CheckError()
@@ -841,11 +843,11 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    
       NEXT
    
-      IF cPrimarykey != NIL
+      IF ! Empty( cPrimarykey )
          cQuery += ' PRIMARY KEY (' + cPrimaryKey + '),'
       ENDIF
    
-      IF ::nInternalError == 0 .AND. cUniquekey != NIL 
+      IF ::nInternalError == 0 .AND. ! Empty( cUniquekey )
          cQuery += ' UNIQUE ' + cUniquekey + ' (' + cUniqueKey + '),'
       ENDIF     
    ENDIF
@@ -1214,12 +1216,18 @@ RETURN aList
 
 //---------------------------------------------//
 
-METHOD MultiQuery( aQueries, lTransaction ) CLASS TDolphinSrv
+METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
 
    LOCAL oError
    LOCAL cQuery
+   LOCAL cLast
+   LOCAL nIdx
+   
 
    DEFAULT lTransaction TO .T.
+   DEFAULT bOnMultiQry  TO ::bOnMultiQry
+   
+   ::bOnMultiQry = bOnMultiQry
 
    IF Empty( aQueries ) 
       ::nInternalError = ERR_INVALIDQUERYARRAY
@@ -1234,7 +1242,18 @@ METHOD MultiQuery( aQueries, lTransaction ) CLASS TDolphinSrv
       
       
       FOR EACH cQuery IN aQueries
+         cLast = cQuery
          ::Execute( cQuery )
+         
+         IF ::bOnMultiQry != NIL
+#ifdef __HARBOUR__
+            nIdx = cQuery:__EnumIndex() 
+#else                      
+            nIdx = HB_EnumIndex()
+#endif 
+            Eval( ::bOnMultiQry, nIdx )
+            
+         ENDIF
       NEXT
       
       IF lTransaction
@@ -1245,7 +1264,7 @@ METHOD MultiQuery( aQueries, lTransaction ) CLASS TDolphinSrv
       MySqlRollBack( ::hMysql )
       ::RollBack()
       ::nInternalError = ERR_MULTIQUERYFAULIRE
-      ::CheckError()
+      ::CheckError( , cLast)
       RETURN .F.
       
    END 
@@ -1806,15 +1825,17 @@ RETURN cText
    
 //----------------------------------------------------//  
 
-PROCEDURE Dolphin_DefError( oServer, nError, lInternal )
+PROCEDURE Dolphin_DefError( oServer, nError, lInternal, cExtra )
    LOCAL cText := ""
    LOCAL oError
+   
+   DEFAULT cExtra TO ""
 
    oError := ErrorNew()
    oError:SubSystem   = If( lInternal, "TDOLPHIN", "MYSQL" )
    oError:SubCode     = nError
    oError:Severity    = 2
-   oError:Description = If( lInternal, "Internal Error", oServer:ErrorTxt() )
+   oError:Description = If( lInternal, "Internal Error", oServer:ErrorTxt() ) + " " + cExtra
    
    Eval( ErrorBlock(), oError )   
 
