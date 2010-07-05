@@ -1135,7 +1135,6 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
    ENDIF 
 
    cExecute = BuildInsert( cTable, aColumns, aValues )
-
    lRet = ::Execute( cExecute )  
   
 RETURN lRet

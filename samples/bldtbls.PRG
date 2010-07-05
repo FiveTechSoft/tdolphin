@@ -29,10 +29,10 @@ PROCEDURE Main()
    
    //Create tables
    //Student
-   aQuery[ 1 ] = "DROP TABLE IF EXISTS score"
-   aQuery[ 2 ] = "DROP TABLE IF EXISTS absence"
-   aQuery[ 3 ] = "DROP TABLE IF EXISTS student"
-   aQuery[ 4 ] = "DROP TABLE IF EXISTS grade_event"
+   aQuery[ 1 ] = "DROP TABLE IF EXISTS absence"
+   aQuery[ 2 ] = "DROP TABLE IF EXISTS score"
+   aQuery[ 3 ] = "DROP TABLE IF EXISTS grade_event"
+   aQuery[ 4 ] = "DROP TABLE IF EXISTS student"
    aQuery[ 5 ] = "DROP TABLE IF EXISTS member"
    aQuery[ 6 ] = "DROP TABLE IF EXISTS president"
 

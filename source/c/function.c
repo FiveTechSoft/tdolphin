@@ -795,8 +795,7 @@ HB_FUNC( FILETOSQLBINARY )
    }
 }
 
-
-// Function taked from mysql.c (xHarbour)
+//------------------------------------
 HB_FUNC( D_READFILE )
 {
    char *szFile = ( char * )hb_parc( 1 );
