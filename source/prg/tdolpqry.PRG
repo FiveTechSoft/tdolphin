@@ -78,7 +78,7 @@ CLASS TDolphinQry
    DATA bBof,;        //codeblock to evaluate if the value is the first row
         bEof,;        //codeblock to evaluate if the value is the last row
         bOnFillArray,;//codeblock to evaluate while is filling array
-        bOnChangePage
+        bOnChangePage //codeblock to evaluate when paginmation is activated and change page
    
    DATA cBuild,;        // Current server version
         cQuery,;        // copy of query that generated this object
@@ -104,12 +104,13 @@ CLASS TDolphinQry
    DATA nRecNo                 // Current query row position
    DATA nQryId
    
-   DATA nCurentPage
-   DATA nTotalRows
-   DATA nPageStep
-   DATA nMaxPages
-   DATA nCurrentLimit
-   DATA nCurrentPage
+   
+   //Paginations datas
+   DATA nCurrentPage           // Current page
+   DATA nTotalRows             // Total row without limits
+   DATA nPageStep              // total rows for page
+   DATA nMaxPages              // Max pages avalaible in query
+   DATA nCurrentLimit          // Current limit value
    
    DATA oServer
    

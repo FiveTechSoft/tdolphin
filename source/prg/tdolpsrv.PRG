@@ -987,7 +987,7 @@ METHOD GetAutoIncrement( cTable ) CLASS TDolphinSrv
 
    oQuery := ::Query( cQuery )
    IF oQuery:LastRec() > 0
-      nId := Val( oQuery:FieldGet( 1 ) )
+      nId := oQuery:FieldGet( 1 )
    ENDIF
 
    ::SelectDB( cOldDB )
