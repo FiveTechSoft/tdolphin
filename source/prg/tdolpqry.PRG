@@ -497,7 +497,7 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
    IF ValType( cnField ) == "N"
       cFieldName = "_" + ::FieldName( cnField )
    ELSE 
-      cFieldName = "_" + D_LowerCase( cnField )
+      cFieldName := "_" + D_LowerCase( cnField )
    ENDIF
    IF hGetPos( ::hRow, cFieldName ) > 0
       RETURN ::VerifyValue( nNum, ::hRow[ cFieldName ] )
@@ -676,6 +676,7 @@ METHOD GetBlankRow() CLASS TDolphinQry
    LOCAL uValue, uItem
    LOCAL nIdx
    LOCAL cCol, aRow
+   LOCAL nPad
 
    IF ! ::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDGETBLANKROW
@@ -704,15 +705,19 @@ METHOD GetBlankRow() CLASS TDolphinQry
       SWITCH cType
       
       CASE "C"
-         IF ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL
-            uValue = PadR( ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ] )
-         ELSE 
-            uValue = Space(::aStructure[ nIdx ][ MYSQL_FS_LENGTH ])
-         ENDIF 
-         EXIT
       CASE "M"
       CASE "B"
-         uValue := ""
+         IF D_SetPadRight()
+            nPad = Min( If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
+                      ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ), MAX_BLOCKSIZE )
+         ELSE 
+            nPad = 0 
+         ENDIF
+         IF ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL
+            uValue = PadR( ::aStructure[ nIdx ][ MYSQL_FS_DEF ], Max( Len( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), nPad ) )
+         ELSE 
+            uValue = Space( nPad )
+         ENDIF 
          EXIT
 
       CASE "N"
@@ -877,9 +882,10 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
 
 #ifdef USE_HASH
       //Build Hash
-      //Enable case sensitive
-      hSetCaseMatch( ::hRow    , lCaseSen )
-      hSetCaseMatch( ::hOldRow , lCaseSen )
+      //Disable case sensitive
+      //all fieldname should be lower case
+      hSetCaseMatch( ::hRow    , .F. )
+      hSetCaseMatch( ::hOldRow , .F. )
       //set hash
       FOR each aField in ::aStructure
          cCol = aField[ MYSQL_FS_NAME ]
@@ -1252,6 +1258,7 @@ RETURN ::nRecNo - n
 METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
 
    LOCAL cType, uValue
+   LOCAL nPad
 
    cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ] //, ::aStructure[ nIdx ][ MYSQL_FS_TYPE ]
    SWITCH cType
@@ -1281,11 +1288,18 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
       CASE "M"
       CASE "T"
       CASE "C"
-         IF Empty( cField )
-            uValue := If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], "")
+         IF D_SetPadRight()
+            nPad = Min( If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
+                      ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ), MAX_BLOCKSIZE )
+         ELSE 
+            nPad = 0 
+         ENDIF
+         IF ( cField == NIL )
+            uValue := PadR( If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ;
+                                ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ""), PadR( ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ;
+                                Max( Len( cField ), nPad ) ) )
          ELSE
-            uValue := PadR( cField, If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
-                                     ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ) ) 
+            uValue := PadR( cField, Max( Len( cField ), nPad ) ) 
          ENDIF
          
          EXIT
@@ -1307,21 +1321,24 @@ RETURN uValue
       LOCAL lAssign := .F., nCol
       LOCAL oError := ErrorNew()
       LOCAL nError := If( SubStr( cCol, 1, 1 ) == "_", 1005, 1004 )      
+      LOCAL nPos
 #else
    METHOD ONERROR( cCol, nError ) CLASS TDolphinQry
       LOCAL uParam1
       LOCAL lAssign
+      LOCAL nPos
       LOCAL oError := ErrorNew()
       IF Len( HB_AParams() ) > 0
          uParam1 = HB_AParams()[ 1 ]
       ENDIF
 #endif
 
+   //the fieldname always are lower case
    IF Substr( cCol, 1, 1 ) != "_"
-      cCol := "_" + D_LowerCase( cCol )
+      cCol := "_" + Lower( cCol )
       lAssign = .T.
    ELSE 
-      cCol = D_LowerCase( cCol )
+      cCol = Lower( cCol )
    ENDIF
 
 #ifdef USE_HASH    

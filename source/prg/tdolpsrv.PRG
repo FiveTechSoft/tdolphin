@@ -1810,6 +1810,24 @@ FUNCTION D_SetCaseSensitive( lOnOff )
 
 RETURN lOldStatus
 
+
+// Turn On/Off PadRight
+// return Last Status
+// default is ON
+FUNCTION D_SetPadRight( lOnOff )
+
+  LOCAL lOldStatus
+
+  STATIC lStatus := .T.
+
+  lOldStatus = lStatus
+
+  IF PCount() == 1 .AND. ValType( lOnOff ) == "L"
+     lStatus = lOnOff
+  ENDIF
+
+RETURN lOldStatus
+
 //----------------------------------------------------//  
 // Convert lower case if case sesitive is off
 FUNCTION D_LowerCase( cText )

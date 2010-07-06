@@ -475,15 +475,17 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
      {
      	  mfield = mysql_fetch_field( mresult ) ;
         hb_arrayNew( itemField, 9 );
-        if( bCase ){
-           hb_arraySetC( itemField, 1, mfield->name );  
-           hb_arraySetC( itemField, 2, mfield->table );
-        }
-        else{
-        	 hb_arraySetC( itemField, 1, hb_strLower( mfield->name, strlen( mfield->name ) ) ) ;  
+
+        // The fieldname are convert to lower case
+     	  hb_arraySetC( itemField, 1, hb_strLower( mfield->name, strlen( mfield->name ) ) ) ;  
+
+        // only table name are affect by case sensitive      
+        if( bCase )
+           hb_arraySetC( itemField, 2, mfield->table );  
+        else
         	 hb_arraySetC( itemField, 2, hb_strLower( mfield->table, strlen( mfield->table ) ) ) ;  
-        }
-        	         	   
+       
+//        MessageBox( 0, mfield->name, "ok", 0 );	         	   
         hb_arraySetC( itemField, 3, mfield->def );
         hb_arraySetNL( itemField, 4, mfield->type );
         hb_arraySetNL( itemField, 5, mfield->length );

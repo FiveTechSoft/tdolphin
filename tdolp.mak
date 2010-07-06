@@ -21,8 +21,8 @@ PROJECT    : $(LIBNAME).lib
 $(LIBNAME).lib   : $(PRG:.PRG=.OBJ) $(C:.C=.OBJ)
 
 .PRG.OBJ:
-   $(HPATH)\bin\harbour $<  /N /W /w /es2 /O$(OBJPRG)\ /I$(INCLUDE);$(HPATH)\include;$(USERINC) > comp.log
-   $(BCCPATH)\bin\bcc32  -c -tWM -I$(HPATH)\include -o$(OBJPRG)\$& $(OBJPRG)\$&.c
+   $(HPATH)\bin\harbour $<  -D$(HARBOUR) /N /W /w /es2 /O$(OBJPRG)\ /I$(INCLUDE);$(HPATH)\include;$(USERINC) > comp.log
+   $(BCCPATH)\bin\bcc32 -c -tWM -I$(HPATH)\include -o$(OBJPRG)\$& $(OBJPRG)\$&.c
    $(BCCPATH)\bin\TLib .\lib\$(LIBNAME).lib -+$(OBJPRG)\$&.obj /0 /P32,,
 
 .C.OBJ:

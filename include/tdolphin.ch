@@ -25,6 +25,10 @@
 #define  MYSQL_VAR_STRING_TYPE   253
 #define  MYSQL_STRING_TYPE       254
 
+#ifndef MAX_BLOCKSIZE
+#define MAX_BLOCKSIZE            65535
+#endif
+
 
 // MySQL field structure 
 #define  MYSQL_FS_NAME           1     /* Name of column */
