@@ -619,7 +619,7 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
       ELSE 
          cCol = "_" + Lower( cnField )
       ENDIF
-      IF Valtype( uValue ) == Valtype( ::hRow[ "_" + cnField ] ) .OR. ::hRow[ "_" + cnField ] == NIL
+      IF Valtype( uValue ) == Valtype( ::hRow[ cCol ] ) .OR. ::hRow[ cCol ] == NIL
 #else      
       IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL      
 #endif      

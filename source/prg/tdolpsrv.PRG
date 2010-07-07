@@ -1768,12 +1768,14 @@ RETURN cQuery
 FUNCTION BuildInsert( cTable, aColumns, aValues )  
 
    LOCAL cExecute
+   LOCAL cValues  := ""
+   LOCAL cColumns := ""
    LOCAL uValue
    LOCAL n
    
-   cExecute := "INSERT INTO " + D_LowerCase( cTable ) + " SET "
    
    FOR n = 1 TO Len( aColumns )
+      cColumns += aColumns[ n ] + ","
       IF ValType( aValues[ n ] ) == "C"
          IF Len( aValues[ n ] ) > 65535 
             uValue = MySqlEscape( aValues[ n ] )
@@ -1783,12 +1785,14 @@ FUNCTION BuildInsert( cTable, aColumns, aValues )
       ELSE 
          uValue = aValues[ n ]
       ENDIF
-      cExecute += aColumns[ n ] + " = " + ClipValue2SQL( uValue ) + ","
+      cValues += ClipValue2SQL( uValue ) + ","
    NEXT 
    
    //Delete last coma 
-   cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
-
+   cColumns = SubStr( cColumns, 1, Len( cColumns ) - 1 ) + ") VALUES ( "
+   cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + ")"
+   
+   cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues
 
 RETURN cExecute
 
