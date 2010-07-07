@@ -610,14 +610,23 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
    LOCAL cCol
 
    IF nNum > 0 .AND. nNum <= ::nFCount
-      IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL
 
+#ifdef USE_HASH
+      IF ValType( cnField ) == "N" 
+         cCol = cCol := "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ]
+      ELSE 
+         cCol = "_" + Lower( cnField )
+      ENDIF
+      IF Valtype( uValue ) == Valtype( ::hRow[ "_" + cnField ] ) .OR. ::hRow[ "_" + cnField ] == NIL
+#else      
+      IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL      
+#endif      
          IF ValType( uValue ) == "C"
             uValue := MySqlEscape( AllTrim( uValue ), ::oServer:hMySql )
          ENDIF
   
 #ifdef USE_HASH
-         cCol := "_" + D_LowerCase( ::aStructure[ nNum ][ MYSQL_FS_NAME ] )
+         
          HSet( ::hRow, cCol, uValue )
 #else 
          ::aRow[ nNum ]    = uValue
@@ -1311,7 +1320,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
          IF ( cField == NIL )
             uValue := PadR( If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ;
                                 ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ""), PadR( ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ;
-                                Max( Len( cField ), nPad ) ) )
+                                nPad ) )
          ELSE
             uValue := PadR( cField, Max( Len( cField ), nPad ) ) 
          ENDIF
