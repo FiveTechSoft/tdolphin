@@ -215,6 +215,8 @@ CLASS TDolphinQry
    METHOD Skip( nRecords )
    
    METHOD VerifyValue( nIdx, cField ) HIDDEN
+   
+   METHOD Undo( cnField )
 
    METHOD Zap() INLINE ::Delete( .T. )
                                /*Delete all record in table*/
@@ -1115,9 +1117,9 @@ METHOD Save() CLASS TDolphinQry
          ::LoadQuery()
       ENDIF         
       ::lAppend = .F.
-   ELSE 
-      ::oServer:nInternalError = ERR_NOTHINGTOSAVE
-      ::CheckError()
+//   ELSE 
+//      ::oServer:nInternalError = ERR_NOTHINGTOSAVE
+//      ::CheckError()
    ENDIF
 
 
@@ -1159,7 +1161,7 @@ METHOD SetData( cnField, uValue )	CLASS TDolphinQry
    
 #ifdef USE_HASH
 
-   cCol := "_" + D_LowerCase( ::aStructure[ nNum ][ MYSQL_FS_NAME ] )
+   cCol := "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] 
    HSet( ::hRow, cCol, uValue )
    HSet( ::hOldRow, cCol, uValue )
 
@@ -1334,6 +1336,39 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
       ENDSWITCH
 
 RETURN uValue
+
+//----------------------------------------------------//
+
+METHOD Undo( cnField ) CLASS TDolphinQry
+
+   LOCAL nNum := 0
+   LOCAL aRow
+   
+   IF cnField != NIL 
+      nNum := ::FieldToNum( cnField )
+   ENDIF
+   
+   
+#ifdef USE_HASH
+
+   IF nNum == 0 
+      ::hRow = HClone( ::hOldRow )
+   ELSE 
+      HSet( ::hRow, "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] , ::hOldRow[ "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] ] )
+   ENDIF 
+
+#else 
+   IF nNum == 0 
+      ::aRow = AClone( ::aOldRow )
+   ELSE 
+      ::aRow[ nNum ] = ::aOldRow[ nNum ]
+   ENDIF 
+   
+#endif /*USE_HASH*/    
+   
+
+
+RETURN NIL
 
 //----------------------------------------------------//
 
