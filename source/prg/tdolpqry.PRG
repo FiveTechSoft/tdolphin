@@ -1,5 +1,5 @@
 /*
- * $Id: tdolphinqry.prg 70 2010-07-03 16:33:27Z dgarciagil $
+ * $Id: tdolphinqry.prg 70 2010-07-07 08:33:27Z dgarciagil $
  */
 
 /*
@@ -706,6 +706,13 @@ METHOD GetBlankRow() CLASS TDolphinQry
       
       CASE "C"
       CASE "M"
+         // we can not use PadR in  memo field
+         IF ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL
+            uValue = ::aStructure[ nIdx ][ MYSQL_FS_DEF ]
+         ELSE 
+            uValue = ""
+         ENDIF 
+         EXIT         
       CASE "B"
          IF D_SetPadRight()
             nPad = Min( If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
@@ -1286,6 +1293,13 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
          ENDIF
          EXIT
       CASE "M"
+         // we can not use PadR in  memo field
+         IF ( cField == NIL )
+            uValue := ""
+         ELSE
+            uValue := cField
+         ENDIF
+         EXIT      
       CASE "T"
       CASE "C"
          IF D_SetPadRight()
