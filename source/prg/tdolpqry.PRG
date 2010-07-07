@@ -849,7 +849,7 @@ RETURN ::nRecNo
 
 METHOD IsEqual( cnField ) CLASS TDolphinQry
 #ifdef USE_HASH
-RETURN ::hRow( "_" + cnField ) == ::hOldRow( "_" + cnField ) 
+RETURN ::hRow[ "_" + cnField ] == ::hOldRow[ "_" + cnField ]
 #else 
 RETURN ::aRow( cnField ) == ::aOldRow( cnField ) 
 #endif /*USE_HASH*/
@@ -1390,31 +1390,27 @@ RETURN NIL
       ENDIF
 #endif
 
-   //the fieldname always are lower case
-   IF Substr( cCol, 1, 1 ) != "_"
-      cCol := "_" + Lower( cCol )
-      lAssign = .T.
-   ELSE 
-      cCol = Lower( cCol )
-   ENDIF
-
 #ifdef USE_HASH    
 
+   //the fieldname always are lower case
+   
+      cCol := Lower( If( Left( cCol, 1 ) == '_' , SubStr( cCol, 2 ), cCol ) )
+
       IF ! ( uParam1 == NIL ) 
-         IF hGetPos( ::hRow, cCol ) > 0        
-            HSet( ::hRow, cCol, uParam1 )
+         IF hGetPos( ::hRow, "_"+cCol ) > 0        
+            ::FieldPut( cCol, uParam1 )
             RETURN uParam1
          ENDIF
       ELSE
-         IF hGetPos( ::hRow, cCol ) > 0
-            RETURN ::hRow[ cCol ]
+         IF hGetPos( ::hRow, "_" + cCol ) > 0
+            RETURN ::hRow[ "_" + cCol ]
          ENDIF
       ENDIF
 #else
       cCol  := If( lAssign := ( Left( cCol, 1 ) == '_' ), SubStr( cCol, 2 ), cCol )
 
       IF( nCol := ::FieldPos( cCol ) ) > 0
-         RETURN If( lAssign, ::aRow[ nCol ] := uParam1, ::FieldGet( cCol ) )
+         RETURN If( lAssign, ::FieldPut( nCol, uParam1 ), ::FieldGet( cCol ) )
       ENDIF
      
 #endif /*USE_HASH*/
