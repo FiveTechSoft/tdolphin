@@ -713,7 +713,6 @@ METHOD GetBlankRow() CLASS TDolphinQry
       cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ]
       SWITCH cType
       
-      CASE "C"
       CASE "M"
          // we can not use PadR in  memo field
          IF ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL
@@ -722,7 +721,7 @@ METHOD GetBlankRow() CLASS TDolphinQry
             uValue = ""
          ENDIF 
          EXIT         
-      CASE "B"
+      CASE "C"
          IF D_SetPadRight()
             nPad = Min( If( ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ] > ::aStructure[ nIdx ][ MYSQL_FS_LENGTH ],;
                       ::aStructure[ nIdx ][ MYSQL_FS_MAXLEN ], ::aStructure[ nIdx ][ MYSQL_FS_LENGTH] ), MAX_BLOCKSIZE )
