@@ -499,8 +499,8 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
    
    nNum := ::FieldToNum( cnField )
 
-   IF ::xLock > 0 .AND. ::xLock == ::nRecNo 
-      IF nNum > 0 .AND. Len( ::aLock ) > 0
+   IF ::xLock > 0 .AND. ::xLock == ::nRecNo .AND. Len( ::aLock ) > 0
+      IF nNum > 0 
          uValue = ::aLock[ nNum ]
       ELSE 
          lError = .T. 
@@ -640,7 +640,7 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
          IF ValType( uValue ) == "C"
             uValue := MySqlEscape( AllTrim( uValue ), ::oServer:hMySql )
          ENDIF
-         IF ::xLock > 0 .AND. ::xLock == ::nRecNo
+         IF ::xLock > 0 .AND. ::xLock == ::nRecNo .AND. Len( ::aLock ) > 0
             IF Len( ::aLock ) > 0
                ::aLock[ nNum ] = uValue
             ENDIF
