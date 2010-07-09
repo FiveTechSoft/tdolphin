@@ -499,8 +499,8 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
    
    nNum := ::FieldToNum( cnField )
 
-   IF ::xLock > 0 .AND. ::xLock == ::nRecNo
-      IF nNum > 0
+   IF ::xLock > 0 .AND. ::xLock == ::nRecNo 
+      IF nNum > 0 .AND. Len( ::aLock ) > 0
          uValue = ::aLock[ nNum ]
       ELSE 
          lError = .T. 
@@ -641,7 +641,9 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
             uValue := MySqlEscape( AllTrim( uValue ), ::oServer:hMySql )
          ENDIF
          IF ::xLock > 0 .AND. ::xLock == ::nRecNo
-            ::aLock[ nNum ] = uValue
+            IF Len( ::aLock ) > 0
+               ::aLock[ nNum ] = uValue
+            ENDIF
          ELSE
 #ifdef USE_HASH
          
@@ -1372,6 +1374,7 @@ METHOD UnLock() CLASS TDolphinQry
    LOCAL uValue
    LOCAL nIdx
 
+   ::aLock = {}
    IF ::xLock > 0 .AND. ::xLock == ::nRecNo
       ::xLock = 0
       FOR EACH uValue IN ::aLock
@@ -1384,7 +1387,7 @@ METHOD UnLock() CLASS TDolphinQry
       NEXT 
    ENDIF
    ::xLock = 0 
-   ::aLock = {}
+   
 
 RETURN NIL
 
