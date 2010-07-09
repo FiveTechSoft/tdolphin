@@ -87,8 +87,7 @@ CLASS TDolphinQry
         cGroup,;        // copy of GROUP BY command
         cHaving,;       // copy of HAVING command
         cOrder,;        // copy of OREDER BY command
-        cLimit,;        // copy of LIMIT command
-        cExt            // Data for control other MySql commands
+        cLimit          // copy of LIMIT command
 
    DATA Cargo           // For programmer use
    
@@ -129,7 +128,7 @@ CLASS TDolphinQry
    METHOD BuildDataWhere()     /* build a where with oldrow values */
    
    METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
-                      cOrder, cLimit, cExt, lWithRoll )   
+                      cOrder, cLimit, lWithRoll )   
                       
    METHOD CheckError( nError )  INLINE ::oServer:CheckError( nError )
                                /*Compatibility with CheckError from TDolphinSrv*/
@@ -308,8 +307,6 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
    
    DEFAULT cQuery TO ::cQuery
 
-   ::cExt = ""
-
    aToken := HB_ATokens( cQuery, " " )
    
    FOR EACH cItem IN aToken
@@ -325,7 +322,7 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
    cQuery := AllTrim( cQuery )
 
    aToken := HB_ATokens( cQuery, "|" )
-   
+
    FOR EACH cItem IN aToken
    
       cFind = Upper( SubStr( cItem, 1, At( " ", cItem ) - 1 ) )
@@ -395,12 +392,6 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
             
 
             EXIT
-#ifdef __XHARBOUR__
-         DEFAULT 
-#else
-         OTHERWISE 
-#endif                           
-           ::cExt += cItem
       ENDSWITCH
    NEXT
 
@@ -445,7 +436,7 @@ RETURN cWhere
 //----------------------------------------------------//
 
 METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
-                   cOrder, cLimit, cExt, lWithRoll ) CLASS TDolphinQry
+                   cOrder, cLimit, lWithRoll ) CLASS TDolphinQry
 
    LOCAL cQuery := ""
    
@@ -456,9 +447,8 @@ METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
    ::cHaving  = cHaving
    ::cOrder   = cOrder
    ::cLimit   = cLimit 
-   ::cExt     = cExt
 
-   cQuery = BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, cExt, lWithRoll )
+   cQuery = BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, lWithRoll )
    
 
 RETURN cQuery
@@ -897,7 +887,10 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    IF ! oServer:SQLQuery( cQuery )
       RETURN NIL 
    ENDIF
-
+   
+   //we need unlock current record locked
+   ::UnLock()
+   
    IF lBuildData
       ::BuildDatas()
    ENDIF
@@ -1100,7 +1093,7 @@ METHOD Refresh( lBuild ) CLASS TDolphinQry
 
    DEFAULT lBuild TO .F.
 
-   ::cQuery = BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit, ::cExt )
+   ::cQuery = BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit )
 
    ::LoadQuery( lBuild ) 
 
@@ -1176,6 +1169,8 @@ METHOD Save() CLASS TDolphinQry
       ENDIF         
       ::lAppend = .F.
    ENDIF
+   
+   ::UnLock()
 
 
 RETURN nil
@@ -1264,7 +1259,7 @@ METHOD SetNewFilter( nType, cFilter, lRefresh ) CLASS TDolphinQry
          EXIT
    ENDSWITCH
 
-   ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit, ::cExt )
+   ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit )
  
    IF lRefresh 
       ::LoadQuery( .F. )
@@ -1337,12 +1332,26 @@ METHOD Undo( cnField ) CLASS TDolphinQry
       nNum := ::FieldToNum( cnField )
    ENDIF
    
+   IF ::xLock != 0 .AND. ::xLock == ::nRecNo
+      IF nNum == 0
+#ifdef USE_HASH
+         ::aLock[ nNum ] = ::hOldRow[ "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] ]
+#else          
+         ::aLock[ nNum ] = ::aOldRow[ nNum ]
+#endif  /*USE_HASH*/    
+      ELSE
+         ::xLock = 0 
+         ::Lock( ::xLock )
+      ENDIF
+      RETURN NIL 
+   ENDIF
+   
 #ifdef USE_HASH
 
    IF nNum == 0 
       ::hRow = HClone( ::hOldRow )
    ELSE 
-      HSet( ::hRow, "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] , ::hOldRow[ "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] ] )
+      HSet( ::hRow, "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ], ::hOldRow[ "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] ] )
    ENDIF 
 
 #else 

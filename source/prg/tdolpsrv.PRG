@@ -1091,8 +1091,7 @@ METHOD GetRowsFromQry( oQry ) CLASS TDolphinSrv
                                 oQry:cGroup, ;
                                 oQry:cHaving,;
                                 oQry:cOrder, ;
-                                NIL, ;
-                                oQry:cExt )
+                                NIL )
    
    oQry:BuildQuery( aOldColumns, ;
                     oQry:aTables,;
@@ -1100,8 +1099,7 @@ METHOD GetRowsFromQry( oQry ) CLASS TDolphinSrv
                     oQry:cGroup, ;
                     oQry:cHaving,; 
                     oQry:cOrder, ;
-                    oQry:cLimit, ;
-                    oQry:cExt )
+                    oQry:cLimit )
    
    oQryAux = ::Query( cQuery )
    
@@ -1711,10 +1709,10 @@ RETURN aArray
 
 //----------------------------------------------------//         
 
-FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, cExt, lWithRoll )
+FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, lWithRoll )
    LOCAL cQuery := ""
    LOCAL cColumns
-
+   
    DEFAULT cWhere   TO ""
    DEFAULT cGroup   TO ""
    DEFAULT cHaving  TO ""
@@ -1722,8 +1720,8 @@ FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit,
    DEFAULT cLimit   TO ""
    DEFAULT aTables  TO {}
    DEFAULT aColumns TO {}
-   DEFAULT cExt     TO ""
    DEFAULT lWithRoll TO .F.
+
 
    cColumns = SQLStringFromArray( aColumns )
    
@@ -1737,6 +1735,7 @@ FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit,
       cQuery += " FROM "
       cQuery += SQLStringFromArray( aTables )
    ENDIF
+   
    IF !Empty( cWhere )
       cQuery += " WHERE "
       cQuery += cWhere
@@ -1760,8 +1759,6 @@ FUNCTION BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit,
       cQuery += " LIMIT "
       cQuery += cLimit
    ENDIF
-   
-   cQuery += cExt
 
 RETURN cQuery
 
