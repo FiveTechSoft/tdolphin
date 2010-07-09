@@ -1,5 +1,5 @@
 /*
- * $Id: tdolphinsrv.prg 70 2010-07-03 16:33:27Z dgarciagil $
+ * $Id: tdolpsrv.PRG 08-Jul-10 8:13:45 PMZ dgarciagil $
  */
 
 /*
@@ -20,7 +20,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.  If not, write to
+ * along with this software.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
  * Boston, MA 02111-1307 USA (or visit the web site http://www.gnu.org/).
  *
@@ -85,7 +85,9 @@ CLASS TDolphinSrv
                        
    DATA hMysql         /*MySQL connection handle*/
                        
-   DATA lReConnect                       
+   DATA lReConnect     
+   
+   DATA Cargo          /*For programmer use*/
                        
    DATA lError         /*Error detection switch*/
                   
