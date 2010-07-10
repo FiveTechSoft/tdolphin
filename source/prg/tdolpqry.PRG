@@ -1185,7 +1185,7 @@ METHOD SetData( cnField, uValue )	CLASS TDolphinQry
    
 #ifdef USE_HASH
 
-   cCol := "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ] 
+   cCol := "_" + ::aStructure[ nNum ][ MYSQL_FS_NAME ]
    HSet( ::hRow, cCol, uValue )
    HSet( ::hOldRow, cCol, uValue )
 
@@ -1515,10 +1515,10 @@ METHOD SetData() CLASS TDolphinRow
 
 #ifdef USE_HASH
    ::oQuery:hRow = HClone( ::uRow )
-   ::oQuery:hOldRow = HClone( ::hOldRow )
+   ::oQuery:hOldRow = HClone( ::uOldRow )
 #else 
    ::oQuery:aRow = AClone( ::uRow )
-   ::oQuery:aOldRow = AClone( ::aOldRow )
+   ::oQuery:aOldRow = AClone( ::uOldRow )
 #endif
 
 RETURN NIL
