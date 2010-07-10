@@ -1,3 +1,8 @@
+/*
+ * $Id: 10-Jul-10 9:40:27 AM tdolphin.ch Z dgarciagil $
+ */
+
+
 // MySQL field types
 
 #define  MYSQL_DECIMAL_TYPE      0
@@ -78,6 +83,7 @@
 #define IS_PRIMARY_KEY( uValue )  MyAND( uValue, PRI_KEY_FLAG ) == PRI_KEY_FLAG 
 #define IS_MULTIPLE_KEY( uValue ) MyAND( uValue, MULTIPLE_KEY_FLAG ) == MULTIPLE_KEY_FLAG
 #define IS_AUTO_INCREMENT( uValue ) MyAND( uValue, AUTO_INCREMENT_FLAG ) == AUTO_INCREMENT_FLAG
+#define IS_NOT_NULL( uValue ) MyAND( uValue, NOT_NULL_FLAG ) == NOT_NULL_FLAG
 
 // SET NEW FILTER
 #define SET_WHERE    1

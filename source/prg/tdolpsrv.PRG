@@ -1,5 +1,5 @@
 /*
- * $Id: tdolpsrv.PRG 08-Jul-10 8:13:45 PMZ dgarciagil $
+ * $Id: 10-Jul-10 9:40:26 AM tdolpsrv.PRG Z dgarciagil $
  */
 
 /*
@@ -82,6 +82,8 @@ CLASS TDolphinSrv
    DATA cPassword      /*Data contains the password for user*/
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
+   
+   DATA cVersion     INIT '10-Jul-10 9:40:26 AM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -1582,27 +1584,32 @@ RETURN lRet
 //----------------------------------------------------//
 //----------------------------------------------------//
 
-FUNCTION ClipValue2SQL( Value, cType, lTxt ) // Compatibility wint TMysql
+FUNCTION ClipValue2SQL( Value, cType, lTxt, lNoNull ) // Compatibility wint TMysql
 
 
    LOCAL cValue := ""
    LOCAL cTxt   
    
    DEFAULT lTxt TO .T.
-   DEFAULT cType to ValType( Value )
+   DEFAULT cType TO ValType( Value )
+   DEFAULT lNoNull TO .F.
 
    cTxt   := If( lTxt, "'", "" )
 
    SWITCH cType
       CASE "N"
-         cValue := AllTrim( Str( Value ) )
-         EXIT
       CASE "I"
-         cValue := AllTrim( Str( Value ) )
+
+         if ! Empty( Value ) .OR. lNoNull
+            cValue := AllTrim( Str( Value ) )
+         else
+            cValue := "NULL"
+         endif
+
          EXIT
 
       CASE "D"
-         if ! Empty( Value )
+         if ! Empty( Value ) .OR. lNoNull
             cValue := cTxt + Transform( Dtos( Value ), "@R 9999-99-99" ) + cTxt
          else
             cValue := "NULL"
@@ -1610,8 +1617,13 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt ) // Compatibility wint TMysql
          EXIT
 
       CASE "C"
-         cValue := cTxt + AllTrim( Value ) + cTxt
+         if ! Empty( Value ) .OR. lNoNull
+            cValue := cTxt + AllTrim( Value ) + cTxt
+         else
+            cValue := "NULL"
+         endif
          EXIT
+
       CASE "M"
          cValue := cTxt + AllTrim( Value ) + cTxt
          EXIT

@@ -1,8 +1,6 @@
 #include "hbcompat.ch"
 #include "tdolphin.ch"
 
-#define CRLF Chr( 13 ) + Chr( 10 )
-
 PROCEDURE Main()
    
    LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
@@ -18,69 +16,65 @@ PROCEDURE Main()
    LOCAL aStruc, aRow, uItem
    LOCAL oQry
    
-   D_SetHash( .T. )
    
-   oServer = TDolphinSrv():New( cServer, ;
-                                cUser, ;
-                                cPassword, ;
-                                nPort, nFlags, cDBName,;
-                                {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
+   D_SetCaseSensitive( .T. )
+
+   oServer = ConnectTo()
    
    IF ! oServer:lError 
-
-      oQry = TDolphinQry():New( "SELECT * FROM testman", oServer )
-      aStruc = oQry:aStructure
-      ? "NAME      TABLE     DEFAULT   TYPE      LENGTH    MAXLENGTH FLAGS     DECIMAL CLIP TYPE"
-      ? "======================================================================================="
-      ?
-      FOR EACH aRow IN aStruc
-        FOR EACH uItem IN aRow
-           ?? If( ValType( uItem ) == "N", PadR( AllTrim( Str( uItem ) ), 10 ), PadR( uItem, 10 ) )
-        NEXT 
-        ? 
-      NEXT  
-      ? "======================================================================================="
-      oQry:Goto( 100 )
-      ? "ID:", oQry:ID
-      ? "FieldGet( 'ID' ): " + Str( oQry:FieldGet( "ID" ) )
-      ? "FieldGet( 1 ): " + Str( oQry:FieldGet( 1 ) )
-      ? "Field Clipper Type BIRTH: " + oQry:FieldType( "birth" )
-      ? "Field MySql Type BIRTH: " + Str( oQry:FieldMySqlType( "birth" ) )
-      ? "Field MySql2Char Type BIRTH: " + SqlType2Char( oQry:FieldMySqlType( "birth" ) )
-      ? "FieldPos( 'name' ): " + Str( oQry:FieldPos( "name" ) ) 
-      ? "======================================================================================="      
-      oQry:last = "dolphin"
-      ? "value changed: " + oQry:Last  
-      ? "Record no saved"
-      ? "======================================================================================="
-      ? "Current record:" + Str( oQry:RecNo() )
-      ? "Current values:", oQry:id, oQry:Name, oQry:last
-      ? "Skiping 30 Record"
-      oQry:Skip( 30 )
-      ? "Current record:" + Str( oQry:RecNo() )
-      ? "Current values:", oQry:id, oQry:Name, oQry:last    
-      oQry:Goto( 100 )
-      ? "Return record:" + Str( oQry:RecNo() )
-      ? "Current values:", oQry:id, oQry:Name, oQry:last    
       
+      oQry = TDolphinQry():New( "select student.student_id, student.name, "+; 
+                                "absence.date from absence right join  student on "+;
+                                "student.student_id = absence.student_id "+;
+                                "where absence.date is not null group by student.student_id"+;
+                                " order by absence.date limit 10", oServer )
+
+   
+    ? "QUERY  => " , oQry:cQuery
+    ?
+    ? "WHERE  => " , oQry:cWhere     
+    ? "GROUP  => " , oQry:cGroup     
+    ? "HAVING => ", oQry:cHaving    
+    ? "ORDER  => ", oQry:cOrder     
+    ? "LIMIT  => ", oQry:cLimit
+    ? "Changing sentences values"
+    ?
+    oQry:SetLimit( 3, .F. ) //no refresh
+    oQry:SetWhere( "absence.date is null" )// by default the query is refresh
+    ? "Limit changed"   
+    ? "Where changed"
+    ? "LIMIT  => ", oQry:cLimit
+    ? "WHERE  => " , oQry:cWhere     
+    ?
+    ? "QUERY  => " , oQry:cQuery
+    ?
    ENDIF
-   ?
+
    oServer:End()
    inkey(5)
 
 RETURN
 
-PROCEDURE GetError( oServer, nError, lInternal )
-   LOCAL cText := ""
+FUNCTION ConnectTo()
+   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
+   LOCAL oServer   := NIL
+   LOCAL cServer   := hIni["mysql"]["host"],;
+         cUser     := hIni["mysql"]["user"],;
+         cPassword := hIni["mysql"]["psw"],;
+         nPort     := val(hIni["mysql"]["port"]), ;
+         cDBName   := hIni["mysql"]["dbname"], ;
+         nFlags    := val(hIni["mysql"]["flags"])
+   LOCAL oErr
    
-   cText += "Error from Custom Error Message" + CRLF
-   cText += "================================" + CRLF
-   cText += oServer:ErrorTxt() + CRLF
-   cText += "ERROR No: " + Str( nError ) + CRLF
-   cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
+   TRY
    
-   ? cText + CRLF
+      oServer = TDolphinSrv():New( cServer, ;
+                                cUser, ;
+                                cPassword, ;
+                                nPort, nFlags, cDBName )
+   CATCH oErr
+     RETURN NIL
+   END
    
-   
-RETURN
+RETURN oServer
    

@@ -1,12 +1,16 @@
 /*
- * $Id: newtop.js 7/7/2010 9:44:50 PMZ dgarciagil $
+ * $Id: 10-Jul-10 9:27:15 AMnewtop.js Z dgarciagil $
  */
+
+
 // Get the num of open documents.
 var num_of_docs = UltraEdit.document.length;
 
 var com1 = "/*\r\n";
 var com2 = " */\r\n";
-
+var time;
+var sfile;
+var doc
 
 // Enumerate through all open documents and add the header.
 var index;
@@ -17,11 +21,14 @@ for (index = 0; index < num_of_docs; index++) {
 	UltraEdit.document[index].deleteLine();	
   UltraEdit.document[index].write(com1);
   UltraEdit.document[index].write(" * $Id: ");
-  UltraEdit.document[index].write( GetFileName( index ) + " " );
-  UltraEdit.document[index].write( UltraEdit.document[index].timeDate() );
+  sfile = GetFileName( index );
+  time = UltraEdit.document[index].timeDate();
+  UltraEdit.document[index].write( " " + sfile + " " );
+  UltraEdit.document[index].write( time );
   UltraEdit.document[index].write( "Z dgarciagil $" );
   UltraEdit.document[index].write( "\r\n");
   UltraEdit.document[index].write(com2);
+  GetBuild( sfile, index, time );
   UltraEdit.saveAll();
 
 }
@@ -34,4 +41,15 @@ function GetFileName ( nIndex ) {
 	nLastDirDelim = sFullName.lastIndexOf("\\");
 	sFileName = sFullName.substring(nLastDirDelim + 1);	
 	return sFileName;
+}
+
+function GetBuild ( sfile, index, time ) {
+	if( sfile == "tdolpsrv.PRG" ){
+		UltraEdit.document[index].findReplace.find( "DATA cVersion" );
+    UltraEdit.document[index].deleteLine(); 
+    UltraEdit.document[index].write( "   DATA cVersion     INIT '" );
+    UltraEdit.document[index].write( UltraEdit.document[index].timeDate() );
+    UltraEdit.document[index].write( "'" );
+    UltraEdit.document[index].write( "\r\n");    
+	}
 }

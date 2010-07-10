@@ -1,5 +1,5 @@
 /*
- * $Id: function.c 70 2010-07-03 16:33:27Z dgarciagil $
+ * $Id: 10-Jul-10 9:40:28 AM function.c Z dgarciagil $
  */
 
 /*
