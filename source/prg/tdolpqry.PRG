@@ -1151,7 +1151,7 @@ RETURN nil
 
 //----------------------------------------------------//
 
-METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
+METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
 
    LOCAL nNum
    LOCAL nSeek
@@ -1161,7 +1161,14 @@ METHOD Seek( cSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
 
    nNum := ::FieldToNum( cnField )
    
-   nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( cSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
+   IF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "N"
+      uSeek = Val( uSeek )
+   ELSEIF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "D"
+      //no supported field type date 
+      RETURN 0
+   ENDIF
+   
+   nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
    
    IF nSeek > 0 
       IF lRefresh
