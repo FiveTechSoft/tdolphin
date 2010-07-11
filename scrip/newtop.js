@@ -1,5 +1,5 @@
 /*
- * $Id: 10-Jul-10 9:27:15 AMnewtop.js Z dgarciagil $
+ * $Id: 11-Jul-10 9:42:23 AM newtop.js Z dgarciagil $
  */
 
 
@@ -45,9 +45,9 @@ function GetFileName ( nIndex ) {
 
 function GetBuild ( sfile, index, time ) {
 	if( sfile == "tdolpsrv.PRG" ){
-		UltraEdit.document[index].findReplace.find( "DATA cVersion" );
+		UltraEdit.document[index].findReplace.find( "DATA cBuild" );
     UltraEdit.document[index].deleteLine(); 
-    UltraEdit.document[index].write( "   DATA cVersion     INIT '" );
+    UltraEdit.document[index].write( "   DATA cBuild     INIT '" );
     UltraEdit.document[index].write( UltraEdit.document[index].timeDate() );
     UltraEdit.document[index].write( "'" );
     UltraEdit.document[index].write( "\r\n");    

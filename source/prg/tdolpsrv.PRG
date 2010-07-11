@@ -1,7 +1,7 @@
 /*
- * $Id: 10-Jul-10 9:40:26 AM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 11-Jul-10 9:43:49 AM tdolpsrv.PRG Z dgarciagil $
  */
-
+   
 /*
  * TDOLPHIN PROJECT source code:
  * Manager MySql server connection
@@ -83,7 +83,7 @@ CLASS TDolphinSrv
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    
-   DATA cVersion     INIT '10-Jul-10 9:40:26 AM'
+   DATA cBuild     INIT '11-Jul-10 9:43:49 AM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        

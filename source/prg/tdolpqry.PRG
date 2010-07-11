@@ -1,5 +1,5 @@
 /*
- * $Id: tdolpqry.PRG 10-Jul-10 9:00:09 AMZ dgarciagil $
+ * $Id: 11-Jul-10 9:43:50 AM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -80,8 +80,7 @@ CLASS TDolphinQry
         bOnFillArray,;//codeblock to evaluate while is filling array
         bOnChangePage //codeblock to evaluate when paginmation is activated and change page
    
-   DATA cBuild,;        // Current server version
-        cQuery,;        // copy of query that generated this object
+   DATA cQuery,;        // copy of query that generated this object
         cWhere,;        // copy of WHERE command
         cGroup,;        // copy of GROUP BY command
         cHaving,;       // copy of HAVING command
@@ -276,9 +275,6 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    ENDIF 
 
    ::LoadQuery()
-   
-   ::cBuild = "10-Jul-10 9:00:09"
-   
 
 
 RETURN Self

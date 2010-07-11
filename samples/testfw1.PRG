@@ -1,3 +1,7 @@
+/*
+ * $Id: 11-Jul-10 9:43:51 AM testfw1.PRG Z dgarciagil $
+ */
+
 #include "hbcompat.ch"
 #include "tdolphin.ch"
 #include "fivewin.ch"
@@ -47,7 +51,8 @@ PROCEDURE DataBrowse( oServer, oWnd )
    
    oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 500" )
    
-   DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd FONT oFont BRUSH oBrush
+   DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd FONT oFont BRUSH oBrush ;
+          TITLE "TDolphin Build " + oServer:cBuild
    
    FOR nSays= 4001 TO 4007 //all says
       REDEFINE SAY ID nSays OF oDlg TRANSPARENT
