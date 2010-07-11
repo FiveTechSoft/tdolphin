@@ -423,7 +423,7 @@ METHOD BuildDataWhere() CLASS TDolphinQry
          cWhere += aField[ MYSQL_FS_NAME ] + " = " + ;
                    ClipValue2Sql( uValue, , , .T. ) + " AND "
       ELSE
-        cWhere += aField[ MYSQL_FS_NAME ] + If( Empty( uValue ), " IS ", " = " ) + ;
+        cWhere += aField[ MYSQL_FS_NAME ] + If( Empty( uValue ) .AND. ValType( uValue ) != "L", " IS ", " = " ) + ;
                    ClipValue2Sql( uValue, , , .F. ) + " AND "
       ENDIF
           
@@ -690,7 +690,7 @@ RETURN aTable
 
 //----------------------------------------------------//
 
-METHOD GetBlankRow() CLASS TDolphinQry
+METHOD GetBlankRow( lRow ) CLASS TDolphinQry
    LOCAL cType
    LOCAL uValue, uItem
    LOCAL nIdx
@@ -702,6 +702,10 @@ METHOD GetBlankRow() CLASS TDolphinQry
       ::oServer:CheckError()
       RETURN NIL 
    ENDIF
+   
+   ::oRow = NIL
+   
+   DEFAULT lRow TO .T.
    
    ::lAppend := .T.
 
@@ -782,7 +786,11 @@ METHOD GetBlankRow() CLASS TDolphinQry
       ::SetData( nIdx, uValue )
    NEXT
    
-RETURN ::GetRowObj()
+   IF lRow
+      ::oRow = ::GetRowObj()
+   ENDIF
+   
+RETURN ::oRow
 
 //----------------------------------------------------//
 
@@ -1141,6 +1149,7 @@ METHOD Save() CLASS TDolphinQry
          cPrimary = ::MakePrimaryKeyWhere()
          cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
       ENDIF
+
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         

@@ -1,6 +1,8 @@
 #include "hbcompat.ch"
 #include "tdolphin.ch"
 #include "fivewin.ch"
+#include "ribbon.ch"
+#include "dtpicker.ch"
 
 FUNCTION Main() 
 
@@ -36,79 +38,121 @@ PROCEDURE DataBrowse( oServer, oWnd )
    LOCAL lNew := .F.
    LOCAL lMod := .F.
    LOCAL oGet := Array( 8 )
+   LOCAL nSays 
+   LOCAL oFont, oBrush
    
    
-   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 1000" )
+   DEFINE FONT oFont NAME "Times New Roman" SIZE 8, 12
+   DEFINE BRUSH oBrush FILE "..\bitmaps\bluewhit.bmp"
    
-   DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd
+   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 500" )
    
-   REDEFINE GET oGet[ 1 ] VAR oQry:first    ID 4016 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
-   REDEFINE GET oGet[ 2 ] VAR oQry:last     ID 4017 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
-   REDEFINE GET oGet[ 3 ] VAR oQry:street   ID 4018 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
-   REDEFINE GET oGet[ 4 ] VAR oQry:city     ID 4019 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
-   REDEFINE GET oGet[ 5 ] VAR oQry:state    ID 4020 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
-   REDEFINE GET oGet[ 6 ] VAR oQry:hiredate ID 4025 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
-   REDEFINE GET oGet[ 7 ] VAR oQry:salary   ID 4022 OF oDlg  UPDATE WHEN( lNew .OR. lMod ) PICTURE "999,999,999.99"
-   REDEFINE CHECKBOX oGet[ 7 ] VAR oQry:married ID 4026 PROMPT "Married";
-            OF oDlg       UPDATE WHEN( lNew .OR. lMod )   
+   DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd FONT oFont BRUSH oBrush
+   
+   FOR nSays= 4001 TO 4007 //all says
+      REDEFINE SAY ID nSays OF oDlg TRANSPARENT
+   NEXT
+   
+   REDEFINE GET oGet[ 1 ] VAR oQry:first    ID 4008 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 2 ] VAR oQry:last     ID 4009 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE DTPICKER oGet[ 3 ] VAR oQry:hiredate ID 4010 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 4 ] VAR oQry:street   ID 4011 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 5 ] VAR oQry:city     ID 4012 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 6 ] VAR oQry:state    ID 4013 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 7 ] VAR oQry:salary   ID 4014 OF oDlg  UPDATE WHEN( lNew .OR. lMod ) PICTURE "999,999,999.99"
+
+   REDEFINE CHECKBOX oGet[ 8 ] VAR oQry:married ID 4026 PROMPT "Married";
+            OF oDlg       UPDATE WHEN( lNew .OR. lMod )  
+   oGet[ 8 ]:lTransparent = .T.
    
    //top 
-   REDEFINE BUTTON ID 4001 OF oDlg ;
+   REDEFINE RBBTN ID 4015 OF oDlg ;
             ACTION ( lNew := lMod := .F.,;
                      oQry:GoTop(), ;
-                     oDlg:Update() )
+                     oDlg:Update() );
+            GROUPBUTTON FIRST ROUND ROUNDSIZE 2;
+            BITMAP "..\bitmaps\top.bmp"
    
    //prev                        
-   REDEFINE BUTTON ID 4002 OF oDlg;
+   REDEFINE RBBTN ID 4016 OF oDlg;
             ACTION ( lNew := lMod := .F.,;
                      oQry:Skip( -1 ), ;
-                     oDlg:Update() )
+                     oDlg:Update() );
+            GROUPBUTTON;
+            BITMAP "..\bitmaps\prev.bmp" 
    //next                     
-   REDEFINE BUTTON ID 4003 OF oDlg;
+   REDEFINE RBBTN ID 4017 OF oDlg;
             ACTION ( lNew := lMod := .F.,;
                      oQry:Skip(), ;
-                     oDlg:Update() )
+                     oDlg:Update() );
+            GROUPBUTTON;
+            BITMAP "..\bitmaps\next.bmp"
+                                 
    //bottom                     
-   REDEFINE BUTTON ID 4004 OF oDlg;
+   REDEFINE RBBTN ID 4018 OF oDlg;
             ACTION ( lNew := lMod := .F.,;
                      oQry:GoBottom(), ;
-                     oDlg:Update() )   
+                     oDlg:Update() );
+            GROUPBUTTON END ROUND ROUNDSIZE 2;
+            BITMAP "..\bitmaps\bottom.bmp"
+                     
    //new                  
-   REDEFINE BUTTON ID 4005 OF oDlg;
+   REDEFINE RBBTN ID 4019 OF oDlg;
             ACTION ( lNew := ! ( lMod := ! lMod ),;
-                     oQry:GetBlankRow(),;
+                     oQry:GetBlankRow( .F. ),;
                      oDlg:Update(),;
                      oGet[ 1 ]:SetFocus() ) ;
-            WHEN ! lNew
+            WHEN ! lNew;
+            GROUPBUTTON FIRST ROUND ROUNDSIZE 2;
+            BITMAP "..\bitmaps\new2.bmp"
    
    //Modify         
-   REDEFINE BUTTON ID 4006 OF oDlg ;
+   REDEFINE RBBTN  ID 4020 OF oDlg ;
             ACTION ( lMod := ! ( lNew := ! lNew ),;
                      oDlg:Update() );
-            WHEN ! lMod
+            WHEN ! lMod;
+            GROUPBUTTON;
+            BITMAP "..\bitmaps\edit.bmp"
    
    //save         
-   REDEFINE BUTTON ID 4007 OF oDlg;
+   REDEFINE RBBTN  ID 4021 OF oDlg;
             ACTION ( oQry:Save(), ;
                      oQry := oQry, ;
                      lNew := lMod := .F.,;
                      oDlg:Update() );
-            WHEN lNew .OR. lMod
+            WHEN lNew .OR. lMod;
+            GROUPBUTTON;
+            BITMAP "..\bitmaps\floppy.bmp"
    
+   //delete
+   REDEFINE RBBTN  ID 4022 OF oDlg;
+            ACTION ( If( MsgYesNo( "Do want delete current record" ), ;
+                         ( oQry:Delete(), oQry:Refresh(),oDlg:Update() ), ) ) ;
+            WHEN ( ! lNew .AND. ! lMod );
+            GROUPBUTTON;
+            BITMAP "..\bitmaps\delete2.bmp"
+
    //cancel
-   REDEFINE BUTTON ID 4008 OF oDlg ;
+   REDEFINE RBBTN  ID 4023 OF oDlg ;
             ACTION ( lNew := lMod := .F.,;
                      oQry:Refresh(), ;
                      oDlg:Update() );
-            WHEN lNew .OR. lMod
+            WHEN lNew .OR. lMod;
+            GROUPBUTTON END ROUND ROUNDSIZE 2;
+            BITMAP "..\bitmaps\repeat.bmp"
    
    //exit         
-   REDEFINE BUTTON ID 4023 OF oDlg;
-            ACTION( oDlg:End() )
+   REDEFINE RBBTN  ID 4024 OF oDlg;
+            ACTION( oDlg:End() );
+            BORDER ROUND ROUNDSIZE 2;
+            BITMAP "..\bitmaps\exit.bmp"
+            
    
    ACTIVATE DIALOG oDlg CENTERED
    
    oQry:End()
+   oFont:End()
+   oBrush:End()
 
 RETURN 
 

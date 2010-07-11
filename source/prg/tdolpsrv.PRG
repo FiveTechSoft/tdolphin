@@ -1636,11 +1636,11 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt, lNoNull ) // Compatibility wint TMys
          EXIT
 
       CASE "L"
-         cValue := AllTrim( Str( iif(Value, 1, 0 ) ) )
+         cValue := AllTrim( Str( If( Value, 1, 0 ) ) )
          EXIT
 
       CASE "T"
-         cValue := iif( Value < 0, "NULL", Alltrim( str( Value ) ) )
+         cValue := iif( Value < 0, "NULL", Alltrim( Str( Value ) ) )
          EXIT
 
 #ifdef __XHARBOUR__
