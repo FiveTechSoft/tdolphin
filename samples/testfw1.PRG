@@ -1,147 +1,141 @@
-#include "fivewin.ch"
 #include "hbcompat.ch"
 #include "tdolphin.ch"
-#include "xbrowse.ch"
+#include "fivewin.ch"
 
+FUNCTION Main() 
 
-PROCEDURE Main()
-   
-   LOCAL oServer   := NIL
-   
-   LOCAL cServer   := "dolphintest.sitasoft.net",;
-         cUser     := "test_dolphin",;
-         cPassword := "123456",;
-         nPort     := 3306, ;
-         cDBName   := "dolphin_man", ;
-         nFlags    := 0
-   LOCAL oQry
-   
-   LOCAL oWnd, oBrw
+   LOCAL oWnd 
+   LOCAL oMenu
+   LOCAL oServer
+   MENU oMenu 2007
+      MENUITEM "testing" ACTION DataBrowse( oServer, oWnd )
+   ENDMENU
    
    SET CENTURY ON
-   SET DATE FORMAT "dd/mm/yyyy"
- 
-   oServer = TDolphinSrv():New( cServer, ;
-                                cUser, ;
-                                cPassword, ;
-                                nPort, nFlags, cDBName,;
-                                {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
+   SET DATE FORMAT "dd/mm/yyyy"   
+      
+   //Activated Case sensitive
+   D_SetCaseSensitive( .T. )
    
-   IF ! oServer:lError 
-
-      oQry = TDolphinQry():New( "SELECT * FROM testman", oServer )
-   ELSE 
-      RETURN 
+   IF ( oServer := ConnectTo() ) == NIL
+      RETURN NIL
    ENDIF
-
-   DEFINE WINDOW oWnd TITLE "Testing TDOLPHIN"
    
-   @ 0, 0 XBROWSE oBrw OF oWnd
+   DEFINE WINDOW oWnd TITLE "Testing Dolphin - Fivewin" MENU oMenu
    
-   SetDolphin( oBrw, oQry )
-   
-   oBrw:CreateFromCode() 
-   
-   oWnd:oClient = oBrw
-   
-   
-   ACTIVATE WINDOW oWnd
+   ACTIVATE WINDOW oWnd 
    
    oServer:End()
+   
+RETURN NIL
 
+PROCEDURE DataBrowse( oServer, oWnd )
 
-RETURN
-   
-PROCEDURE GetError( oServer, nError, lInternal )
-   LOCAL cText := ""
-   
-   cText += "Error from Custom Error Message" + CRLF
-   cText += "================================" + CRLF
-   cText += oServer:ErrorTxt() + CRLF
-   cText += "ERROR No: " + Str( nError ) + CRLF
-   cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
-   
-   ? cText + CRLF
+   LOCAL oDlg
+   LOCAL oQry
+   LOCAL lNew := .F.
+   LOCAL lMod := .F.
+   LOCAL oGet := Array( 8 )
    
    
-RETURN   
-
-PROCEDURE SetDolphin( oBrw, oQry)
-
-   LOCAL xField    := NIL
-   LOCAL cHeader   := ""
-   LOCAL cCol      := ""
-   LOCAL aFldNames
-
-   WITH OBJECT oBrw
-      :bGoTop    := {|| If( oQry:LastRec() > 0, oQry:GoTop(), NIL ) }
-      :bGoBottom := {|| If( oQry:LastRec() > 0, oQry:GoBottom(), nil )  }
-      :bSkip     := {| n | oQry:Skip( n ) }
-      :bBof      := {|| oQry:Bof() }
-      :bEof      := {|| oQry:Eof() }
-      :bBookMark := {| n | If( n == nil,;
-                           If( oQry:LastRec() > 0, oQry:RecNo(), 0 ), ;
-                           If( oQry:LastRec() > 0, oQry:goto( n ), 0 ) ) }
-      :bKeyNo    := {| n | If( n == nil, ;
-                           If( oQry:LastRec() > 0, oQry:RecNo(), 0 ), ;
-                           If( oQry:LastRec() > 0, oQry:Goto( n ), 0 ) ) }
-      :bKeyCount := {|| oQry:LastRec() }
-   END
-
-   oBrw:nDataType         := DATATYPE_MYSQL
-   oBrw:oMySql = oQry
+   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 1000" )
    
-
-//   IF lAddCols
-
-      aFldNames := oQry:aStructure
-
-      FOR EACH xField IN aFldNames
-         IF Valtype( xField ) == "A" .AND. Len(xField) == 2
-            cCol    := xField[1]
-            cHeader := xField[2]
-         ELSEIF Valtype( xField ) == "A" .AND. Len(xField) # 2
-            cCol    := xField[1]
-            cHeader := xField[1]
-         ELSE
-            cCol    := xField
-            cHeader := xField
-         ENDIF
-
-         oBrw:SetColFromMySQL( cCol, cHeader, .F., oQry )
-      NEXT
-
-      oBrw:bSeek  := { | c | DolphinSeek( c, oQry ) }
-
-//   ENDIF
+   DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd
+   
+   REDEFINE GET oGet[ 1 ] VAR oQry:first    ID 4016 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 2 ] VAR oQry:last     ID 4017 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 3 ] VAR oQry:street   ID 4018 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 4 ] VAR oQry:city     ID 4019 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 5 ] VAR oQry:state    ID 4020 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 6 ] VAR oQry:hiredate ID 4025 OF oDlg  UPDATE WHEN( lNew .OR. lMod )
+   REDEFINE GET oGet[ 7 ] VAR oQry:salary   ID 4022 OF oDlg  UPDATE WHEN( lNew .OR. lMod ) PICTURE "999,999,999.99"
+   REDEFINE CHECKBOX oGet[ 7 ] VAR oQry:married ID 4026 PROMPT "Married";
+            OF oDlg       UPDATE WHEN( lNew .OR. lMod )   
+   
+   //top 
+   REDEFINE BUTTON ID 4001 OF oDlg ;
+            ACTION ( lNew := lMod := .F.,;
+                     oQry:GoTop(), ;
+                     oDlg:Update() )
+   
+   //prev                        
+   REDEFINE BUTTON ID 4002 OF oDlg;
+            ACTION ( lNew := lMod := .F.,;
+                     oQry:Skip( -1 ), ;
+                     oDlg:Update() )
+   //next                     
+   REDEFINE BUTTON ID 4003 OF oDlg;
+            ACTION ( lNew := lMod := .F.,;
+                     oQry:Skip(), ;
+                     oDlg:Update() )
+   //bottom                     
+   REDEFINE BUTTON ID 4004 OF oDlg;
+            ACTION ( lNew := lMod := .F.,;
+                     oQry:GoBottom(), ;
+                     oDlg:Update() )   
+   //new                  
+   REDEFINE BUTTON ID 4005 OF oDlg;
+            ACTION ( lNew := ! ( lMod := ! lMod ),;
+                     oQry:GetBlankRow(),;
+                     oDlg:Update(),;
+                     oGet[ 1 ]:SetFocus() ) ;
+            WHEN ! lNew
+   
+   //Modify         
+   REDEFINE BUTTON ID 4006 OF oDlg ;
+            ACTION ( lMod := ! ( lNew := ! lNew ),;
+                     oDlg:Update() );
+            WHEN ! lMod
+   
+   //save         
+   REDEFINE BUTTON ID 4007 OF oDlg;
+            ACTION ( oQry:Save(), ;
+                     oQry := oQry, ;
+                     lNew := lMod := .F.,;
+                     oDlg:Update() );
+            WHEN lNew .OR. lMod
+   
+   //cancel
+   REDEFINE BUTTON ID 4008 OF oDlg ;
+            ACTION ( lNew := lMod := .F.,;
+                     oQry:Refresh(), ;
+                     oDlg:Update() );
+            WHEN lNew .OR. lMod
+   
+   //exit         
+   REDEFINE BUTTON ID 4023 OF oDlg;
+            ACTION( oDlg:End() )
+   
+   ACTIVATE DIALOG oDlg CENTERED
+   
+   oQry:End()
 
 RETURN 
 
+//--------------------------------------//
 
-function DolphinSeek( c, oQry )
-
-   local nStart
-   static aLastRec := {}
-   
-   if Len( aLastRec ) < Len( c )
-      if Len( aLastRec ) == 0 
-         nStart = 1
-      else 
-         nStart = oQry:RecNo()
-      endif
-      AAdd( aLastRec, nStart )
-   else 
-      ADel( aLastRec, Len( aLastRec ) )
-      ASize( aLastRec, Len( aLastRec ) - 1 )
-      IF Len( aLastRec ) == 0
-         nStart = 1 
-      ELSE 
-         nStart = ATail( aLastRec )
-      ENDIF
-   endif
-   
-   oQry:Seek( Val( c ),  "ID", nStart, oQry:LastRec(), .T., .T. )
-   
-return .T.
+FUNCTION ConnectTo()
+   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
+   LOCAL oServer   := NIL
+   LOCAL cServer   := hIni["mysql"]["host"],;
+         cUser     := hIni["mysql"]["user"],;
+         cPassword := hIni["mysql"]["psw"],;
+         nPort     := val(hIni["mysql"]["port"]), ;
+         cDBName   := hIni["mysql"]["dbname"], ;
+         nFlags    := val(hIni["mysql"]["flags"])
+   LOCAL oErr
    
    
+   
+   TRY
+   
+      oServer = TDolphinSrv():New( cServer, ;
+                                cUser, ;
+                                cPassword, ;
+                                nPort, nFlags, cDBName )
+                                
+   CATCH oErr 
+     RETURN NIL
+   END
+   
+RETURN oServer
