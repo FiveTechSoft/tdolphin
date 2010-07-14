@@ -146,7 +146,7 @@ HB_FUNC( MYSEEK )
    int uiEnd, uiOk = -1;
    unsigned int uiField = hb_parni( 2 ) - 1;
    char * cSearch = ( char *) hb_parc( 3 );
-   unsigned long * pulFieldLengths;
+   unsigned long * pulFieldLengths = NULL;
    BOOL bSoft = hb_parl( 6 );
    
    
@@ -156,26 +156,30 @@ HB_FUNC( MYSEEK )
          uiEnd = mysql_num_rows( result );
       else 
       	 uiEnd = hb_parni( 5 ); 
-      
+
       while( uiStart < uiEnd )
       {
       	mysql_data_seek(result, uiStart);
       	row = mysql_fetch_row( result );
       	pulFieldLengths = mysql_fetch_lengths( result ) ;
-            
-      	if( bSoft )
-      	   pulFieldLengths[ uiField ] = strlen( cSearch );
-      	
-      	if( row )
-      		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( long ) pulFieldLengths[ uiField ] );
-
-        if( uii == 0 )
-        { 
-        	 uiOk = uiStart;
-        	 break;
+        
+        if( pulFieldLengths[ uiField ] != 0 )
+        {
+         	if( bSoft )
+         	   pulFieldLengths[ uiField ] = strlen( cSearch );
+       	
+         	if( row )
+         		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( long ) pulFieldLengths[ uiField ] );
+   
+           if( uii == 0 )
+           { 
+           	 uiOk = uiStart;
+           	 break;
+           }     
         }
         uiStart++;
       }      	 
+
    }
    uiOk = uiOk >=0 ? uiOk + 1 : 0;
    hb_retnl( ( long ) uiOk  );

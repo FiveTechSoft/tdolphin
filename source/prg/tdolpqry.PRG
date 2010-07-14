@@ -154,13 +154,16 @@ CLASS TDolphinQry
    METHOD FieldToNum( cnField ) HIDDEN                                                            
    
    METHOD FillArray()           /*Fill and return a array with all query information*/
+
+   METHOD FirstPage   INLINE ::PrevPage( ::nCurrentPage - 1 )
+                                /*Go to first page in pagination*/
    
    METHOD GetBlankRow()                       
    METHOD GetRow( nRow )        /*Fill aRow and Hash with current data row selected*/
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
                                 /*Goto specific Row (RecNo) and fill aRow/Hash*/
                                 
-   METHOD GetRowObj( nRow )  
+   METHOD GetRowObj( nRow )     /*Return TDolphinRow Object*/
                                 
    METHOD GoBottom()   INLINE   ::GetRow( ::nRecCount  ) 
                                 /*Goto BOTTOM of Query and fill aRow/Hash*/
@@ -173,6 +176,10 @@ CLASS TDolphinQry
    METHOD IsSingleTable() INLINE Len( ::aTables ) == 1  
    METHOD IsCommand()     INLINE ( ::IsSingleTable() .AND. Len( ::aColumns ) == 0 ) .OR. ;
                                  ( Len( ::aTables ) < 1 .AND. Len( ::aColumns ) >= 1 )
+
+
+   METHOD LastPage() INLINE ::NextPage( ::nMaxPages - ::nCurrentPage )
+                               /*Go to Last page in pagination*/
 
                                   
    METHOD LastRec()    INLINE     ::nRecCount
@@ -1025,7 +1032,6 @@ METHOD NextPage( nSkip, lRefresh ) CLASS TDolphinQry
 
       ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( ::nPageStep ) ), lRefresh ) 
 
-
       IF ::lPagination .AND. ::bOnChangePage != NIL .AND. lRefresh
          Eval( ::bOnChangePage, .F. )
       ENDIF     
@@ -1049,13 +1055,14 @@ METHOD PrevPage( nSkip, lRefresh ) CLASS TDolphinQry
       ::nMaxPages     = Int( ::nTotalRows / ::nPageStep ) + If( ::nTotalRows % ::nPageStep > 0, 1, 0 )
    
       IF ::nCurrentPage - nSkip > 0
-         ::nCurrentLimit -= ( ::nPageStep * nSkip ) 
+         ::nCurrentLimit -= ( ::nPageStep * nSkip )
          ::nCurrentPage  -= nSkip    
+         ::nCurrentPage = Max( 1, ::nCurrentPage )
+         ::nCurrentLimit = Max( 0, ::nCurrentLimit )
       ELSE 
          ::nCurrentLimit = 0
          ::nCurrentPage  = 1
       ENDIF
-
       ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( ::nPageStep ) ), lRefresh ) 
 
       IF ::lPagination .AND. ::bOnChangePage != NIL .AND. lRefresh
@@ -1172,7 +1179,7 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
       //no supported field type date 
       RETURN 0
    ENDIF
-   
+
    nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
    
    IF nSeek > 0 
