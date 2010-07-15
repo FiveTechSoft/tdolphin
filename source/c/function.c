@@ -146,7 +146,7 @@ HB_FUNC( MYSEEK )
    int uiEnd, uiOk = -1;
    unsigned int uiField = hb_parni( 2 ) - 1;
    char * cSearch = ( char *) hb_parc( 3 );
-   unsigned long * pulFieldLengths = NULL;
+   unsigned long * pulFieldLengths;
    BOOL bSoft = hb_parl( 6 );
    
    

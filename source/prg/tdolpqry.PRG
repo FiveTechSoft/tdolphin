@@ -246,7 +246,7 @@ METHOD New( cQuery, oServer ) CLASS TDolphinQry
    IF oServer == NIL
       RETURN NIL 
    ENDIF   
-   
+
    ::oServer = oServer
    ::cQuery  = cQuery
    ::nQryId  = oServer:GetQueryId()
@@ -486,8 +486,7 @@ METHOD Delete( lAll ) CLASS TDolphinQry
    If ::oServer:SqlQuery( cQry )
       ::LoadQuery()
    Else 
-      ::oServer:nInternalError = ERR_DELETING
-      ::CheckError()
+      RETURN .F. 
    EndIf
 
 RETURN .T.
@@ -645,6 +644,9 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
          ::aRow[ nNum ]    := uValue
 #endif /*USE_HASH*/
          RETURN uValue
+      ELSE 
+         ::oServer:nInternalError = ERR_INVALIDFIELDTYPE
+         ::oServer:CheckError()
       ENDIF
    ENDIF
 
@@ -1156,10 +1158,11 @@ METHOD Save() CLASS TDolphinQry
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         
-      ::lAppend = .F.
    ENDIF
+   
+   ::lAppend = .F.
 
-RETURN nil
+RETURN lSaveOk
 
 //----------------------------------------------------//
 
@@ -1464,7 +1467,7 @@ RETURN uValue
       cCol = Lower( If( Left( cCol, 1 ) == '_' , SubStr( cCol, 2 ), cCol ) )
 
       IF ! ( uParam1 == NIL ) 
-         IF hGetPos( ::hRow, "_"+cCol ) > 0        
+         IF hGetPos( ::hRow, "_"+cCol ) > 0           
             ::FieldPut( cCol, uParam1 )
             RETURN uParam1
          ENDIF
@@ -1566,7 +1569,8 @@ RETURN NIL
       cCol = Lower( If( Left( cCol, 1 ) == '_' , SubStr( cCol, 2 ), cCol ) )
 
       IF ! ( uParam1 == NIL ) 
-         IF hGetPos( ::uRow, "_" + cCol ) > 0        
+         IF hGetPos( ::uRow, "_" + cCol ) > 0   
+             
             HSet( ::uRow, "_" + cCol, uParam1 )
             RETURN uParam1
          ENDIF
