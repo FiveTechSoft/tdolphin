@@ -1177,7 +1177,7 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
    nNum := ::FieldToNum( cnField )
    
    IF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "N"
-      uSeek = Val( uSeek )
+      uSeek = If( ValTye( uSeek ) != "N", Val( uSeek ),uSeek )
    ELSEIF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "D"
       //no supported field type date 
       RETURN 0
