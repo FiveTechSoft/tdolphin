@@ -1,10 +1,56 @@
 #include "hbcompat.ch"
 #include "tdolphin.ch"
 
-#define CRLF Chr( 13 ) + Chr( 10 )
+FUNCTION Main() 
 
-PROCEDURE Main()
+   LOCAL cTime :=  time()
+   LOCAL oServer   
    
+   SET CENTURY ON
+   SET DATE FORMAT "dd/mm/yyyy"   
+      
+   //Activated Case sensitive
+   D_SetCaseSensitive( .T. )
+   
+   IF ( oServer := ConnectTo() ) == NIL
+      RETURN NIL
+   ENDIF
+   
+   DoInsert( oServer )
+
+   ? "Test with DOLPHIN is finished!!!"
+   ? "Process Time: " + ElapTime( cTime, time() )
+   ? 
+   Inkey(5)
+   
+   oServer:End()
+   
+RETURN NIL
+
+
+PROCEDURE DoInsert( oServer )
+
+   LOCAL n := 1
+   LOCAL cQry
+   ?
+    oServer:SQLQuery( "DELETE FROM testman" )
+   FOR n = 1 TO 500
+       cQry = "INSERT INTO testman SET " + ;
+              " NAME='NAME" + StrZero( n, 4 ) + "'" +;
+              ",LAST='LAST" + StrZero( n, 4 ) + "'" +;
+              ",BIRTH='" + StrZero( Year( Date() ), 4 ) + "-" + StrZero( Month( Date() ), 2 )  + "-" + StrZero( Day( Date() ), 2 ) +"'" +;
+              ",ACTIVE=1" 
+       ? cQry    
+       
+       oServer:SQLQuery( cQry )
+          
+   NEXT
+   ? "Finished Insert 500 items"
+   ?
+   
+RETURN
+
+FUNCTION ConnectTo()
    LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
    LOCAL oServer   := NIL
    LOCAL cServer   := hIni["mysql"]["host"],;
@@ -13,107 +59,19 @@ PROCEDURE Main()
          nPort     := val(hIni["mysql"]["port"]), ;
          cDBName   := hIni["mysql"]["dbname"], ;
          nFlags    := val(hIni["mysql"]["flags"])
-   LOCAL cText := ""
-
-   LOCAL aStruc, aRow, uItem
+   LOCAL oErr
    
-   oServer = TDolphinSrv():New( cServer, ;
+   
+   
+   TRY
+   
+      oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
-                                nPort, nFlags, ,;
-                                {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
-
-   IF ! oServer:lError 
-      oServer:DBCreate( "test03" )
-      oServer:SelectDB( "test03" )
-      IF CreateTable( oServer )
-         DoInsert( oServer )
-         DoUpdate( oServer )
-      ENDIF
-
-   ENDIF 
-
-   oServer:end()
-   inkey(5)
-
-RETURN 
-
-FUNCTION CreateTable( oServer )
-   LOCAL aStruc := { { "ID",     "N", 10, 0, .T., NIL     },;
-                     { "NAME",   "C", 15, 0, .F., "First" },;
-                     { "LAST",   "C", 15, 0, .F., "Last"  },;
-                     { "BIRTH",  "D",   ,  ,    ,         },;
-                     { "ACTIVE", "L",   ,  ,    ,.F.      },;
-                     { "AUX",    "N", 10, 0, , 0} }
-
-RETURN oServer:CreateTable( "testman", aStruc, "id", "id", "id" )
-
-
-PROCEDURE DoInsert( oServer )
-
-   LOCAL aFields
-   LOCAL aValues
-   LOCAL n := 1, lSwitch := .T.
-   LOCAL cTime := time()
-   LOCAL lOk := .T.
-
+                                nPort, nFlags, cDBName )
+                                
+   CATCH oErr 
+     RETURN NIL
+   END
    
-   aFields = { "NAME", "LAST", "BIRTH", "ACTIVE" }
-   ?
-   WHILE lOk .AND. n <= 500
-       aValues = { "NAME" + StrZero( n, 4 ),;
-                   "LAST" + StrZero( n, 4 ),;
-                   Date(),;
-                   .T. } 
-            
-       IF n%50 == 0
-          lSwitch = ! lSwitch 
-       ENDIF
-       
-       IF lSwitch
-         ?? "="
-       ELSE
-         ?? chr( 8 )
-       ENDIF
-       lOk = oServer:Insert( "testman", aFields, aValues )
-       n++
-          
-   ENDDO
-
-   ? "Finished Insert 500 items"
-   ? "Time " + elaptime( cTime, time() )
-   ?
-RETURN
-
-
-PROCEDURE DoUpdate( oServer )
-
-   LOCAL aFields
-   LOCAL aValues
-   LOCAL n, lSwitch := .T.
-   
-   
-   aFields = { "BIRTH", "AUX" }
-   aValues = { Date() - 5,;
-              { 1, .T. } } //Add Self ( AUX = AUX + 1  )
-
-   oServer:Update( "testman", aFields, aValues, "ID<=200" )
-   
-   ? "Finished Update 200 items"
-   ?
-
-RETURN
-
-PROCEDURE GetError( oServer, nError, lInternal )
-   LOCAL cText := ""
-   
-   cText += "Error from Custom Error Message" + CRLF
-   cText += "================================" + CRLF
-   cText += oServer:ErrorTxt() + CRLF
-   cText += "ERROR No: " + Str( nError ) + CRLF
-   cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
-   
-   ? cText + CRLF
-   
-   
-RETURN
+RETURN oServer
