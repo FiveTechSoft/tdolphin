@@ -78,7 +78,8 @@ CLASS TDolphinQry
    DATA bBof,;        //codeblock to evaluate if the value is the first row
         bEof,;        //codeblock to evaluate if the value is the last row
         bOnFillArray,;//codeblock to evaluate while is filling array
-        bOnChangePage //codeblock to evaluate when paginmation is activated and change page
+        bOnChangePage,; //codeblock to evaluate when paginmation is activated and change page
+        bOnLoadQuery  //codeblock to evaluate before load new Query
    
    DATA cQuery,;        // copy of query that generated this object
         cWhere,;        // copy of WHERE command
@@ -903,6 +904,10 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    LOCAL lCaseSen := D_SetCaseSensitive()
 
    DEFAULT lBuildData TO .T.
+
+   IF ::bOnLoadQuery != NIL 
+      Eval( ::bOnLoadQuery, Self )
+   ENDIF
 
    IF ! oServer:SQLQuery( cQuery )
       RETURN NIL 
