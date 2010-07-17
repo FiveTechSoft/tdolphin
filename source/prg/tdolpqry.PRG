@@ -1174,6 +1174,10 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
    DEFAULT lSoft TO .F.
    DEFAULT lRefresh TO .T.
 
+   IF ::nRecCount == 0 
+      RETURN 0
+   ENDIF
+
    nNum := ::FieldToNum( cnField )
    
    IF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "N"
