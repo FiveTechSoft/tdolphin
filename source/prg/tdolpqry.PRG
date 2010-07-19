@@ -577,7 +577,7 @@ METHOD FieldPos( cFieldName ) CLASS TDolphinQry
    LOCAL nPos := 0
 
    IF ! Empty( cFieldName )
-      nPos = AScan( ::aStructure, {| aField | aField[ MYSQL_FS_NAME ] == D_LowerCase( cFieldName ) } )
+      nPos = AScan( ::aStructure, {| aField | aField[ MYSQL_FS_NAME ] == Lower( cFieldName ) } )
    ENDIF
 
    IF nPos == 0 

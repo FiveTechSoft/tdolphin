@@ -113,9 +113,9 @@ CLASS TDolphinSrv
 
    METHOD Backup( aTables, cFile, lDrop, lOver, nStep, cHeader, cFooter, lCancel )  
 
-   METHOD BeginTransaction()          INLINE ::Execute( "BEGIN" )    
+   METHOD BeginTransaction()          INLINE ::SqlQuery( "BEGIN" )    
    
-   METHOD ChangeEngine( cTable, cType )  INLINE ::Execute( "ALTER TABLE " + D_LowerCase( cTable ) + " ENGINE = " + D_LowerCase( cType ) )
+   METHOD ChangeEngine( cTable, cType )  INLINE ::SqlQuery( "ALTER TABLE " + D_LowerCase( cTable ) + " ENGINE = " + D_LowerCase( cType ) )
       
    METHOD ChangeEngineAll( cType )  
    
@@ -156,7 +156,7 @@ CLASS TDolphinSrv
    METHOD DeleteTables( acTable, lExists )
                               /*Delete Tables*/
                               
-   METHOD DropUser( cUser )             INLINE ::Execute( "DROP USER " + cUser )
+   METHOD DropUser( cUser )             INLINE ::SqlQuery( "DROP USER " + cUser )
                               /*Drop User*/
    
    METHOD Embedded( cDataBase, aOptions, aGroups )
@@ -351,7 +351,7 @@ METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOptio
       cQuery += " WITH " + cWithOption
    ENDIF
 
-   lReturn := ::Execute( cQuery )
+   lReturn := ::SqlQuery( cQuery )
 
 RETURN lReturn
 
@@ -547,7 +547,7 @@ METHOD ChangeEngineAll( cType ) CLASS TDolphinSrv
    LOCAL cTable
 
    FOR EACH cTable IN ::ListTables()
-      ::Execute( "ALTER TABLE " + cTable + " ENGINE = " + D_LowerCase( cType ) )
+      ::SqlQuery( "ALTER TABLE " + cTable + " ENGINE = " + D_LowerCase( cType ) )
    NEXT
 
 RETURN NIL
@@ -636,7 +636,7 @@ METHOD Compact( cTable ) CLASS TDolphinSrv
    ENDIF
 
    FOR EACH cTable IN aTables
-      ::Execute( "OPTIMIZE TABLE " + cTable )
+      ::SqlQuery( "OPTIMIZE TABLE " + cTable )
    NEXT
 
 RETURN NIL
@@ -1137,7 +1137,7 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
    ENDIF 
 
    cExecute = BuildInsert( cTable, aColumns, aValues )
-   lRet = ::Execute( cExecute )  
+   lRet = ::SqlQuery( cExecute )  
   
 RETURN lRet
 
@@ -1244,7 +1244,7 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
       
       FOR EACH cQuery IN aQueries
          cLast = cQuery
-         ::Execute( cQuery )
+         ::SqlQuery( cQuery )
          
          IF ::bOnMultiQry != NIL
 #ifdef __HARBOUR__
@@ -1301,7 +1301,7 @@ METHOD RenameUser( cFromUser, cServer, cRename )
    cQry += "@" + D_LowerCase( ClipValue2SQL( cServer ) )
 
 
-RETURN ::Execute( cQry )
+RETURN ::SqlQuery( cQry )
 
 
 //---------------------------------------------//
@@ -1352,7 +1352,7 @@ METHOD Restore( cFile, lCancel ) CLASS TDolphinSrv
          ENDIF
 
          IF "CREATE DATABASE IF NOT EXISTS" $ cLine 
-            ::Execute( cLine )
+            ::SqlQuery( cLine )
             ::SelectDB( SubStr( cLine, RAt( " ", cLine ) + 1 ) )
             LOOP
          ENDIF
@@ -1364,19 +1364,19 @@ METHOD Restore( cFile, lCancel ) CLASS TDolphinSrv
          ENDIF
          
          IF "DROP TABLE" $ cLine
-            ::Execute( cLine )
+            ::SqlQuery( cLine )
          ENDIF
          IF "CREATE TABLE" $ cLine
-            ::Execute( cLine )
+            ::SqlQuery( cLine )
          ENDIF
          IF "LOCK TABLES" $ cLine
-            ::Execute( cLine )
+            ::SqlQuery( cLine )
          ENDIF
          IF "INSERT INTO" $ cLine
-            ::Execute( cLine )
+            ::SqlQuery( cLine )
          ENDIF
          IF "UNLOCK TABLES" $ cLine
-            ::Execute( cLine )
+            ::SqlQuery( cLine )
          ENDIF
 
       NEXT
@@ -1514,7 +1514,6 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
    LOCAL cExecute
    LOCAL lRet, n
    LOCAL aStruc, nPos
-   LOCAL lAddSelf := .F.
    LOCAL cValue
    
    DEFAULT cWhere       TO ""
@@ -1524,8 +1523,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
       ::CheckError()
       RETURN .F. 
    ENDIF 
-   
-   
+      
    IF Empty( cTable ) 
       ::nInternalError = ERR_EMPTYTABLE
       ::CheckError()
@@ -1542,15 +1540,9 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
    aStruc = ::TableStructure( cTable )
    FOR n = 1 TO Len( aColumns )
       IF ValType( aValues[ n ] ) == "A"
-         lAddSelf = aValues[ n ][ 2 ]
          cValue   = ClipValue2SQL( aValues[ n ][ 1 ] )
-      ELSE 
-         cValue   = ClipValue2SQL( aValues[ n ] )
-      ENDIF
-         
-      IF lAddSelf
          nPos := AScan( aStruc, {| uItem | Upper( AllTrim( uItem[ 1 ] ) ) == Upper( AllTrim( aColumns[ n ] ) ) } )
-         IF nPos > 0 .AND. aStruc[ nPos ][ 2 ] == "M"
+         IF nPos > 0 .AND. aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] == "M"
             cExecute += aColumns[ n ] + " = CONCAT(" + aColumns[ n ] + ", " + cValue + "),"
          ELSEIF nPos > 0
             cExecute += aColumns[ n ] + " = " + aColumns[ n ] + " + " + cValue + ","
@@ -1558,19 +1550,21 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
             ::lError := .T.
             ::nInternalError = ERR_INVALIDCOLUMN
             EXIT
-         ENDIF
-      ELSE
+         ENDIF         
+      ELSE 
+         cValue   = ClipValue2SQL( aValues[ n ] )
          cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
       ENDIF
-      lAddSelf = .F.
+
    NEXT 
+   
    IF ! ::lError
       //Delete last comma 
       cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
       IF !Empty( cWhere )
          cExecute += " WHERE " + cWhere
       ENDIF
-      lRet = ::Execute( cExecute )   
+      lRet = ::SqlQuery( cExecute )   
    ELSE 
       lRet = .F.
       ::CheckError()
