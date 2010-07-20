@@ -1,5 +1,5 @@
 /*
- * $Id: 11-Jul-10 9:43:50 AM tdolpqry.PRG Z dgarciagil $
+ * $Id: 20-Jul-10 3:30:58 PM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -470,11 +470,13 @@ METHOD Delete( lAll ) CLASS TDolphinQry
    
    DEFAULT lAll TO .F.
 
+#ifndef NOINTERNAL
    IF !::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDDELETE
       ::oServer:CheckError()
       RETURN .F. 
    ENDIF
+#endif   
    
    cTable := ::aTables[ 1 ]
    cQry   := "DELETE FROM " + cTable
@@ -526,12 +528,13 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
       ENDIF
 
 #endif /*USE_HASH*/
+#ifndef NOINTERNAL
    IF lError
       ::oServer:nInternalError = ERR_INVALIDFIELDGET
       ::oServer:CheckError()
       RETURN NIL
    ENDIF   
-
+#endif 
 RETURN ::VerifyValue( nNum, uValue )       
 
 //----------------------------------------------------//
@@ -541,9 +544,11 @@ METHOD FieldName( nNum ) CLASS TDolphinQry
    
    IF nNum > 0 .AND. nNum <= ::nFCount
       cName = ::aStructure[ nNum ][ MYSQL_FS_NAME ]
+#ifndef NOINTERNAL      
    ELSE 
       ::oServer:nInternalError = ERR_INVALIDFIELDNUM
       ::oServer:CheckError()
+#endif      
    ENDIF
     
 RETURN cName
@@ -580,10 +585,12 @@ METHOD FieldPos( cFieldName ) CLASS TDolphinQry
       nPos = AScan( ::aStructure, {| aField | aField[ MYSQL_FS_NAME ] == Lower( cFieldName ) } )
    ENDIF
 
+#ifndef NOINTERNAL
    IF nPos == 0 
       ::oServer:nInternalError = ERR_INVALIDFIELDNAME
       ::oServer:CheckError()
    ENDIF
+#endif
 
 RETURN nPos
 
@@ -645,9 +652,11 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
          ::aRow[ nNum ]    := uValue
 #endif /*USE_HASH*/
          RETURN uValue
+#ifndef NOINTERNAL         
       ELSE 
          ::oServer:nInternalError = ERR_INVALIDFIELDTYPE
          ::oServer:CheckError()
+#endif      
       ENDIF
    ENDIF
 
@@ -703,11 +712,13 @@ METHOD GetBlankRow( lRow ) CLASS TDolphinQry
    LOCAL cCol, aRow
    LOCAL nPad
 
+#ifndef NOINTERNAL
    IF ! ::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDGETBLANKROW
       ::oServer:CheckError()
       RETURN NIL 
    ENDIF
+#endif 
    
    ::oRow = NIL
    
@@ -857,10 +868,12 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
          NEXT
 
       ENDIF
+#ifndef NOINTERNAL      
    ELSE 
       ::oServer:nInternalError = ERR_FAILEDGETROW
       ::nRecNo = 0
       ::CheckError()
+#endif       
    ENDIF
 
 RETURN ::nRecNo
@@ -1106,11 +1119,13 @@ METHOD Save() CLASS TDolphinQry
    LOCAL lSaveOk := .F.
    LOCAL cPrimary
    
+#ifndef NOINTERNAL   
    IF ! ::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDSAVE
       ::oServer:CheckError()
       RETURN NIL 
    ENDIF
+#endif    
    
    cTable = ::aTables[ 1 ]
 

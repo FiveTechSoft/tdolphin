@@ -1,5 +1,5 @@
 /*
- * $Id: 11-Jul-10 9:43:49 AM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 20-Jul-10 3:30:59 PM tdolpsrv.PRG Z dgarciagil $
  */
    
 /*
@@ -77,13 +77,16 @@ CLASS TDolphinSrv
              
    DATA bOnRestore     /*codeblock to evaluate in restore process*/      
    DATA bOnMultiQry    /*codeblock to evaluate for each Query in METHOD MultiQuery*/      
+#ifdef DEBUG 
+   DATA bDebug         /*codeblock to evaluate for each Query, Arg cQuery, ProcName( 1 ), ProcLine( 1 )*/ 
+#endif      
    
    DATA cDBName        /*Data base selected*/
    DATA cPassword      /*Data contains the password for user*/
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    
-   DATA cBuild     INIT '11-Jul-10 9:43:49 AM'
+   DATA cBuild     INIT '20-Jul-10 3:30:59 PM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -381,6 +384,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
     "-- CLASS TDolphin, for [x]Harbour" + CRLF +;
     "---------------------------------" + CRLF
 
+#ifndef NOINTERNAL
    IF Empty( ::cDBName )
       ::nInternalError = ERR_NODATABASESELECTED
       ::CheckError()
@@ -398,6 +402,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       ::CheckError()
       RETURN .F.
    ENDIF
+#endif 
    
    IF ::bOnBackUp != NIL
       Eval( ::bOnBackUp, ST_STARTBACKUP )
@@ -739,6 +744,9 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    cUniqueKey  = If( ! Empty( cUniqueKey ), D_LowerCase( cUniqueKey ), "" )
    cExtra      = If( ! Empty( cExtra ), D_LowerCase( cExtra ), "" )
 
+
+#ifndef NOINTERNAL
+
    IF lVer .AND. nLenStruct > 0
       ::CheckError( VerifyStructure( aStruct ) )
        IF ! ::lError .AND. ! Empty( cPrimarykey ) 
@@ -766,7 +774,8 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
          RETURN ::lError 
       ENDIF
    ENDIF
-   
+#endif   
+
    cQuery := "CREATE TABLE " + If( lIfNotExist, " IF NOT EXISTS ", "" ) + D_LowerCase( cTable ) + If( nLenStruct > 0, " (", " " )
 
    IF nLenStruct > 0
@@ -974,10 +983,12 @@ METHOD GetAutoIncrement( cTable ) CLASS TDolphinSrv
    
    IF !Empty( ::cDBName )
       cOldDB = ::cDBName
+#ifndef NOINTERNAL
    ELSE 
       ::nInternalError = ERR_NODATABASESELECTED
       ::CheckError()
       RETURN nId
+#endif       
    ENDIF
       
    ::SelectDB( "information_schema" )
@@ -1079,11 +1090,13 @@ METHOD GetRowsFromQry( oQry ) CLASS TDolphinSrv
    LOCAL cQuery
    LOCAL oQryAux
    
+#ifndef NOINTERNAL   
    IF ! oQry != NIL .AND. oQry:IsKindOf( "TDOLPHINQRY" )
       ::nInternalError = ERR_MISSINGQRYOBJECT
       ::CheckError()
       RETURN nTotal 
    ENDIF
+#endif 
 
    aOldColumns = AClone( oQry:aColumns )
    
@@ -1118,6 +1131,7 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
    LOCAL cExecute
    LOCAL lRet, n
 
+#ifndef NOINTERNAL
    IF Empty( aColumns ) .AND. Empty( aValues ) 
       ::nInternalError = ERR_EMPTYVALUES
       ::CheckError()
@@ -1135,6 +1149,7 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
       ::CheckError()
       RETURN .F. 
    ENDIF 
+#endif 
 
    cExecute = BuildInsert( cTable, aColumns, aValues )
    lRet = ::SqlQuery( cExecute )  
@@ -1230,11 +1245,13 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
    
    ::bOnMultiQry = bOnMultiQry
 
+#ifndef NOINTERNAL
    IF Empty( aQueries ) 
       ::nInternalError = ERR_INVALIDQUERYARRAY
       ::CheckError()
       RETURN .F.
    ENDIF
+#endif
 
    TRY
       IF lTransaction
@@ -1264,10 +1281,11 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
    CATCH oError
       MySqlRollBack( ::hMysql )
       ::RollBack()
+#ifndef NOINTERNAL      
       ::nInternalError = ERR_MULTIQUERYFAULIRE
       ::CheckError( , cLast)
       RETURN .F.
-      
+#endif       
    END 
 
 RETURN .T.
@@ -1320,12 +1338,13 @@ METHOD Restore( cFile, lCancel ) CLASS TDolphinSrv
    
    DEFAULT lCancel TO .F.
    
-
+#ifndef NOINTERNAL
    IF ! File( cFile )
       ::nInternalError = ERR_INVALIDBACKUPFILE
       ::CheckError()
       RETURN .F.
    ENDIF
+#endif 
    
    IF ::bOnRestore != NIL 
       Eval( ::bOnRestore, ST_STARTRESTORE )
@@ -1430,11 +1449,13 @@ METHOD SelectDB( cDBName ) CLASS TDolphinSrv
    
    ::lError := .F.
 
+#ifndef NOINTERNAL
    IF Empty( cDBName )
       ::nInternalError = ERR_EMPTYDBNAME
       ::CheckError()
       RETURN .F.
    ENDIF
+#endif
 
    IF ( nError := MysqlSelectDB( ::hMysql, cDBName ) ) != 0   // table not exist
       ::cDBName :=""
@@ -1471,13 +1492,20 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
    LOCAL nRet
       
    IF nLen > 0
+#ifdef DEBUG
+      IF ::bDebug != NIL 
+         Eval( ::bDebug, cQuery, ProcName( 1 ), ProcLine( 1 ) )      
+      ENDIF
+#endif      
       IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
          ::CheckError()
       ENDIF
+#ifndef NOINTERNAL      
    ELSE 
       ::nInternalError = ERR_NOQUERY
       ::CheckError()
       nRet = ::nInternalError
+#endif       
    ENDIF
 
 RETURN nRet == 0
@@ -1514,10 +1542,12 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
    LOCAL cExecute
    LOCAL lRet, n
    LOCAL aStruc, nPos
-   LOCAL cValue
+   LOCAL cValue, cField
+   LOCAL lError := .F.
    
    DEFAULT cWhere       TO ""
-   
+
+#ifndef NOINTERNAL   
    IF Empty( aColumns ) .OR. Empty( aValues )
       ::nInternalError = ERR_EMPTYVALUES
       ::CheckError()
@@ -1535,30 +1565,37 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
       ::CheckError()
       RETURN .F. 
    ENDIF 
-   
+#endif    
    cExecute := "UPDATE " + D_LowerCase( cTable ) + " SET "
    aStruc = ::TableStructure( cTable )
-   FOR n = 1 TO Len( aColumns )
-      IF ValType( aValues[ n ] ) == "A"
+   FOR EACH cField IN aColumns
+#ifdef __HARBOUR__
+            n = cField:__EnumIndex() 
+#else                      
+            n = HB_EnumIndex()
+#endif 
+      IF HB_IsArray( aValues[ n ] ) 
          cValue   = ClipValue2SQL( aValues[ n ][ 1 ] )
-         nPos := AScan( aStruc, {| uItem | Upper( AllTrim( uItem[ 1 ] ) ) == Upper( AllTrim( aColumns[ n ] ) ) } )
+         nPos := AScan( aStruc, {| uItem | Upper( AllTrim( uItem[ 1 ] ) ) == Upper( AllTrim( cField ) ) } )
          IF nPos > 0 .AND. aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] == "M"
-            cExecute += aColumns[ n ] + " = CONCAT(" + aColumns[ n ] + ", " + cValue + "),"
+            cExecute += cField + " = CONCAT(" + cField + ", " + cValue + "),"
          ELSEIF nPos > 0
-            cExecute += aColumns[ n ] + " = " + aColumns[ n ] + " + " + cValue + ","
+            cExecute += cField + " = " + cField + " + " + cValue + ","
+#ifndef NOINTERNAL            
          ELSE 
-            ::lError := .T.
+            lError := .T.
             ::nInternalError = ERR_INVALIDCOLUMN
             EXIT
+#endif             
          ENDIF         
       ELSE 
          cValue   = ClipValue2SQL( aValues[ n ] )
-         cExecute += aColumns[ n ] + " = " + ClipValue2SQL( aValues[ n ] ) + ","
+         cExecute += cField + " = " + cValue + ","
       ENDIF
 
    NEXT 
    
-   IF ! ::lError
+   IF ! lError
       //Delete last comma 
       cExecute = SubStr( cExecute, 1, Len( cExecute ) - 1 )
       IF !Empty( cWhere )
@@ -1567,6 +1604,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
       lRet = ::SqlQuery( cExecute )   
    ELSE 
       lRet = .F.
+      ::lError = lError
       ::CheckError()
    ENDIF
 
