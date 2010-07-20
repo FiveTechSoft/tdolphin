@@ -9,7 +9,7 @@
 FUNCTION Main() 
 
    LOCAL oServer
-   LOCAL aOpc := { "Method Update", "Build Sentence", "METHOD Save", "Sentence UPDATE" }, nOpc, nRecords := 100
+   LOCAL aOpc := { "Method Update", "Build Sentence", "Method Save", "Sentence UPDATE" }, nOpc, nRecords := 100
    LOCAL GetList := {}
    
    SET CENTURY ON
@@ -39,13 +39,13 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    
-   Updates( oServer, nOpc, nRecords )
+   Updates( oServer, nOpc, nRecords, aOpc )
 
    oServer:End()
    
 RETURN NIL
 
-PROCEDURE Updates( oServer, nOpc, nRecords )
+PROCEDURE Updates( oServer, nOpc, nRecords, aOpc )
 
    LOCAL oQry 
    LOCAL aColumns
@@ -57,7 +57,7 @@ PROCEDURE Updates( oServer, nOpc, nRecords )
    oQry = oServer:Query( "SELECT * FROM clientes LIMIT " + Str( nRecords ) )
 
    aColumns = { "Married", "Age", "salary", "Notes" }
-
+   
    DO WHILE ! oQry:Eof()
       aValues = { .f., 40, 10, oQry:Notes }
       
@@ -87,9 +87,9 @@ PROCEDURE Updates( oServer, nOpc, nRecords )
             oServer:SqlQuery( cQry )       
             EXIT 
          CASE 3
-            oQry:married = .F.
-            oQry:age = 40 
-            oQry:salary = 10
+            oQry:married = .T.
+            oQry:age = 30 
+            oQry:salary = 20
             oQry:Save()
             EXIT
          CASE 4
@@ -102,6 +102,7 @@ PROCEDURE Updates( oServer, nOpc, nRecords )
       ENDSWITCH
       oQry:Skip() 
    END
+   @ 4,1 SAY  "Opcion: " + aOpc[ nOpc ]
    ? 
    
    

@@ -1565,9 +1565,9 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
       ::CheckError()
       RETURN .F. 
    ENDIF 
+  
 #endif    
    cExecute := "UPDATE " + D_LowerCase( cTable ) + " SET "
-   aStruc = ::TableStructure( cTable )
    FOR EACH cField IN aColumns
 #ifdef __HARBOUR__
             n = cField:__EnumIndex() 
@@ -1576,17 +1576,9 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
 #endif 
       IF HB_IsArray( aValues[ n ] ) 
          cValue   = ClipValue2SQL( aValues[ n ][ 1 ] )
-         nPos := AScan( aStruc, {| uItem | Upper( AllTrim( uItem[ 1 ] ) ) == Upper( AllTrim( cField ) ) } )
-         IF nPos > 0 .AND. aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] == "M"
+         IF aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] == "M"
             cExecute += cField + " = CONCAT(" + cField + ", " + cValue + "),"
-         ELSEIF nPos > 0
             cExecute += cField + " = " + cField + " + " + cValue + ","
-#ifndef NOINTERNAL            
-         ELSE 
-            lError := .T.
-            ::nInternalError = ERR_INVALIDCOLUMN
-            EXIT
-#endif             
          ENDIF         
       ELSE 
          cValue   = ClipValue2SQL( aValues[ n ] )
