@@ -1,11 +1,15 @@
 //--------------------------------------//
 
-PROCEDURE SetDolphin( oBrw, oQry )
+PROCEDURE SetDolphin( oBrw, oQry, lAddCols )
 
    LOCAL xField    := NIL
    LOCAL cHeader   := ""
    LOCAL cCol      := ""
    LOCAL aFldNames, oCol
+   
+   IF lAddCols == NIL 
+      lAddCols = .T.
+   ENDIF
 
    WITH OBJECT oBrw
       :bGoTop    := {|| If( oQry:LastRec() > 0, oQry:GoTop(), NIL ) }
@@ -27,7 +31,7 @@ PROCEDURE SetDolphin( oBrw, oQry )
    
 
 
-//   IF lAddCols
+   IF lAddCols
 
       aFldNames := oQry:aStructure
 
@@ -41,7 +45,7 @@ PROCEDURE SetDolphin( oBrw, oQry )
 
       oBrw:bSeek  := { | c | DolphinSeek( c, oQry ) }
 
-//   ENDIF
+   ENDIF
 
 RETURN 
 
