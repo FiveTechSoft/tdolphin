@@ -813,7 +813,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
       
                   ENDCASE
                ENDIF
-   
+
                cQuery += fNotNull( aField, cPrimaryKey, cAuto ) + ;
                          If( lAutoIncrement, " auto_increment", ;
                              Eval( bDefault, aField ) ) + ","
@@ -1624,7 +1624,7 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt, lNoNull ) // Compatibility wint TMys
       CASE "N"
       CASE "I"
 
-         if ! Empty( Value ) .OR. lNoNull
+         if Value != NIL .OR. lNoNull
             cValue := AllTrim( Str( Value ) )
          else
             cValue := "NULL"
