@@ -1213,9 +1213,6 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
       IF lRefresh
          ::GetRow( nSeek )
       ENDIF
-   ELSE 
-      ::Goto( ::nRecNo )
-      nSeek = ::nRecNo
    ENDIF
 
 RETURN nSeek 

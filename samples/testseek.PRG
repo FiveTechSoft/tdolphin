@@ -31,11 +31,10 @@ PROCEDURE Main()
 
       oQry = TDolphinQry():New( "SELECT * FROM test", oServer )
 
-      ? If( oQry:Seek( 45, "ID", , , .T. ) > 0, "Found 3", "No found 3" )
+      ? If( oQry:Seek( 3, "ID", , , .T. ) > 0, "Found 3", "No found 3" )
       ? If( oQry:Seek( 10, "ID" ) > 0, "Found 10", "No found 10" )
       ? If( oQry:Seek( "nombre", 2 ) > 0, "Found nombre", "No found nombre" )
       ? If( oQry:Seek( "N", "name", , , .t. ) > 0, "Found N", "No found N" )
-      ? If( oQry:Seek( Date(), "birth" ) > 0, "Found Date", "No found Date" )
       ?
       
       
