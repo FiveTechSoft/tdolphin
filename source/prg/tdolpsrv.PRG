@@ -1569,7 +1569,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
 #endif    
    cExecute := "UPDATE " + D_LowerCase( cTable ) + " SET "
    FOR EACH cField IN aColumns
-#ifdef __HARBOUR__
+#ifndef __XHARBOUR__
             n = cField:__EnumIndex() 
 #else                      
             n = HB_EnumIndex()
