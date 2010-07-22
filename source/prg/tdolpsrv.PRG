@@ -1569,10 +1569,10 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
 #endif    
    cExecute := "UPDATE " + D_LowerCase( cTable ) + " SET "
    FOR EACH cField IN aColumns
-#ifndef __XHARBOUR__
-            n = cField:__EnumIndex() 
-#else                      
+#ifdef __XHARBOUR__
             n = HB_EnumIndex()
+#else                      
+            n = cField:__EnumIndex() 
 #endif 
       IF HB_IsArray( aValues[ n ] ) 
          cValue   = ClipValue2SQL( aValues[ n ][ 1 ] )
