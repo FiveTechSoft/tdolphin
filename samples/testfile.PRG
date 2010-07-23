@@ -87,7 +87,7 @@ PROCEDURE DataBrowse( oServer )
    LOCAL oBrw
 
    
-   oQry = oServer:Query( "SELECT * FROM files" )
+   oQry = oServer:Query( "SELECT id, filename FROM files" )
    
    
    DEFINE DIALOG oDlg TITLE "Browsing Records" SIZE 300, 480
@@ -160,21 +160,24 @@ PROCEDURE SaveToDisk( uValue, oQry )
    LOCAL nHandle
    LOCAL cDir := cGetDir( "Select a directory",;
                           CurDrive() + ":\" + GetCurDir() + "\" )
-
+   LOCAL oQryFind
+   
    IF ! Empty( cDir )
    
       oQry:Seek( uValue, "id", , , , .F. )
       
+      oQryFind = TDolphinQry():New( "select file from files where id=" + ClipValue2Sql( uValue ), oQry:oServer )
    
       nHandle := FCreate( cDir + "\" + AllTrim( oQry:filename ) )
       IF FError() # 0       
          MsgInfo( "Error saving file " + cDir + "\" + AllTrim( oQry:filename ) )
          RETURN
       ENDIF
-      FWrite( nHandle, oQry:file, Len( oQry:file ) )
+      FWrite( nHandle, oQryFind:file, Len( oQryFind:file ) )
       FClose( nHandle )
       
       MsgInfo( "Filed Saved in: " + cDir )
+      oQryFind:End()
    
    ENDIF
 
