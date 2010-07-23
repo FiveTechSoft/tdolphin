@@ -1800,7 +1800,7 @@ RETURN cQuery
 
 //----------------------------------------------------//  
 
-FUNCTION BuildInsert( cTable, aColumns, aValues )  
+FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue  )  
 
    LOCAL cExecute
    LOCAL cValues  := ""
@@ -1808,15 +1808,12 @@ FUNCTION BuildInsert( cTable, aColumns, aValues )
    LOCAL uValue
    LOCAL n
    
+   DEFAULT lForceValue TO .F.
    
    FOR n = 1 TO Len( aColumns )
       cColumns += aColumns[ n ] + ","
-      IF ValType( aValues[ n ] ) == "C"
-         IF Len( aValues[ n ] ) > 65535 
-            uValue = MySqlEscape( aValues[ n ] )
-         ELSE 
-            uValue = Val2Escape( aValues[ n ] ) 
-         ENDIF
+      IF ValType( aValues[ n ] ) == "C" .AND. ! lForceValue
+         uValue = Val2Escape( aValues[ n ] ) 
       ELSE 
          uValue = aValues[ n ]
       ENDIF
