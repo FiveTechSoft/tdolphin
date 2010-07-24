@@ -133,7 +133,7 @@ CLASS TDolphinSrv
    METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )	
                               /*to establish a connection to a MySQL database engine running on server*/
 
-   METHOD CommitTransaction()       INLINE MySqlCommit( ::hMySql )
+   METHOD CommitTransaction()       INLINE MySqlCommit( ::hMySql ) == 0
                               /*Commits the current transaction.*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              

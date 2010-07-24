@@ -983,7 +983,8 @@ METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
    LOCAL cWhere := "", aField
    LOCAL nIdx, lPrimary := .F.
 
-   IF ::LastRec() > 0
+
+   IF Empty( ::cWhere )
 
       FOR EACH aField IN ::aStructure
    
@@ -1208,7 +1209,7 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
    ENDIF
 
    nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
-   
+
    IF nSeek > 0 
       IF lRefresh
          ::GetRow( nSeek )
