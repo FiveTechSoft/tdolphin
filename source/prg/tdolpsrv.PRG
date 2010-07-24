@@ -202,6 +202,9 @@ CLASS TDolphinSrv
    
    METHOD LastDownData( cTable, cCol, uDef )
    
+   METHOD LastInsertID()      /*Returns the first automatically generated value that was set for an AUTO_INCREMENT
+                                column by the most recently executed INSERT statement to affect such a column.*/
+   
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
                                  wild may contain the wildcard characters “%” or “_”, 
@@ -1207,6 +1210,17 @@ METHOD LastDownData( cTable, cCol, uDef ) CLASS TDolphinSrv
 
 RETURN xData
 
+//----------------------------------------------------//
+
+METHOD LastInsertID() CLASS TDolphinSrv
+   LOCAL oQry
+   LOCAL nLast
+   
+   oQry = ::Query( "SELECT LAST_INSERT_ID() AS last" )
+   nlast = oQry:Last 
+   oQry:End()
+   
+RETURN nlast
 
 //----------------------------------------------------//
 

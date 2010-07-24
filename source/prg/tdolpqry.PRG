@@ -1118,6 +1118,7 @@ METHOD Save() CLASS TDolphinQry
    LOCAL uOldValue
    LOCAL nIdx
    LOCAL lSaveOk := .F.
+   LOCAL lChanged := .F.
    LOCAL cPrimary
    
 #ifndef NOINTERNAL   
@@ -1159,13 +1160,15 @@ METHOD Save() CLASS TDolphinQry
          uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
          uOldValue = ::aOldRow[ nIdx ]
 #endif /*USE_HASH*/
-         IF uValue != uOldValue
-            lSaveOk = .T.
+         IF uValue != uOldValue .and. ! lChanged
+            lChanged = .T.
          ENDIF
       ENDIF
-      IF lSaveOk
+      IF lChanged 
          cQry += aField[ MYSQL_FS_NAME ] + "=" + ClipValue2SQL( uValue, , , IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) ) + ","
+         lSaveOk = .T.
       ENDIF
+      lChanged = .F.
    NEXT
 
    IF lSaveOk
