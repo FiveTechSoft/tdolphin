@@ -1146,6 +1146,7 @@ METHOD Save() CLASS TDolphinQry
       
       IF ::lAppend
          lSaveOk = .T.
+         lChanged = .T.
          uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
       ELSE
 #ifdef USE_HASH

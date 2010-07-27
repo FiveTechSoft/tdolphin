@@ -71,6 +71,15 @@ LPSTR LToStr( long w )
    return ( char * ) dbl;
 }  
 
+LPSTR DToStr( double w )
+{
+   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+   sprintf( dbl, "%f", w );
+ //  * strchr( dbl, '.' ) = 0;
+   
+   return ( char * ) dbl;
+} 
+
 //------------------------------------------------//
 //
 HB_FUNC( VAL2ESCAPE )
@@ -167,7 +176,7 @@ HB_FUNC( MYSEEK )
         {
          	if( bSoft )
          	   pulFieldLengths[ uiField ] = strlen( cSearch );
-       	
+       	  
          	if( row )
          		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( long ) pulFieldLengths[ uiField ] );
    
@@ -184,6 +193,7 @@ HB_FUNC( MYSEEK )
    uiOk = uiOk >=0 ? uiOk + 1 : 0;
    hb_retnl( ( long ) uiOk  );
 }
+
 
 
 //------------------------------------------------//
