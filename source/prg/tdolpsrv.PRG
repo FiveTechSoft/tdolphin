@@ -1176,7 +1176,7 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
    IF hRes == 0 
       ::CheckError() 
    ELSE   
-      aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive() ) 
+      aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive(), D_LogicalValue() ) 
       MySqlFreeResult( hRes )
       lAuto = IS_AUTO_INCREMENT( aStruct[ 1, MYSQL_FS_FLAGS ] )
    ENDIF
@@ -1538,7 +1538,7 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
    IF hRes == 0 
       ::CheckError() 
    ELSE
-      aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive() ) 
+      aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive(), D_LogicalValue() ) 
       
       MySqlFreeResult( hRes )
       
@@ -1889,6 +1889,23 @@ FUNCTION D_LowerCase( cText )
    ENDIF
    
 RETURN cText
+   
+//----------------------------------------------------//  
+// Set logical values to default Mysql Values (1/0)->lOldStatus
+FUNCTION D_LogicalValue( lOnOff )
+
+  LOCAL lOldStatus
+
+  STATIC lStatus := .T.
+
+  lOldStatus = lStatus
+
+  IF PCount() == 1 .AND. ValType( lOnOff ) == "L"
+     lStatus = lOnOff
+  ENDIF
+
+RETURN lOldStatus
+   
    
 //----------------------------------------------------//  
 

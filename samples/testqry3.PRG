@@ -21,6 +21,8 @@ PROCEDURE Main()
    SET CENTURY ON
    SET DATE FORMAT "dd/mm/yyyy"
    
+//   D_LogicalValue( .F. )
+   
    oServer = TDolphinSrv():New( cServer, ;
                                 cUser, ;
                                 cPassword, ;
@@ -29,7 +31,7 @@ PROCEDURE Main()
    
    IF ! oServer:lError 
 
-      oQry = TDolphinQry():New( "SELECT * FROM test", oServer )
+      oQry = TDolphinQry():New( "SELECT * FROM clientes limit 10", oServer )
       ? "Table created correctly test"
       ?
       aStruc = oQry:aStructure
@@ -54,21 +56,20 @@ PROCEDURE Main()
       NEXT
 
       ? "Getting Blank Row"
-      ?
-      oQry:GetBlankRow()
-      FOR n = 1 TO oQry:FCount()
-         ?? oQry:FieldGet( n ), "   "
-      NEXT
-      oQry:Birth = Date()
+      
+      oQry:married = .T.
       oQry:Save()
       ?
+/*
       oQry:GoBottom()
       oQry:name = "Name " + Str( oQry:ID )
       oQry:Save()
       oQry:GoBottom()
+      */
       FOR n = 1 TO oQry:FCount()
          ?? oQry:FieldGet( n ), "   "
       NEXT      
+      */
       oQry:End() 
              
    ENDIF

@@ -427,7 +427,7 @@ METHOD BuildDataWhere() CLASS TDolphinQry
          cWhere += aField[ MYSQL_FS_NAME ] + " = " + ;
                    ClipValue2Sql( uValue, , , .T. ) + " AND "
       ELSE
-        cWhere += aField[ MYSQL_FS_NAME ] + If( Empty( uValue ) .AND. ValType( uValue ) != "L", " IS ", " = " ) + ;
+        cWhere += aField[ MYSQL_FS_NAME ] + If( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ), " IS ", " = " ) + ;
                    ClipValue2Sql( uValue, , , .F. ) + " AND "
       ENDIF
           
@@ -943,7 +943,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    ::hResult := MySqlStoreResult( oServer:hMysql )
    
    IF ! ( ::hResult == 0 )
-      ::aStructure = MySqlResultStructure( ::hResult, lCaseSen ) 
+      ::aStructure = MySqlResultStructure( ::hResult, lCaseSen, D_LogicalValue() ) 
 
       ::nRecCount := MySqlNumRows( ::hResult )
       ::nRecNo    = Max( 1, ::nRecNo )
@@ -1182,7 +1182,7 @@ METHOD Save() CLASS TDolphinQry
          cPrimary = ::MakePrimaryKeyWhere()
          cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
       ENDIF
-
+? cQry
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         
