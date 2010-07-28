@@ -1471,23 +1471,12 @@ RETURN uValue
 
 //----------------------------------------------------//
 
-#ifndef __XHARBOUR__
-   METHOD ONERROR( uParam1 ) CLASS TDolphinQry
+METHOD ONERROR( uParam1 ) CLASS TDolphinQry
       LOCAL cCol   := __GetMessage()
       LOCAL lAssign := .F., nCol
       LOCAL oError := ErrorNew()
       LOCAL nError := If( SubStr( cCol, 1, 1 ) == "_", 1005, 1004 )      
       LOCAL nPos
-#else
-   METHOD ONERROR( cCol, nError ) CLASS TDolphinQry
-      LOCAL uParam1
-      LOCAL lAssign
-      LOCAL nPos
-      LOCAL oError := ErrorNew()
-      IF Len( HB_AParams() ) > 0
-         uParam1 = HB_AParams()[ 1 ]
-      ENDIF
-#endif
 
 #ifdef USE_HASH    
 
