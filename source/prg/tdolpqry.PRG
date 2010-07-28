@@ -57,7 +57,7 @@
 #include "tdolphin.ch"
 #include "dolerr.ch"
 
-#ifdef __HARBOUR__
+#ifndef __XHARBOUR__
    #include "hbcompat.ch"
 #endif
 
@@ -409,7 +409,7 @@ METHOD BuildDataWhere() CLASS TDolphinQry
 #ifdef USE_HASH 
       uValue = ::hOldRow[ "_" + D_LowerCase( aField[ MYSQL_FS_NAME ] ) ]
 #else 
-#ifdef __HARBOUR__
+#ifndef __XHARBOUR__
       nIdx = aField:__EnumIndex()
 #else 
       nIdx = HB_EnumINdex()
@@ -681,7 +681,10 @@ RETURN nNum
 METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
 
    LOCAL aTable := {}, aRow
-   LOCAL n, aGet
+   LOCAL n, aGet, i := 0
+   
+ //  aTable = DolphinFillArray( ::hResult, bOnFillArray )
+  
 
    DEFAULT bOnFillArray TO ::bOnFillArray
 
@@ -693,13 +696,13 @@ METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
             AAdd( aRow, ::FieldGet( n ) )
          NEXT 
          IF bOnFillArray != NIL 
-            Eval( bOnFillArray, aRow )
+            Eval( bOnFillArray, aRow, ++i )
          ENDIF
          AAdd( aTable, aRow )
          ::Skip()
       END 
    ENDIF
-   
+  */ 
 RETURN aTable 
 
 
@@ -1468,7 +1471,7 @@ RETURN uValue
 
 //----------------------------------------------------//
 
-#ifdef __HARBOUR__
+#ifndef __XHARBOUR__
    METHOD ONERROR( uParam1 ) CLASS TDolphinQry
       LOCAL cCol   := __GetMessage()
       LOCAL lAssign := .F., nCol
@@ -1573,26 +1576,16 @@ RETURN NIL
 
 //----------------------------------------------------//
 
-#ifdef __HARBOUR__
-   METHOD ONERROR( uParam1 ) CLASS TDolphinRow
+METHOD ONERROR( uParam1 ) CLASS TDolphinRow
       LOCAL cCol   := __GetMessage()
-      LOCAL lAssign := .F., nCol
-      LOCAL nPos
-#else
-   METHOD ONERROR( cCol ) CLASS TDolphinRow
-      LOCAL uParam1
-      LOCAL lAssign
-      LOCAL nPos
-      IF Len( HB_AParams() ) > 0
-         uParam1 = HB_AParams()[ 1 ]
-      ENDIF
-#endif
+      LOCAL lAssign, nCol
+      LOCAL nPos, a 
 
 #ifdef USE_HASH    
 
    //the fieldname always are lower case
    
-      cCol = Lower( If( Left( cCol, 1 ) == '_' , SubStr( cCol, 2 ), cCol ) )
+      cCol = Lower( If( lAssign := Left( cCol, 1 ) == '_' , SubStr( cCol, 2 ), cCol ) )
 
       IF ! ( uParam1 == NIL ) 
          IF hGetPos( ::uRow, "_" + cCol ) > 0   
@@ -1613,20 +1606,28 @@ RETURN NIL
 #endif /*USE_HASH*/
 
 
-#ifdef __HARBOUR__
-   IF "(" $ cCol
-      cCol = StrTran( cCol, "()", "" )
-   ENDIF
-   RETURN __ObjSendMsg( ::oQuery, cCol, uParam1 )
-#else   
-   uParam1 := hb_aParams()
-      
-   if "(" $ uParams1[ 2 ]
-      uParam1[ 2 ] = StrTran( uParam1[ 2 ], "()", "" )
-   endif
 
-   RETURN hb_execFromArray( @::oQuery, uParam1 )   
+   IF ! lAssign
+      cCol = StrTran( cCol, "()", "" )
+   ELSE 
+      cCol = "_" + cCol
+   ENDIF
+
+#ifndef __XHARBOUR__
+   IF uParam1 == nil
+      a = __ObjSendMsg( ::oQuery, cCol )
+   ELSE
+      a = __ObjSendMsg( ::oQuery, cCol, uParam1 )
+   ENDIF
+#else   
+
+   IF uParam1 == nil
+      a = hb_execFromArray( @::oQuery, cCol )
+   ELSE
+      a = hb_execFromArray( @::oQuery, cCol, { uParam1 } )
+   ENDIF
 #endif 
       
 
-RETURN NIL
+RETURN a
+
