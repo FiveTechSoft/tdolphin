@@ -60,7 +60,7 @@
 #define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
 #endif //__HARBOUR__
 
-char * SQL2ClipType( long lType );
+char * SQL2ClipType( long lType, BOOL bLogical );
 
 LPSTR LToStr( long w )
 {
@@ -479,6 +479,7 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
 	MYSQL_FIELD *mfield;
 	unsigned long ulLen;
 	BOOL bCase = hb_parl( 2 );
+	BOOL bNoLogical = hb_param( 3, HB_IT_LOGICAL ) ? hb_parl( 3 ) : FALSE;
 	
 	
 	if( mresult )
@@ -506,13 +507,63 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
         hb_arraySetNL( itemField, 6, mfield->max_length );
         hb_arraySetNL( itemField, 7, mfield->flags );
         hb_arraySetNL( itemField, 8, mfield->decimals );   
-        hb_arraySetC( itemField, 9, SQL2ClipType( ( long ) mfield->type ) );
+        hb_arraySetC( itemField, 9, SQL2ClipType( ( long ) mfield->type, bNoLogical ) );
      	  hb_arrayAddForward( itemReturn, itemField );
       }
   } else
      itemReturn = hb_itemArrayNew( 0 );
 
    hb_itemRelease( itemField );
+   hb_itemReturnRelease( itemReturn );
+}
+
+//------------------------------------------------//
+// Build a Array with table structure 
+HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
+{
+	MYSQL_RES * mresult = ( MYSQL_RES * ) hb_parnl( 1 );
+	PHB_ITEM pBlock = HB_ISBLOCK( 2 ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
+	unsigned int num_fields, ui;
+	PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
+	PHB_ITEM itemRow = hb_itemNew( NULL );
+	MYSQL_ROW mrow;
+	ULONG *pulFieldLengths ;
+	int i = 0;
+	
+	
+	if( mresult )
+  {
+     num_fields = mysql_num_fields( mresult );
+     pulFieldLengths = mysql_fetch_lengths( mresult ) ;
+   	 mysql_data_seek( mresult, 0 );
+
+     while( mrow = mysql_fetch_row( mresult ) )
+     {
+        if ( mrow )
+        {
+          hb_arrayNew( itemRow, num_fields );
+          for ( ui = 0; ui < num_fields; ui++ )
+          {
+            if ( mrow[ ui ] == NULL )
+            {
+              hb_arraySetC( itemRow, ui + 1, NULL );
+            }
+            else  
+            {
+              hb_arraySetCL( itemRow, ui + 1, mrow[ ui ], pulFieldLengths[ ui ] );
+            }
+          }
+          if( pBlock)
+            {
+               PHB_ITEM pParam = hb_itemPutNI( NULL, ++i );
+               hb_evalBlock( pBlock, itemRow, pParam, 0 );
+            }
+          hb_arrayAddForward( itemReturn, itemRow );
+        }
+      }
+   }
+
+   hb_itemRelease( itemRow );
    hb_itemReturnRelease( itemReturn );
 }
 
@@ -526,7 +577,7 @@ HB_FUNC( MYSQLSTORERESULT ) // -> MYSQL_RES
 
 //------------------------------------------------//
 // convert MySql field type to clipper field type
-char * SQL2ClipType( long lType ) //-> Clipper field type 
+char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type 
 {
 	 char * sType;
 	 
@@ -541,7 +592,7 @@ char * SQL2ClipType( long lType ) //-> Clipper field type
          break;
 
       case FIELD_TYPE_TINY        :
-         sType = "L";
+         sType = bNoLogical ? "L" : "N";
          break;
 
       case FIELD_TYPE_SHORT       :
@@ -613,7 +664,7 @@ char * SQL2ClipType( long lType ) //-> Clipper field type
          break;
          
       case FIELD_TYPE_BIT         :      	
-         sType = "L";
+         sType = bNoLogical ? "L" : "N";
          break;
       case FIELD_TYPE_NEWDATE     :
       case FIELD_TYPE_ENUM        :
@@ -744,7 +795,7 @@ char * SQLType2Char( long lType ) //-> Clipper field type
 
 HB_FUNC( SQL2CLIPTYPE )
 {
-	hb_retc( SQL2ClipType( hb_parnl( 1 ) ) );
+	hb_retc( SQL2ClipType( hb_parnl( 1 ), hb_parl( 2 ) ) );
 }
 
 //------------------------------------------------//
