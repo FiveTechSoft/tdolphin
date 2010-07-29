@@ -1,5 +1,5 @@
 /*
- * $Id: 20-Jul-10 3:30:58 PM tdolpqry.PRG Z dgarciagil $
+ * $Id: 29-Jul-10 12:07:32 PM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -226,7 +226,7 @@ CLASS TDolphinQry
   
    METHOD Skip( nRecords )
    
-   METHOD VerifyValue( nIdx, cField ) HIDDEN
+   METHOD VerifyValue( nIdx, cField ) //HIDDEN
    
    METHOD Undo( cnField )
 
@@ -683,10 +683,11 @@ METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
    LOCAL aTable := {}, aRow
    LOCAL n, aGet, i := 0
    
- //  aTable = DolphinFillArray( ::hResult, bOnFillArray )
-  
 
    DEFAULT bOnFillArray TO ::bOnFillArray
+
+//   aTable = DolphinFillArray( ::hResult, bOnFillArray, Self )
+
 
    IF ::nRecCount > 0
          
@@ -702,7 +703,7 @@ METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
          ::Skip()
       END 
    ENDIF
-  */ 
+
 RETURN aTable 
 
 
@@ -1463,7 +1464,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
 #else
       OTHERWISE 
 #endif
-         uValue = cField
+  //       uValue = cField
       ENDSWITCH
 
 RETURN uValue
@@ -1620,3 +1621,6 @@ METHOD ONERROR( uParam1 ) CLASS TDolphinRow
 
 RETURN a
 
+FUNCTION VerifyValue( oQry, nIdx, cField  )
+   LOCAL uValue := oQry:VerifyValue( nIdx, cField )
+RETURN uValue

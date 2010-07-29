@@ -1,5 +1,5 @@
 /*
- * $Id: 10-Jul-10 9:40:28 AM function.c Z dgarciagil $
+ * $Id: 29-Jul-10 12:07:31 PM function.c Z dgarciagil $
  */
 
 /*
@@ -54,13 +54,19 @@
 #include <hbapi.h>
 #include <hbapiitm.h>
 #include <hbapifs.h>
+#include <hbstack.h>
+#include <hbvm.h>
 #include <mysql.h>
+
+
 
 #ifdef __HARBOUR__
 #define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
 #endif //__HARBOUR__
 
 char * SQL2ClipType( long lType, BOOL bLogical );
+
+static PHB_SYMB symClip2MySql = NULL;
 
 LPSTR LToStr( long w )
 {
@@ -522,21 +528,26 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
 HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
 {
 	MYSQL_RES * mresult = ( MYSQL_RES * ) hb_parnl( 1 );
-	PHB_ITEM pBlock = hb_param( 3, HB_IT_BLOCK ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
+	PHB_ITEM pBlock = hb_param( 2, HB_IT_BLOCK ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
 	unsigned int num_fields, ui;
 	PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
 	PHB_ITEM itemRow = hb_itemNew( NULL );
 	MYSQL_ROW mrow;
 	ULONG *pulFieldLengths ;
+  PHB_ITEM self = hb_param( 3, HB_IT_ARRAY );
+	     	  
 	int i = 0;
 	
+	
+	if( symClip2MySql == NULL )
+	   symClip2MySql = hb_dynsymSymbol( hb_dynsymFind( "VERIFYVALUE" ) );
+	   
 	
 	if( mresult )
   {
      num_fields = mysql_num_fields( mresult );
      pulFieldLengths = mysql_fetch_lengths( mresult ) ;
    	 mysql_data_seek( mresult, 0 );
-
      while( mrow = mysql_fetch_row( mresult ) )
      {
         if ( mrow )
@@ -550,7 +561,24 @@ HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
             }
             else  
             {
-              hb_arraySetCL( itemRow, ui + 1, mrow[ ui ], pulFieldLengths[ ui ] );
+              PHB_ITEM pReturn;
+              hb_vmPushSymbol( symClip2MySql );
+              hb_vmPushNil();
+              hb_vmPush( self );
+              hb_vmPushLong( ui + 1 );
+              hb_vmPushString( mrow[ ui ], pulFieldLengths[ ui ] );
+              hb_vmDo( 3 );	
+              pReturn = hb_stackReturnItem();
+              if( HB_IS_STRING( pReturn ) )
+                 hb_arraySetC( itemRow, ui + 1, hb_parc( -1 ) ) ;
+              else if( HB_IS_NUMERIC( pReturn ) )
+                hb_arraySetNL( itemRow, ui + 1, hb_parnl( -1 ) );
+              else if( HB_IS_LOGICAL( pReturn ) )
+                hb_arraySetL( itemRow, ui + 1, hb_parl( -1 ) );
+              else if( HB_IS_DATE( pReturn ) )
+                hb_arraySetDS( itemRow, ui + 1, hb_pards( -1 ) );
+             else
+                MessageBox( 0, "error", "ok", 0 );
             }
           }
           if( pBlock)

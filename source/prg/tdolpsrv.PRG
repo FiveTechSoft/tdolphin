@@ -1,5 +1,5 @@
 /*
- * $Id: 20-Jul-10 3:30:59 PM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 29-Jul-10 12:07:33 PM tdolpsrv.PRG Z dgarciagil $
  */
    
 /*
@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    
-   DATA cBuild     INIT '20-Jul-10 3:30:59 PM'
+   DATA cBuild     INIT '29-Jul-10 12:07:33 PM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
