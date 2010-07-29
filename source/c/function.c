@@ -522,7 +522,7 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
 HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
 {
 	MYSQL_RES * mresult = ( MYSQL_RES * ) hb_parnl( 1 );
-	PHB_ITEM pBlock = HB_ISBLOCK( 2 ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
+	PHB_ITEM pBlock = hb_param( 3, HB_IT_BLOCK ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
 	unsigned int num_fields, ui;
 	PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
 	PHB_ITEM itemRow = hb_itemNew( NULL );
