@@ -364,12 +364,14 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
             ENDIF
             IF Val(::cLimit) <= 1
                ::cLimit := ""
-            ENDIF     
+            ENDIF
+            EXIT 
 
          CASE 6 //"ORDER"
             IF Empty( ::cOrder )
                ::cOrder  := AllTrim(SubStr( cItem, 10 ))
             ENDIF
+            MsgInfo( ::cOrder )
             EXIT
             
          CASE 7 //"FROM"
