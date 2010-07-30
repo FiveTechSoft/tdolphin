@@ -371,7 +371,6 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
             IF Empty( ::cOrder )
                ::cOrder  := AllTrim(SubStr( cItem, 10 ))
             ENDIF
-            MsgInfo( ::cOrder )
             EXIT
             
          CASE 7 //"FROM"
@@ -450,6 +449,14 @@ METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
                    cOrder, cLimit, lWithRoll ) CLASS TDolphinQry
 
    LOCAL cQuery := ""
+   
+   DEFAULT aColumns TO {}
+   DEFAULT aTables  TO {}
+   DEFAULT cWhere   TO ""
+   DEFAULT cGroup   TO ""
+   DEFAULT cHaving  TO ""
+   DEFAULT cOrder   TO ""
+   DEFAULT cLimit   TO ""
    
    ::aColumns = aColumns
    ::aTables  = aTables

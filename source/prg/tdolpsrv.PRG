@@ -1103,13 +1103,12 @@ METHOD GetRowsFromQry( oQry ) CLASS TDolphinSrv
 
    aOldColumns = AClone( oQry:aColumns )
    
-   cQuery := oQry:BuildQuery( { "COUNT(*)" }, ;
-                                oQry:aTables, ;
-                                oQry:cWhere, ;
-                                oQry:cGroup, ;
-                                oQry:cHaving,;
-                                oQry:cOrder, ;
-                                NIL )
+   
+   cQuery := BuildQuery( { "COUNT(*)" }, ;
+                          oQry:aTables, ;
+                          oQry:cWhere, ;
+                          oQry:cGroup, ;
+                          oQry:cHaving )
    
    oQry:BuildQuery( aOldColumns, ;
                     oQry:aTables,;
