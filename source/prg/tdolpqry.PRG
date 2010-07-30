@@ -156,7 +156,7 @@ CLASS TDolphinQry
    
    METHOD FillArray()           /*Fill and return a array with all query information*/
 
-   METHOD FirstPage   INLINE ::PrevPage( ::nCurrentPage - 1 )
+   METHOD FirstPage()   INLINE ::PrevPage( ::nCurrentPage - 1 )
                                 /*Go to first page in pagination*/
    
    METHOD GetBlankRow()                       
@@ -192,6 +192,9 @@ CLASS TDolphinQry
    METHOD MakePrimaryKeyWhere() 
                                /*Build Make Primary key if exist*/
    
+   METHOD GoToPage( nPage ) INLINE If( nPage > ::nCurrentPage, ;
+                                      ::NextPage( nPage - ::nCurrentPage ), ;
+                                      If( nPage < ::nCurrentPage, ::PrevPage( ::nCurrentPage - nPage ), ) )
        
    METHOD NextPage( nSkip )
    
