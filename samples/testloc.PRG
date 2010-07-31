@@ -18,6 +18,8 @@ FUNCTION Main()
    ? "Seeking Vincent, Brook ..."
    ?"Using Locate"
    cTime = Time()
+   // To use Method Locate, the query should be order same way data to find
+   // other way the result are invalid
    ? "found:", oQry:Locate( { "Vincent", "Brook" }, {"first", "last" } ) , "Time " + ElapTime( cTime, Time() )
    ?"Using Find"
    cTime = Time()
