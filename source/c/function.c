@@ -1,5 +1,5 @@
 /*
- * $Id: 30-Jul-10 10:22:43 PM function.c Z dgarciagil $
+ * $Id: 31-Jul-10 8:47:53 AM function.c Z dgarciagil $
  */
 
 /*
@@ -930,7 +930,7 @@ HB_FUNC( D_READFILE )
   
 }
 
-//
+//------------------------------------
 HB_FUNC( MYSQLEMBEDDED )  
 {
    MYSQL *mysql;
@@ -998,6 +998,7 @@ HB_FUNC( MYSQLEMBEDDED )
    hb_retnl((long) mysql );
 }
 
+//------------------------------------
 
 unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, BOOL bSoft, const char * cSearch )
 {
@@ -1081,3 +1082,147 @@ HB_FUNC( MYSEEK2 )
    hb_retnl( ( long ) uiOk  );
 }
 
+//------------------------------------
+unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PHB_ITEM pValues )
+{
+   MYSQL_ROW row;
+   unsigned int uii;
+   int i, j;
+   long lField;
+   char * cSearch;
+   
+   mysql_data_seek(presult, iData);
+   row = mysql_fetch_row( presult );
+	 i   = hb_arrayLen( pFields );
+
+   if( i > 0 ){
+      for( j = 0; j < i; j++ )
+      { 
+   	    lField = hb_arrayGetNL( pFields, j + 1 ) - 1;
+   	    cSearch = hb_arrayGetC( pValues, j + 1 );
+   	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+   	    if( uii != 0 )
+   	    {
+   	        break; 
+   	    }
+      }      
+   }
+
+   return uii;
+}
+
+//------------------------------------------------//
+// mysql_result, field pos, cSearch, nStart, nEnd
+HB_FUNC( MYLOCATE ) 
+{
+   MYSQL_RES * result = ( MYSQL_RES * ) hb_parnl( 1 );
+   unsigned int uii, uii2;
+   int uiStart = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) - 1 : 0 ;
+   int uiStart2;
+   int uiEnd, uiOk = -1;
+	 PHB_ITEM pArrayFields  = hb_param( 2, HB_IT_ARRAY );
+	 PHB_ITEM pArrayValues  = hb_param( 3, HB_IT_ARRAY );
+   int iMid;
+   int iLastFound;
+   
+   
+   if (result > 0)
+   {
+      if( ! ISNUM( 5 ) )
+         uiEnd = mysql_num_rows( result );
+      else 
+      	 uiEnd = hb_parni( 5 ); 
+      
+      iMid = ( uiEnd + uiStart ) / 2;
+      
+      while( uiStart < iMid )
+      {
+         uii = InternalLocate( result, iMid, pArrayFields, pArrayValues );
+       		 
+         if( uii == -1 )
+            uiStart = iMid;
+         else if( uii == 1 )
+            uiEnd = iMid; 
+         else 
+         {
+
+             iLastFound = iMid;
+             uiStart2 = uiStart2 = iLastFound - 1;
+             while( iLastFound > uiStart2 )
+             {
+                uii2 = InternalLocate( result, uiStart2, pArrayFields, pArrayValues );
+                
+                if( uii2 != 0 )
+                {
+                  break;
+                }  
+                else 
+                  iLastFound = uiStart2;
+                  
+                uiStart2 = iLastFound - 1;
+             }
+             uiOk = iLastFound;
+             break;
+         }
+         iMid = ( uiEnd + uiStart ) / 2;
+      }      	 
+
+   }
+   
+   uiOk = uiOk >=0 ? uiOk + 1 : 0;
+   hb_retnl( ( long ) uiOk  );
+}
+
+//------------------------------------------------//
+// mysql_result, field pos, cSearch, nStart, nEnd
+HB_FUNC( MYFIND ) 
+{
+   MYSQL_RES * result = ( MYSQL_RES * ) hb_parnl( 1 );
+   MYSQL_ROW row;
+   unsigned int uii;
+   int uiStart = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) - 1 : 0 ;
+   int uiEnd, uiOk = -1, i, j;
+	 PHB_ITEM pArrayFields  = hb_param( 2, HB_IT_ARRAY );
+	 PHB_ITEM pArrayValues  = hb_param( 3, HB_IT_ARRAY );
+	 long lField;
+	 char * cSearch;
+   
+   
+   if (result > 0)
+   {
+      if( ! ISNUM( 5 ) )
+         uiEnd = mysql_num_rows( result );
+      else 
+      	 uiEnd = hb_parni( 5 ); 
+
+      while( uiStart < uiEnd )
+      {
+      	mysql_data_seek(result, uiStart);
+      	row = mysql_fetch_row( result );
+
+        i = hb_arrayLen( pArrayFields );
+      
+        if( i > 0 ){
+            for( j = 0; j < i; j++ )
+            { 
+         	    lField = hb_arrayGetNL( pArrayFields, j + 1 ) - 1;
+         	    cSearch = hb_arrayGetC( pArrayValues, j + 1 );
+         	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+         	    if( uii != 0 )
+         	    {
+         	        break; 
+         	    }
+            }      
+         }
+         if( uii == 0 )
+         { 
+         	 uiOk = uiStart;
+         	 break;
+         }     
+         uiStart++;
+      }      	 
+
+   }
+   uiOk = uiOk >=0 ? uiOk + 1 : 0;
+   hb_retnl( ( long ) uiOk  );
+}

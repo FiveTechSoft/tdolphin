@@ -1,5 +1,5 @@
 /*
- * $Id: 30-Jul-10 10:22:45 PM tdolpqry.PRG Z dgarciagil $
+ * $Id: 31-Jul-10 8:47:54 AM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -158,6 +158,7 @@ CLASS TDolphinQry
 
    METHOD FirstPage()   INLINE ::PrevPage( ::nCurrentPage - 1 )
                                 /*Go to first page in pagination*/
+   METHOD Find( aValues, aFields, nStart, nEnd, lRefresh )                                
    
    METHOD GetBlankRow()                       
    METHOD GetRow( nRow )        /*Fill aRow and Hash with current data row selected*/
@@ -188,6 +189,7 @@ CLASS TDolphinQry
 
    METHOD LoadQuery()          /*Load anf fill current query*/
    
+   METHOD Locate( aValues, aFields, nStart, nEnd, lSoft, lRefresh )
                                
    METHOD MakePrimaryKeyWhere() 
                                /*Build Make Primary key if exist*/
@@ -718,6 +720,43 @@ METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
 
 RETURN aTable 
 
+//----------------------------------------------------//
+
+METHOD Find( aValues, aFields, nStart, nEnd, lRefresh ) CLASS TDolphinQry
+
+   LOCAL nNum
+   LOCAL nSeek
+   LOCAL uValue, cField, nId
+   
+   DEFAULT lRefresh TO .T.
+
+   IF ::nRecCount == 0 
+      RETURN 0
+   ENDIF
+   
+   FOR EACH cField IN aFields
+      cField = ::FieldToNum( cField ) 
+   NEXT
+
+   FOR EACH uValue IN aValues
+#ifdef __XHARBOUR__
+      nId = HB_EnumINdex()
+#else 
+      nId = uValue:__EnumIndex()
+#endif               
+      uValue = ClipValue2SQL( uValue, ::aStructure[ aFields[ nId ] ][ MYSQL_FS_CLIP_TYPE ], .F. )
+   NEXT
+   
+   nSeek = MyFind( ::hResult, aFields, aValues, nStart, nEnd )
+   
+   IF nSeek > 0 
+      IF lRefresh
+         ::GetRow( nSeek )
+      ENDIF
+   ENDIF   
+   
+RETURN nSeek 
+
 
 //----------------------------------------------------//
 
@@ -991,6 +1030,44 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    ENDIF  
    
 RETURN NIL 
+
+
+//----------------------------------------------------//
+
+METHOD Locate( aValues, aFields, nStart, nEnd, lRefresh ) CLASS TDolphinQry
+
+   LOCAL nNum
+   LOCAL nSeek
+   LOCAL uValue, cField, nId
+   
+   DEFAULT lRefresh TO .T.
+
+   IF ::nRecCount == 0 
+      RETURN 0
+   ENDIF
+   
+   FOR EACH cField IN aFields
+      cField = ::FieldToNum( cField ) 
+   NEXT
+
+   FOR EACH uValue IN aValues
+#ifdef __XHARBOUR__
+      nId = HB_EnumINdex()
+#else 
+      nId = uValue:__EnumIndex()
+#endif               
+      uValue = ClipValue2SQL( uValue, ::aStructure[ aFields[ nId ] ][ MYSQL_FS_CLIP_TYPE ], .F. )
+   NEXT
+   
+   nSeek = MyLocate( ::hResult, aFields, aValues, nStart, nEnd )
+
+   IF nSeek > 0 
+      IF lRefresh
+         ::GetRow( nSeek )
+      ENDIF
+   ENDIF
+   
+RETURN nSeek 
 
 //----------------------------------------------------//
 
