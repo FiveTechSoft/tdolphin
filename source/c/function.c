@@ -1,5 +1,5 @@
 /*
- * $Id: 29-Jul-10 12:07:31 PM function.c Z dgarciagil $
+ * $Id: 30-Jul-10 10:22:43 PM function.c Z dgarciagil $
  */
 
 /*
@@ -997,3 +997,87 @@ HB_FUNC( MYSQLEMBEDDED )
 
    hb_retnl((long) mysql );
 }
+
+
+unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, BOOL bSoft, const char * cSearch )
+{
+   MYSQL_ROW row;
+   unsigned long * pulFieldLengths;
+   unsigned int uii;
+   
+   mysql_data_seek(presult, iData);
+   row = mysql_fetch_row( presult );
+   pulFieldLengths = mysql_fetch_lengths( presult ) ;
+        
+   if( pulFieldLengths[ uiField ] != 0 )
+   {
+      if( bSoft )
+         pulFieldLengths[ uiField ] = strlen( cSearch );
+         	
+      uii = hb_strnicmp( ( const char * ) row[ uiField ], cSearch, ( long ) pulFieldLengths[ uiField ] );
+   }
+   return uii;
+}
+
+//------------------------------------------------//
+// mysql_result, field pos, cSearch, nStart, nEnd
+HB_FUNC( MYSEEK2 ) 
+{
+   MYSQL_RES * result = ( MYSQL_RES * ) hb_parnl( 1 );
+   unsigned int uii, uii2;
+   int uiStart = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) - 1 : 0 ;
+   int uiStart2;
+   int uiEnd, uiOk = -1;
+   unsigned int uiField = hb_parni( 2 ) - 1;
+   char * cSearch = ( char *) hb_parc( 3 );
+   BOOL bSoft = hb_parl( 6 );
+   int iMid;
+   int iLastFound;
+   
+   
+   if (result > 0)
+   {
+      if( ! ISNUM( 5 ) )
+         uiEnd = mysql_num_rows( result );
+      else 
+      	 uiEnd = hb_parni( 5 ); 
+      
+      iMid = ( uiEnd + uiStart ) / 2;
+      
+      while( uiStart < iMid )
+      {
+         uii = InternalSeek( result, iMid, uiField, bSoft, cSearch );
+       		 
+         if( uii == -1 )
+            uiStart = iMid;
+         else if( uii == 1 )
+            uiEnd = iMid; 
+         else 
+         {
+             iLastFound = iMid;
+             uiStart2 = uiStart2 = iLastFound - 1;
+             while( iLastFound > uiStart2 )
+             {
+                uii2 = InternalSeek( result, uiStart2, uiField, bSoft, cSearch );
+                
+                if( uii2 != 0 )
+                {
+                  break;
+                }  
+                else 
+                  iLastFound = uiStart2;
+                  
+                uiStart2 = iLastFound - 1;
+             }
+             uiOk = iLastFound;
+             break;
+         }
+         iMid = ( uiEnd + uiStart ) / 2;
+      }      	 
+
+   }
+   
+   uiOk = uiOk >=0 ? uiOk + 1 : 0;
+   hb_retnl( ( long ) uiOk  );
+}
+

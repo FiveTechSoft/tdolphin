@@ -1,5 +1,5 @@
 /*
- * $Id: 29-Jul-10 12:07:32 PM tdolpqry.PRG Z dgarciagil $
+ * $Id: 30-Jul-10 10:22:45 PM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -196,10 +196,10 @@ CLASS TDolphinQry
                                       ::NextPage( nPage - ::nCurrentPage ), ;
                                       If( nPage < ::nCurrentPage, ::PrevPage( ::nCurrentPage - nPage ), ) )
        
-   METHOD NextPage( nSkip )
+   METHOD NextPage( nSkip )    /* Go to next page avalaible with pagination active */
    
    
-   METHOD PrevPage( nSkip )
+   METHOD PrevPage( nSkip )    /* Go to previous page avalaible with pagination active */
                               
    METHOD RecNo()      INLINE    ::nRecNo
                                /*returns the identity found at the position of the row pointer.*/
@@ -225,7 +225,7 @@ CLASS TDolphinQry
    METHOD SetOrder( cOrder, lRefresh )   INLINE ::SetNewFilter( SET_ORDER, cOrder, lRefresh )
    METHOD SetLimit( cLimit, lRefresh )   INLINE ::SetNewFilter( SET_LIMIT, cLimit, lRefresh )
    
-   METHOD SetPages( nLimit )
+   METHOD SetPages( nLimit )   /*Activate pagination and Set total rows by page*/
   
    METHOD Skip( nRecords )
    
@@ -1228,7 +1228,7 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
       RETURN 0
    ENDIF
 
-   nSeek = MySeek( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
+   nSeek = MySeek2( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
 
    IF nSeek > 0 
       IF lRefresh

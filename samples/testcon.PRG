@@ -22,12 +22,18 @@ PROCEDURE Main()
    IF ! oServer:lError 
       cText += "Connection OK" + CRLF
       cText += "Host: " + oServer:cHost +CRLF
-      cText += "Database: " + +oServer:cDBName + CRLF
+      cText += "Database: " +oServer:cDBName + CRLF
+      ? oServer:Query( "select * from test")
+      ? oServer:query( "select get_lock('2',180 )" )
+inkey( 180 )
+      ? oServer:query( "select release_lock('2')" )
+
       ? cText 
+
    ENDIF
+   inkey(180)
 
    oServer:End()
-   inkey(5)
 
 RETURN
 
@@ -41,7 +47,7 @@ PROCEDURE GetError( oServer, nError, lInternal )
    cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
    
    ? cText + CRLF
-   wait "presiona una tecla"
+
    
 RETURN
    
