@@ -1852,6 +1852,9 @@ FUNCTION Clip2Str( uValue, cPicture )
       CASE "N"
          cValue = Transform( Str( uValue ), cPicture )
          EXIT 
+      CASE "L"
+         cValue = If( uValue, ".T.", ".F." )
+         EXIT 
       CASE "D"
          cValue = Transform( DtoC( uValue ), cPicture )
          EXIT 

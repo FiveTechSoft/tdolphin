@@ -36,6 +36,7 @@
 #define ERR_INVALIDQUERYARRAY            9024
 #define ERR_MULTIQUERYFAULIRE            9025
 #define ERR_INVALIDFIELDTYPE             9026
+#define ERR_INVALIDFILENAME              9027
 
 //MySql Errort
 

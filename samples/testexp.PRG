@@ -12,19 +12,21 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    cls
-   oQry = oServer:Query( "SELECT * FROM president " )
+   oQry = oServer:Query( "SELECT first, last FROM clientes" )
    
-   oExp = oQry:Export( 1 )
-   oExp:bOnRow = {| n, cText| ShowLine( n, cText ) }
+   oExp = oQry:Export( EXP_TEXT, "client.txt" )
+   oExp:oExport:lAddHeader = .T.
+   
+   oExp:bOnRow = {| n, cText| ShowLine( n, cText, oQry:LastRec() ) }
    
    oExp:Start()
    ?
    
 RETURN NIL
 
-PROCEDURE ShowLine( n, cText )
+PROCEDURE ShowLine( n, cText, nTotal )
 
-? cText
+@ 1,1 say Str( n / nTotal * 100 ) + "%"
 
 RETURN
 

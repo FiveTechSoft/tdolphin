@@ -132,7 +132,8 @@ CLASS TDolphinQry
 
    METHOD Delete( lAll )       /*Delete current record active*/
    
-   METHOD Export( nType, aColumns, aPictures )   INLINE TDolphinExport():New( nType, Self, aColumns, aPictures )
+   METHOD Export( nType, cFieldName, aColumns, aPictures )   ;
+                       INLINE TDolphinExport():New( nType, Self, cFieldName, aColumns, aPictures )
 
    METHOD Eof()        INLINE ::lEof  
                       

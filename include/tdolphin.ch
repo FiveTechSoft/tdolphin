@@ -110,3 +110,6 @@
 #define ST_RESTORING     3
 #define ST_ENDRESTORE    4
 #define ST_RSTCANCEL     0
+
+//export
+#define EXP_TEXT    1 
