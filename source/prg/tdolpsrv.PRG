@@ -1,5 +1,5 @@
 /*
- * $Id: 30-Jul-10 10:22:46 PM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 01-Aug-10 12:39:19 PM tdolpsrv.PRG Z dgarciagil $
  */
    
 /*
@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    
-   DATA cBuild     INIT '30-Jul-10 10:22:46 PM'
+   DATA cBuild     INIT '01-Aug-10 12:39:19 PM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -1840,6 +1840,31 @@ FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue  )
    cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues
 
 RETURN cExecute
+
+//----------------------------------------------------//  
+
+FUNCTION Clip2Str( uValue, cPicture )
+   
+   LOCAL cType := ValType( uValue )
+   LOCAL cValue
+   
+   SWITCH cType 
+      CASE "N"
+         cValue = Transform( Str( uValue ), cPicture )
+         EXIT 
+      CASE "D"
+         cValue = Transform( DtoC( uValue ), cPicture )
+         EXIT 
+#ifdef __XHARBOUR__
+      DEFAULT
+#else 
+      OTHERWISE
+#endif   
+      cValue = uValue  
+   ENDSWITCH
+   
+RETURN cValue            
+         
 
 //----------------------------------------------------//  
 

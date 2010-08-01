@@ -1,5 +1,5 @@
 /*
- * $Id: 31-Jul-10 8:47:54 AM tdolpqry.PRG Z dgarciagil $
+ * $Id: 01-Aug-10 12:39:18 PM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -131,6 +131,8 @@ CLASS TDolphinQry
                                /*Compatibility with CheckError from TDolphinSrv*/
 
    METHOD Delete( lAll )       /*Delete current record active*/
+   
+   METHOD Export( nType, aColumns, aPictures )   INLINE TDolphinExport():New( nType, Self, aColumns, aPictures )
 
    METHOD Eof()        INLINE ::lEof  
                       
@@ -1272,7 +1274,7 @@ METHOD Save() CLASS TDolphinQry
          cPrimary = ::MakePrimaryKeyWhere()
          cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
       ENDIF
-? cQry
+
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         
