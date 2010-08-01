@@ -58,7 +58,8 @@
 #include "fileio.ch"
 #ifndef __XHARBOUR__
 #include "hbcompat.ch"
-#ifndef RGB
+#endif
+
  
  CLASS TDolphinExport 
  
@@ -71,6 +72,8 @@
     DATA nType
     DATA bOnRow
     DATA oExport
+    DATA oMain
+    
 
     METHOD New( nType, oQuery, aColumns, aPictures  )
     
@@ -101,7 +104,7 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
       CASE EXP_TEXT
          ::oExport = TDolphinToText():New( Self )
          EXIT
-      CASE EXP_TEXT
+      CASE EXP_EXCEL
          ::oExport = TDolphinToExcel():New( Self )
          EXIT 
           
@@ -120,7 +123,6 @@ CLASS TDolphinToText FROM TDolphinExport
     DATA cFieldDelimiter
     DATA lAppend
     DATA lAddHeader
-    DATA oMain
     
     METHOD New( oMain )
     METHOD Export()
@@ -236,6 +238,7 @@ RETURN NIL
 CLASS TDolphinToExcel FROM TDolphinExport
 
    DATA lAddHeader
+   DATA lOpened
    DATA cxlTrue
    DATA cxlFalse
    DATA cxlSum
@@ -256,9 +259,11 @@ METHOD New( oMain ) CLASS TDolphinToExcel
 
    ::oMain = oMain
    ::lAddHeader = .F.
+   ::lOpened = .F.
 
    TRY
-      ::oExcel   := GetActiveObject( "Excel.Application" )
+      ::oExcel   = GetActiveObject( "Excel.Application" )
+      ::lOpened  = .T.
    CATCH oError
       TRY 
          ::oExcel   := CreateObject( "Excel.Application" )
@@ -267,7 +272,6 @@ METHOD New( oMain ) CLASS TDolphinToExcel
          ::oMain:oQuery:oServer:CheckError()
       END
    END   
-   
    ::SetExcelLanguage()
    
 RETURN Self
@@ -276,7 +280,58 @@ RETURN Self
 
 METHOD Export() CLASS TDolphinToExcel
    
+   LOCAL oSheet, oBook
+   LOCAL cField, aRow, nID
+   LOCAL nRow     := 1
+   LOCAL nCol     := 0
+   LOCAL oQuery   := ::oMain:oQuery
+   LOCAL aColumns  := ::oMain:aColumns
+   LOCAL aPictures := aPictures   
+   LOCAL bOnRow   := ::oMain:bOnRow   
 
+   ::oExcel:ScreenUpdating := .T.
+   oBook   = ::oExcel:WorkBooks:Add()
+   oSheet  = ::oExcel:ActiveSheet()
+   
+   IF Empty( aColumns )
+      aColumns = {}
+      AEval( oQuery:aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
+   ENDIF   
+
+   FOR EACH cField IN aColumns
+      oSheet:Cells( nRow, ++nCol ):Value   := cField
+   NEXT
+   oSheet:Rows( 1 ):Font:Bold   := .T.
+   oSheet:Range( oSheet:Cells( 1, 1 ), oSheet:Cells( 1, nCol ) ):Select()
+   ::oExcel:Selection:Borders( 9 ):LineStyle := 1   // xlContinuous = 1
+   ::oExcel:Selection:Borders( 9 ):Weight    := -4138   // xlThin = 2, xlHairLine = 1, xlThick = 4, xlMedium = -4138   
+   nRow++  
+   nCol = 0
+    
+     DO WHILE ! oQuery:Eof()
+        FOR EACH cField IN aColumns
+#ifdef __XHARBOUR__
+            nId = HB_EnumINdex()
+#else 
+            nId = cField:__EnumIndex()
+#endif      
+            oSheet:Cells( nRow, ++nCol ):Value   := oQuery:FieldGet( cField )
+            
+         NEXT 
+         IF bOnRow != NIL
+            Eval( bOnRow, nRow )
+         ENDIF
+         nRow++
+         nCol = 0
+         oQuery:Skip()
+      ENDDO
+      
+   ::oExcel:ScreenUpdating   := .T.
+   ::oExcel:visible          := .T.
+   
+   IF ! ::lOpened   
+      ::oExcel:Quit()
+   ENDIF
    
 RETURN NIL
 

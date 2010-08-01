@@ -1,6 +1,6 @@
 OBJPRG  = .\$(OBJS)
 OBJC    = .\objc 
-INCLUDE = .\include
+INCLUDE = .\include;c:\fivewin\svn\repo\include
 LIBNAME = $(LIBNAME)
 DOLPHINDEF = 
 
