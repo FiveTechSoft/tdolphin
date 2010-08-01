@@ -84,6 +84,11 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
    ::oQuery     = oQuery
    ::aColumns   = aColumns
    ::aPictures  = aPictures
+   IF Empty( cFileName )
+      oQuery:oServer:nInternalError = ERR_INVALIDFILENAME
+      oQuery:oServer:CheckError()
+   ENDIF
+   
    ::cFileName  = cFileName
       
 
