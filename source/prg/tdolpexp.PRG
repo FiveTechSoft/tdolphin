@@ -49,12 +49,16 @@
  * If you do not wish that, delete this exception notice.
  *
  */
- 
- #include "tdolphin.ch"
- #include "hbclass.ch"
- #include "common.ch"
- #include "fileio.ch"
- #include "dolerr.ch" 
+
+#include "hbclass.ch"
+#include "common.ch"
+#include "dbstruct.ch"
+#include "tdolphin.ch"
+#include "dolerr.ch"
+#include "fileio.ch"
+#ifndef __XHARBOUR__
+#include "hbcompat.ch"
+#ifndef RGB
  
  CLASS TDolphinExport 
  
@@ -248,15 +252,17 @@ ENDCLASS
 
 METHOD New( oMain ) CLASS TDolphinToExcel
 
+   LOCAL oError
+
    ::oMain = oMain
    ::lAddHeader = .F.
 
    TRY
       ::oExcel   := GetActiveObject( "Excel.Application" )
-   CATCH
+   CATCH oError
       TRY 
          ::oExcel   := CreateObject( "Excel.Application" )
-      CATCH 
+      CATCH oError
          ::oMain:oQuery:oServer:lInternalError = ERR_NOEXCELINSTALED
          ::oMain:oQuery:oServer:CheckError()
       END

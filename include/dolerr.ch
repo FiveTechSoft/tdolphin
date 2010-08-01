@@ -37,6 +37,7 @@
 #define ERR_MULTIQUERYFAULIRE            9025
 #define ERR_INVALIDFIELDTYPE             9026
 #define ERR_INVALIDFILENAME              9027
+#define ERR_NOEXCELINSTALED              9028
 
 //MySql Errort
 
