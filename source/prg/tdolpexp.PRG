@@ -84,6 +84,7 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
    ::oQuery     = oQuery
    ::aColumns   = aColumns
    ::aPictures  = aPictures
+   
    IF Empty( cFileName )
       oQuery:oServer:nInternalError = ERR_INVALIDFILENAME
       oQuery:oServer:CheckError()
@@ -95,11 +96,17 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
    SWITCH nType
       CASE EXP_TEXT
          ::oExport = TDolphinToText():New( Self )
+         EXIT
+      CASE EXP_TEXT
+         ::oExport = TDolphinToExcel():New( Self )
          EXIT 
+          
    ENDSWITCH 
 
 RETURN Self
 
+//----------------------------------------// 
+// Start export to text
 //----------------------------------------// 
  
 CLASS TDolphinToText FROM TDolphinExport
@@ -126,7 +133,6 @@ METHOD New( oMain ) CLASS TDolphinToText
    ::cFieldDelimiter = ";"
    ::lAppend = .F.
    ::lAddHeader = .F.
-   
    
 RETURN Self
 
@@ -214,3 +220,108 @@ METHOD Export() CLASS TDolphinToText
          
 
 RETURN NIL
+
+//----------------------------------------// 
+// end export to text
+//----------------------------------------// 
+
+//----------------------------------------// 
+// Start export to excel
+//----------------------------------------// 
+
+CLASS TDolphinToExcel FROM TDolphinExport
+
+   DATA lAddHeader
+   DATA cxlTrue
+   DATA cxlFalse
+   DATA cxlSum
+   
+   DATA oExcel
+   METHOD New( oMain )
+   
+   METHOD Export()
+   METHOD SetExcelLanguage()
+
+ENDCLASS
+
+//----------------------------------------// 
+
+METHOD New( oMain ) CLASS TDolphinToExcel
+
+   ::oMain = oMain
+   ::lAddHeader = .F.
+
+   TRY
+      ::oExcel   := GetActiveObject( "Excel.Application" )
+   CATCH
+      TRY 
+         ::oExcel   := CreateObject( "Excel.Application" )
+      CATCH 
+         ::oMain:oQuery:oServer:lInternalError = ERR_NOEXCELINSTALED
+         ::oMain:oQuery:oServer:CheckError()
+      END
+   END   
+   
+   ::SetExcelLanguage()
+   
+RETURN Self
+
+//----------------------------------------// 
+
+METHOD Export() CLASS TDolphinToExcel
+   
+
+   
+RETURN NIL
+
+//----------------------------------------// 
+
+METHOD SetExcelLanguage() CLASS TDolphinToExcel
+
+   local aEng     := { 1033, 2057, 10249, 4105, 9225, 14345, 6153, 8201, 5129, 13321, 7177, 11273, 12297 }
+   local aSpanish := {3082,1034,11274,16394,13322,9226,5130,7178,12298,17418,4106,18442,;
+                     58378,2058,19466,6154,15370,10250,20490,21514,14346,8202}
+   local aGerman  := {1031,3079,5127,4103,2055}
+   local aFrench  := {1036,2060,11276,3084,9228,12300,15372,5132,13324,6156,14348,58380,8204,10252,4108,7180}
+
+   local nxlLangID  := .f.
+
+   nxlLangID := ::oExcel:LanguageSettings:LanguageID( 2 )
+   do case
+      case AScan( aEng, nxlLangID ) > 0 // English
+         ::cxlTrue     := "TRUE"
+         ::cxlFalse    := "FALSE"
+         ::cxlSum      := "SUBTOTAL(9,"
+
+      case AScan( aSpanish, nxlLangID ) > 0 // Spanish
+         ::cxlTrue     := "VERDADERO"
+         ::cxlFalse    := "FALSO"
+         ::cxlSum      := "SUBTOTALES(9;"
+
+      case nxlLangID == 1040 .or. nxlLangID == 2064 // Italian
+         ::cxlTrue     := "VERO"
+         ::cxlFalse    := "FALSO"
+         ::cxlSum      := "SOMMA("
+
+      case AScan( aGerman, nxlLangID ) > 0 // German
+         ::cxlTrue     := "WAHR"
+         ::cxlFalse    := "FALSCH"
+         ::cxlSum      := "SUMME("
+
+      case AScan( aFrench, nxlLangID ) > 0 // French
+         ::cxlTrue     := "VRAI"
+         ::cxlFalse    := "FAUX"
+         ::cxlSum      := "SOMME("
+
+      case nxlLangID == 2070 .or. nxlLangID == 1046 // Portugese
+         ::cxlTrue     := "VERDADEIRO"
+         ::cxlFalse    := "FALSO"
+         ::cxlSum      := "SOMA("
+         
+      otherwise
+         ::cxlTrue     := "=(1=1)"
+         ::cxlFalse    := "=(1=0)"
+         
+   endcase
+
+return nil   

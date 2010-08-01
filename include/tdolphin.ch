@@ -112,4 +112,5 @@
 #define ST_RSTCANCEL     0
 
 //export
-#define EXP_TEXT    1 
+#define EXP_TEXT     1 
+#define EXP_EXCEL    2
