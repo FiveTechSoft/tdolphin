@@ -19,7 +19,7 @@ FUNCTION Main()
    oQry = oServer:Query( "SELECT first, last FROM clientes limit 100" )
    
    oExp = oQry:Export( EXP_TEXT, "client.txt" )
-   oExp:oExport:lAddHeader = .T.
+   
    oExp:bOnStart = {| o | FWrite( o:hFile, Replicate( "=", Len( cHead ) ) + CRLF, Len( cHead ) + 1 ),;
                           FWrite( o:hFile, cHead, Len( cHead ) ),;
                           FWrite( o:hFile, Replicate( "=", Len( cHead ) ) + CRLF , Len( cHead ) + 1 ) }

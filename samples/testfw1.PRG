@@ -49,7 +49,7 @@ PROCEDURE DataBrowse( oServer, oWnd )
    DEFINE FONT oFont NAME "Times New Roman" SIZE 8, 12
    DEFINE BRUSH oBrush FILE "..\bitmaps\bluewhit.bmp"
    
-   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 500" )
+   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 10" )
    
    DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd FONT oFont BRUSH oBrush ;
           TITLE "TDolphin Build " + oServer:cBuild

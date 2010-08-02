@@ -60,21 +60,23 @@
 #include "hbcompat.ch"
 #endif
 
+
+
+//Main class to manager exports 
+CLASS TDolphinExport 
  
- CLASS TDolphinExport 
+    DATA oQuery        /* Query object */
+    DATA aColumns      /* Columns seelct to fill file */
+    DATA aPictures     /* Columns's Picture */
  
-    DATA oQuery
-    DATA aColumns
-    DATA aPictures
- 
-    DATA cFileName
+    DATA cFileName     /* File name */
     
-    DATA nType
-    DATA bOnRow
-    DATA bOnStart
-    DATA bOnEnd
-    DATA oExport
-    DATA oMain
+    DATA nType         /* Export type */
+    DATA bOnRow        /* codeblock to evaluate row by row */
+    DATA bOnStart      /* codeblock to evaluate at the begin process */
+    DATA bOnEnd        /* codeblock to evaluate at the end process */ 
+    DATA oExport       /* Export Objet, is direftent by type */
+    DATA oMain         /* Self */
     
 
     METHOD New( nType, oQuery, aColumns, aPictures  )
