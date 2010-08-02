@@ -1275,7 +1275,7 @@ METHOD Save() CLASS TDolphinQry
          cPrimary = ::MakePrimaryKeyWhere()
          cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
       ENDIF
-? cQry
+
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         
