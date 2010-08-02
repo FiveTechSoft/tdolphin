@@ -296,9 +296,10 @@ METHOD New( oMain ) CLASS TDolphinToExcel
    CATCH oError
       TRY 
          ::oExcel   := CreateObject( "Excel.Application" )
+         ::oExcel:Visible = .F.
       CATCH oError
-         ::oMain:oQuery:oServer:lInternalError = ERR_NOEXCELINSTALED
-         ::oMain:oQuery:oServer:CheckError()
+         ::oMain:oQuery:oServer:nInternalError = ERR_NOEXCELINSTALED
+         ::oMain:oQuery:oServer:CheckError(, Ole2TxtError())
       END
    END   
    ::SetExcelLanguage()
@@ -320,7 +321,8 @@ METHOD Export() CLASS TDolphinToExcel
    ::nCol = 0
 
    TRY 
-
+      ::oExcel:Visible = .F.
+      ::oExcel:DisplayAlerts = .F.
       ::oExcel:ScreenUpdating := .F.
       
       oBook   = ::oExcel:WorkBooks:Add()

@@ -1245,3 +1245,8 @@ HB_FUNC( GETTHOUSANDSEP )
   hb_retc( ( LPSTR )&value );
 }  
 
+HB_FUNC( SHOWW )
+{
+  hb_retl( ShowWindow(  ( HWND ) hb_parnl( 1 ), hb_parnl( 2 ) ) );
+}
+
