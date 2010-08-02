@@ -71,6 +71,8 @@
     
     DATA nType
     DATA bOnRow
+    DATA bOnStart
+    DATA bOnEnd
     DATA oExport
     DATA oMain
     
@@ -150,6 +152,7 @@ CLASS TDolphinToText FROM TDolphinExport
     DATA cFieldDelimiter
     DATA lAppend
     DATA lAddHeader
+    DATA hFile
     
     METHOD New( oMain )
     METHOD Export()
@@ -173,14 +176,16 @@ RETURN Self
 
 METHOD Export() CLASS TDolphinToText
 
-   LOCAL oQuery   := ::oMain:oQuery 
+   LOCAL oQuery    := ::oMain:oQuery 
    LOCAL aColumns  := ::oMain:aColumns
    LOCAL aPictures := ::oMain:aPictures
-   LOCAL cLine := "", cField, uField
-   LOCAL bOnRow   := ::oMain:bOnRow
+   LOCAL cLine     := "", cField, uField
+   LOCAL bOnRow    := ::oMain:bOnRow
+   LOCAL bOnStart  := ::oMain:bOnStart
+   LOCAL bOnEnd    := ::oMain:bOnEnd
    LOCAL n := 1
    LOCAL nId
-   LOCAL hFile, cTitle, cHeader := ""
+   LOCAL cTitle, cHeader := ""
    
    IF hb_IsObject( oQuery )
       IF Empty( aColumns )
@@ -199,11 +204,16 @@ METHOD Export() CLASS TDolphinToText
         FClose( FCreate( ::oMain:cFileName ) )
       ENDIF
 
-     IF( ( hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
+     IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
         IF ::lAppend
-           FSeek( hFile, 0, FS_END )
+           FSeek( ::hFile, 0, FS_END )
         ENDIF
      ENDIF      
+     
+      IF bOnStart != NIL 
+         Eval( bOnStart, Self )
+      ENDIF
+     
      
      IF ::lAddHeader
         FOR EACH cTitle IN aColumns
@@ -219,7 +229,7 @@ METHOD Export() CLASS TDolphinToText
         NEXT 
          //Remove Last Delimiter
          cHeader = SubStr( cHeader, 1, Len( cHeader ) - 1 ) + ::cRowDelimiter
-         FWrite( hFile, cHeader, Len( cHeader ) )
+         FWrite( ::hFile, cHeader, Len( cHeader ) )
      ENDIF
            
 
@@ -240,14 +250,19 @@ METHOD Export() CLASS TDolphinToText
          //Remove Last Delimiter
          cLine = SubStr( cLine, 1, Len( cLine ) - 1 ) + ::cRowDelimiter
          IF bOnRow != NIL
-            Eval( bOnRow, n, cLine )
+            Eval( bOnRow, Self, n, cLine )
          ENDIF
-         FWrite( hFile, cLine, Len( cLine ) )
+         FWrite( ::hFile, cLine, Len( cLine ) )
          cLine := ""
          n++
          oQuery:Skip()
       ENDDO
-      FClose( hFile )
+
+      IF bOnEnd != NIL 
+         Eval( bOnEnd, Self )
+      ENDIF      
+      
+      FClose( ::hFile )
       
    ENDIF
          
@@ -296,7 +311,6 @@ METHOD New( oMain ) CLASS TDolphinToExcel
    CATCH oError
       TRY 
          ::oExcel   := CreateObject( "Excel.Application" )
-         ::oExcel:Visible = .F.
       CATCH oError
          ::oMain:oQuery:oServer:nInternalError = ERR_NOEXCELINSTALED
          ::oMain:oQuery:oServer:CheckError(, Ole2TxtError())
@@ -317,16 +331,22 @@ METHOD Export() CLASS TDolphinToExcel
    LOCAL aPictures := ::oMain:aPictures   
    LOCAL bOnRow    := ::oMain:bOnRow   
    LOCAL lAddHeader:= ::lAddHeader
+   LOCAL bOnStart  := ::oMain:bOnStart
+   LOCAL bOnEnd    := ::oMain:bOnEnd
+   
    ::nRow = 1
    ::nCol = 0
 
    TRY 
-      ::oExcel:Visible = .F.
+      ::oExcel:visible       = .F.
       ::oExcel:DisplayAlerts = .F.
-      ::oExcel:ScreenUpdating := .F.
       
       oBook   = ::oExcel:WorkBooks:Add()
       oSheet  = ::oExcel:ActiveSheet()
+      
+      IF bOnStart != NIL 
+         Eval( bOnStart, Self )
+      ENDIF
       
       IF Empty( aColumns )
          aColumns = {}
@@ -374,7 +394,7 @@ METHOD Export() CLASS TDolphinToExcel
                
          NEXT 
          IF bOnRow != NIL
-            Eval( bOnRow, ::nRow - If( lAddHeader, 1, 0 ) )
+            Eval( bOnRow, oQuery:RecNo )
          ENDIF
          ::nRow++
          ::nCol = 0
@@ -400,8 +420,10 @@ METHOD Export() CLASS TDolphinToExcel
       ENDIF
       oSheet:Cells( 1,1 ):Select()
       
-      ::oExcel:ScreenUpdating   := .T.
-      ::oExcel:visible          := .T.
+      IF bOnEnd != NIL 
+         Eval( bOnEnd, ::oExcel, ::nRow, ::nCol )
+      ENDIF
+      
       oBook:SaveAs( ::oMain:cFileName )
       
    CATCH oError
