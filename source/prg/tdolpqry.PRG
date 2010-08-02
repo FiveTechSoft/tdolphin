@@ -1080,7 +1080,7 @@ METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
    LOCAL nIdx, lPrimary := .F.
 
 
-   IF Empty( ::cWhere )
+//   IF Empty( ::cWhere )
 
       FOR EACH aField IN ::aStructure
    
@@ -1121,7 +1121,7 @@ METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
          cWhere := Left( cWhere, Len( cWhere ) - 5 )
       ENDIF
       
-   ENDIF
+//   ENDIF
 
 RETURN cWhere
 
@@ -1233,9 +1233,9 @@ METHOD Save() CLASS TDolphinQry
     ENDIF 
 
    IF ! ::lAppend
-      cQry += "UPDATE " + Lower( cTable ) + " SET "
+      cQry += "UPDATE " + D_LowerCase( cTable ) + " SET "
    ELSE
-      cQry += "INSERT INTO " + Lower( cTable ) + " SET "
+      cQry += "INSERT INTO " + D_LowerCase( cTable ) + " SET "
    ENDIF
 
    FOR EACH aField IN ::aStructure
@@ -1275,7 +1275,7 @@ METHOD Save() CLASS TDolphinQry
          cPrimary = ::MakePrimaryKeyWhere()
          cQry   += " WHERE " + If( ! Empty( cPrimary ), cPrimary, ::BuildDataWhere() )
       ENDIF
-
+? cQry
       IF ::oServer:SqlQuery( cQry )
          ::LoadQuery()
       ENDIF         

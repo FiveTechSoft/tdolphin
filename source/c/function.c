@@ -57,6 +57,7 @@
 #include <hbstack.h>
 #include <hbvm.h>
 #include <mysql.h>
+#include <winnls.h>
 
 
 
@@ -1226,3 +1227,21 @@ HB_FUNC( MYFIND )
    uiOk = uiOk >=0 ? uiOk + 1 : 0;
    hb_retnl( ( long ) uiOk  );
 }
+
+
+HB_FUNC( GETDECIMALSEP )
+{ 
+  LCID lcid = GetThreadLocale();
+  LPSTR value;
+  GetLocaleInfo(lcid, LOCALE_SDECIMAL, ( LPSTR )&value, sizeof(value) / sizeof(TCHAR) );
+  hb_retc( ( LPSTR )&value );
+}  
+
+HB_FUNC( GETTHOUSANDSEP )
+{ 
+  LCID lcid = GetThreadLocale();
+  LPSTR value;
+  GetLocaleInfo(lcid, LOCALE_STHOUSAND, ( LPSTR )&value, sizeof(value) / sizeof(TCHAR) );
+  hb_retc( ( LPSTR )&value );
+}  
+

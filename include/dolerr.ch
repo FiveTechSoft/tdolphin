@@ -38,6 +38,7 @@
 #define ERR_INVALIDFIELDTYPE             9026
 #define ERR_INVALIDFILENAME              9027
 #define ERR_NOEXCELINSTALED              9028
+#define ERR_EXPORTTOEXCEL                9029
 
 //MySql Errort
 

@@ -1,6 +1,10 @@
 #include "hbcompat.ch"
 #include "tdolphin.ch"
 
+#ifndef __XHARBOUR__
+#xtranslate CurDrive() => hb_CurDrive()
+#endif
+
 FUNCTION Main()
   
    LOCAL oServer, oDlg, oQry, oBrw
@@ -12,10 +16,9 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    cls
-   oQry = oServer:Query( "SELECT first, last FROM clientes limit 50" )
-   
-   oExp = oQry:Export( EXP_EXCEL, "client" )
-   
+   oQry = oServer:Query( "SELECT first, last, salary FROM clientes limit 20" )
+   oExp = oQry:Export( EXP_EXCEL, CurDrive() + ":" + CurDir() + "\client", , { , , "999,999.99" } )
+   oExp:lMakeTotals = .T.   
    oExp:bOnRow = {| n, cText| ShowLine( n, cText, oQry:LastRec() ) }
    
    oExp:Start()

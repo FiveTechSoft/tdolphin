@@ -4,7 +4,7 @@
    
 /*
  * TDOLPHIN PROJECT source code:
- * Export table or query information
+ * Export Query information to specific format ( text, excel )
  *
  * Copyright 2010 Daniel Garcia-Gil<danielgarciagil@gmail.com>
  * www - http://tdolphin.blogspot.com/
@@ -78,6 +78,8 @@
     METHOD New( nType, oQuery, aColumns, aPictures  )
     
     METHOD Start() INLINE ::oExport:Export()
+    
+    ERROR HANDLER ONERROR()
  
  
 ENDCLASS
@@ -111,6 +113,31 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
    ENDSWITCH 
 
 RETURN Self
+
+//----------------------------------------// 
+
+METHOD ONERROR( uParam ) CLASS TDolphinExport
+
+   LOCAL cMsg   := __GetMessage()
+   LOCAL a
+
+#ifndef __XHARBOUR__
+   IF uParam == nil
+      a = __ObjSendMsg( ::oExport, cMsg )
+   ELSE
+      a = __ObjSendMsg( ::oExport, cMsg, uParam )
+   ENDIF
+#else   
+
+   IF uParam == nil
+      a = hb_execFromArray( @::oExport, cMsg )
+   ELSE
+      a = hb_execFromArray( @::oExport, cMsg, { uParam } )
+   ENDIF
+#endif
+
+RETURN a
+
 
 //----------------------------------------// 
 // Start export to text
@@ -148,7 +175,7 @@ METHOD Export() CLASS TDolphinToText
 
    LOCAL oQuery   := ::oMain:oQuery 
    LOCAL aColumns  := ::oMain:aColumns
-   LOCAL aPictures := aPictures
+   LOCAL aPictures := ::oMain:aPictures
    LOCAL cLine := "", cField, uField
    LOCAL bOnRow   := ::oMain:bOnRow
    LOCAL n := 1
@@ -239,11 +266,12 @@ CLASS TDolphinToExcel FROM TDolphinExport
 
    DATA lAddHeader
    DATA lOpened
-   DATA cxlTrue
-   DATA cxlFalse
    DATA cxlSum
-   
+   DATA lMakeTotals
    DATA oExcel
+   DATA nRow, nCol
+   
+   
    METHOD New( oMain )
    
    METHOD Export()
@@ -257,12 +285,13 @@ METHOD New( oMain ) CLASS TDolphinToExcel
 
    LOCAL oError
 
-   ::oMain = oMain
-   ::lAddHeader = .F.
-   ::lOpened = .F.
+   ::oMain       = oMain
+   ::lAddHeader  = .T.
+   ::lOpened     = .F.
+   ::lMakeTotals = .F.
 
    TRY
-      ::oExcel   = GetActiveObject( "Excel.Application" )
+      ::oExcel   = GetActiveObject( "Excel.Application" )      
       ::lOpened  = .T.
    CATCH oError
       TRY 
@@ -280,57 +309,115 @@ RETURN Self
 
 METHOD Export() CLASS TDolphinToExcel
    
-   LOCAL oSheet, oBook
+   LOCAL oSheet, oBook, oError
    LOCAL cField, aRow, nID
-   LOCAL nRow     := 1
-   LOCAL nCol     := 0
-   LOCAL oQuery   := ::oMain:oQuery
+   LOCAL oQuery    := ::oMain:oQuery
    LOCAL aColumns  := ::oMain:aColumns
-   LOCAL aPictures := aPictures   
-   LOCAL bOnRow   := ::oMain:bOnRow   
+   LOCAL aPictures := ::oMain:aPictures   
+   LOCAL bOnRow    := ::oMain:bOnRow   
+   LOCAL lAddHeader:= ::lAddHeader
+   ::nRow = 1
+   ::nCol = 0
 
-   ::oExcel:ScreenUpdating := .T.
-   oBook   = ::oExcel:WorkBooks:Add()
-   oSheet  = ::oExcel:ActiveSheet()
+   TRY 
+
+      ::oExcel:ScreenUpdating := .F.
+      
+      oBook   = ::oExcel:WorkBooks:Add()
+      oSheet  = ::oExcel:ActiveSheet()
+      
+      IF Empty( aColumns )
+         aColumns = {}
+         AEval( oQuery:aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
+      ENDIF   
+      
+      IF hb_IsArray( aPictures )
+         IF Len( aPictures ) != Len( aColumns )
+            aPictures = ASize( aPictures, Len( aColumns ) )
+         ENDIF
+      ELSE 
+         aPictures = Array( Len( aColumns ) )
+      ENDIF
    
-   IF Empty( aColumns )
-      aColumns = {}
-      AEval( oQuery:aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
-   ENDIF   
-
-   FOR EACH cField IN aColumns
-      oSheet:Cells( nRow, ++nCol ):Value   := cField
-   NEXT
-   oSheet:Rows( 1 ):Font:Bold   := .T.
-   oSheet:Range( oSheet:Cells( 1, 1 ), oSheet:Cells( 1, nCol ) ):Select()
-   ::oExcel:Selection:Borders( 9 ):LineStyle := 1   // xlContinuous = 1
-   ::oExcel:Selection:Borders( 9 ):Weight    := -4138   // xlThin = 2, xlHairLine = 1, xlThick = 4, xlMedium = -4138   
-   nRow++  
-   nCol = 0
-    
-     DO WHILE ! oQuery:Eof()
-        FOR EACH cField IN aColumns
-#ifdef __XHARBOUR__
+      //Make header and cell format
+      FOR EACH cField IN aColumns
+         ++::nCol
+         IF lAddHeader
+            oSheet:Cells( ::nRow, ::nCol ):Value  = cField       
+         ENDIF
+         oSheet:Columns( ::nCol ):ColumnWidth  = Max( Len( cField ), oQuery:aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] + 2 )
+         if oQuery:aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
+            oSheet:Columns( ::nCol ):NumberFormat = clp2xlnumpic( aPictures[ ::nCol ] )
+            oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
+         endif
+      NEXT
+      IF lAddHeader
+         oSheet:Rows( 1 ):Font:Bold   := .T.
+         oSheet:Range( oSheet:Cells( 1, 1 ), oSheet:Cells( 1, ::nCol ) ):Select()
+         ::oExcel:Selection:Borders( 9 ):LineStyle := 1   // xlContinuous = 1
+         ::oExcel:Selection:Borders( 9 ):Weight    := -4138   // xlThin = 2, xlHairLine = 1, xlThick = 4, xlMedium = -4138   
+         ::nRow++  
+      ENDIF
+      ::nCol = 0
+      
+      //Fill Sheet 
+      DO WHILE ! oQuery:Eof()
+         FOR EACH cField IN aColumns
+   #ifdef __XHARBOUR__
             nId = HB_EnumINdex()
-#else 
+   #else 
             nId = cField:__EnumIndex()
-#endif      
-            oSheet:Cells( nRow, ++nCol ):Value   := oQuery:FieldGet( cField )
-            
+   #endif      
+            oSheet:Cells( ::nRow, ++::nCol ):Value   := oQuery:FieldGet( cField )
+               
          NEXT 
          IF bOnRow != NIL
-            Eval( bOnRow, nRow )
+            Eval( bOnRow, ::nRow - If( lAddHeader, 1, 0 ) )
          ENDIF
-         nRow++
-         nCol = 0
+         ::nRow++
+         ::nCol = 0
          oQuery:Skip()
       ENDDO
+   
+      //Make Totals
+      IF ::lMakeTotals
+         ::nCol = 0
+         oSheet:Rows( ::nRow ):Font:Bold   := .T.
+         ::nRow--
+         oSheet:Range( oSheet:Cells( ::nRow, 1 ), oSheet:Cells( ::nRow, Len( aColumns ) ) ):Select()
+         ::oExcel:Selection:Borders( 9 ):LineStyle := 1   
+         ::oExcel:Selection:Borders( 9 ):Weight    := -4138
+         ::nRow++
+         FOR EACH cField IN aColumns
+            IF oQuery:aStructure[ ++::nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
+               oSheet:Cells( ::nRow, ::nCol ):Formula := "=" + ::cxlSum + ;
+                                   oSheet:Range( oSheet:Cells( 2, ::nCol ), ;
+                                   oSheet:Cells( ::nRow - 1, ::nCol ) ):Address( .f., .f. ) + ")"
+            ENDIF
+         NEXT   
+      ENDIF
+      oSheet:Cells( 1,1 ):Select()
       
-   ::oExcel:ScreenUpdating   := .T.
-   ::oExcel:visible          := .T.
+      ::oExcel:ScreenUpdating   := .T.
+      ::oExcel:visible          := .T.
+      oBook:SaveAs( ::oMain:cFileName )
+      
+   CATCH oError
+      oError:Description = Ole2TxtError()
+      oBook:Close( .F. )
+      IF ! ::lOpened   
+         ::oExcel:Quit()
+      ENDIF
+
+      oQuery:oServer:nInternalError = ERR_EXPORTTOEXCEL
+      oQuery:oServer:CheckError( , oError:Description )
+
+   END         
    
    IF ! ::lOpened   
       ::oExcel:Quit()
+   ELSE 
+      oBook:Close()
    ENDIF
    
 RETURN NIL
@@ -350,39 +437,43 @@ METHOD SetExcelLanguage() CLASS TDolphinToExcel
    nxlLangID := ::oExcel:LanguageSettings:LanguageID( 2 )
    do case
       case AScan( aEng, nxlLangID ) > 0 // English
-         ::cxlTrue     := "TRUE"
-         ::cxlFalse    := "FALSE"
-         ::cxlSum      := "SUBTOTAL(9,"
+         ::cxlSum      := "SUM("
 
       case AScan( aSpanish, nxlLangID ) > 0 // Spanish
-         ::cxlTrue     := "VERDADERO"
-         ::cxlFalse    := "FALSO"
-         ::cxlSum      := "SUBTOTALES(9;"
+         ::cxlSum      := "SUMA("
 
       case nxlLangID == 1040 .or. nxlLangID == 2064 // Italian
-         ::cxlTrue     := "VERO"
-         ::cxlFalse    := "FALSO"
          ::cxlSum      := "SOMMA("
 
       case AScan( aGerman, nxlLangID ) > 0 // German
-         ::cxlTrue     := "WAHR"
-         ::cxlFalse    := "FALSCH"
          ::cxlSum      := "SUMME("
 
       case AScan( aFrench, nxlLangID ) > 0 // French
-         ::cxlTrue     := "VRAI"
-         ::cxlFalse    := "FAUX"
          ::cxlSum      := "SOMME("
 
       case nxlLangID == 2070 .or. nxlLangID == 1046 // Portugese
-         ::cxlTrue     := "VERDADEIRO"
-         ::cxlFalse    := "FALSO"
          ::cxlSum      := "SOMA("
-         
-      otherwise
-         ::cxlTrue     := "=(1=1)"
-         ::cxlFalse    := "=(1=0)"
          
    endcase
 
 return nil   
+
+static function clp2xlnumpic( cPic )
+
+   local cFormat, aPic, c
+   local cDecimal  := GetDecimalSep()
+   local cThousand := GetThousandSep()
+   
+
+   if cPic == nil
+      cFormat  := "0"
+   else
+      if cThousand $ cPic
+         cFormat = "#" + cThousand + "##"
+      endif
+      if cDecimal $ cPic
+         cFormat += "0" + cDecimal + "00"
+      endif         
+   endif
+
+return cFormat
