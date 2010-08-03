@@ -1077,8 +1077,7 @@ RETURN nSeek
 METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
 
    LOCAL cWhere := "", aField
-   LOCAL nIdx, lPrimary := .F.
-
+   LOCAL nIdx, lPrimary := .F., uValue
 
 //   IF Empty( ::cWhere )
 
@@ -1088,7 +1087,7 @@ METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
          IF IS_PRIMARY_KEY( aField[ MYSQL_FS_FLAGS ] ) .OR.;
             IS_MULTIPLE_KEY( aField[ MYSQL_FS_FLAGS ] )
    
-            cWhere += aField[ MYSQL_FS_NAME ] + "="
+            cWhere += aField[ MYSQL_FS_NAME ] 
    
             // if a part of a primary key has been changed, use original value
 #ifdef __XHARBOUR__         
@@ -1099,15 +1098,30 @@ METHOD MakePrimaryKeyWhere() CLASS TDolphinQry
    
 #ifdef USE_HASH
             IF ! ::IsEqual( aField[ MYSQL_FS_NAME ] )
-               cWhere += ClipValue2SQL( ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+               uValue = ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ]
+               cWhere += If( ! IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) .AND. ;
+                             ( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ) ), " IS ", " = " )
+               cWhere += ClipValue2SQL( uValue, ;
+                                        aField[ MYSQL_FS_CLIP_TYPE ], , IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) ) 
             ELSE
-               cWhere += ClipValue2SQL( ::hRow[ "_" + aField[ MYSQL_FS_NAME ] ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+               uValue = ::hRow[ "_" + aField[ MYSQL_FS_NAME ] ]
+               cWhere += If( ! IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) .AND. ;
+                             ( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ) ), " IS ", " = " )
+               cWhere += ClipValue2SQL( uValue,;
+                                        aField[ MYSQL_FS_CLIP_TYPE ], , IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) ) 
             ENDIF
-#else          
+#else         
+            cWhere += If(  uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ), " IS ", " = " )
             IF ! ::IsEqual( nIdx )
-               cWhere += ClipValue2SQL( ::aOldRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] ) 
+               uValue = ::aOldRow[ nIdx ]
+               cWhere += If( ! IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) .AND. ;
+                             ( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ) ), " IS ", " = " )
+               cWhere += ClipValue2SQL( uValue, aField[ MYSQL_FS_CLIP_TYPE ] ) 
             ELSE
-               cWhere += ClipValue2SQL( ::aRow[ nIdx ], aField[ MYSQL_FS_CLIP_TYPE ] )
+               uValue = ::aRow[ nIdx ]
+               cWhere += If( ! IS_NOT_NULL( aField[ MYSQL_FS_FLAGS ] ) .AND. ;
+                             ( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ) ), " IS ", " = " )
+               cWhere += ClipValue2SQL( uValue, aField[ MYSQL_FS_CLIP_TYPE ] )
             ENDIF         
 #endif /*USE_HASH*/
             cWhere += " AND "
