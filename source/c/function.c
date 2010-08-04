@@ -1245,8 +1245,39 @@ HB_FUNC( GETTHOUSANDSEP )
   hb_retc( ( LPSTR )&value );
 }  
 
-HB_FUNC( SHOWW )
+
+HB_FUNC( __OPENCLIPBOARD )
 {
-  hb_retl( ShowWindow(  ( HWND ) hb_parnl( 1 ), hb_parnl( 2 ) ) );
+   hb_retl( OpenClipboard( ( HWND ) hb_parnl( 1 ) ) );
 }
 
+HB_FUNC( __SETCLIPBOARDDATA )
+{
+   ULONG ulLen;
+   HGLOBAL hMem;
+   void far * pMem;
+
+   ulLen = hb_parclen( 1 );
+   hMem = GlobalAlloc( GHND, ulLen + 1 );
+   if( ! hMem )
+   {
+      hb_retl( 0 );
+      return;
+   }
+
+   pMem = GlobalLock( hMem );
+   memcpy( ( char * ) pMem, ( char * ) hb_parc( 1 ), ulLen );
+   GlobalUnlock( hMem );
+   hb_retl( ( BOOL ) SetClipboardData( CF_TEXT, hMem ) );
+
+}
+
+HB_FUNC( __EMPTYCLIPBOARD )   //
+{
+   hb_retl( EmptyClipboard() );
+}
+
+HB_FUNC( __CLOSECLIPBOARD )   // ()  --> lSuccess
+{
+   hb_retl( CloseClipboard() );
+}

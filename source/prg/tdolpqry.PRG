@@ -520,15 +520,15 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
    LOCAL nNum
    LOCAL lError := .F.
    LOCAL uValue
-   
-   nNum := ::FieldToNum( cnField )
 
 //   ::Cargo:cTitle = Time() + " " + Str( ::xLock )
 
 #ifdef USE_HASH
-      IF ValType( cnField ) == "N"
+      IF HB_IsNumeric( cnField )
          cFieldName = "_" + ::FieldName( cnField )
+         nNum = cnField
       ELSE 
+         nNum := ::FieldToNum( cnField )   
          cFieldName := "_" + D_LowerCase( cnField )
       ENDIF
       IF hGetPos( ::hRow, cFieldName ) > 0
@@ -537,7 +537,6 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
          lError = .T.
       ENDIF
 #else      
-   
       IF nNum > 0
          uValue = ::aRow[ nNum ]
       ELSE 
