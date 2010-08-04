@@ -335,6 +335,7 @@ METHOD Export() CLASS TDolphinToExcel
    LOCAL lAddHeader:= ::lAddHeader
    LOCAL bOnStart  := ::oMain:bOnStart
    LOCAL bOnEnd    := ::oMain:bOnEnd
+   LOCAL uVal   
    
    ::nRow = 1
    ::nCol = 0
@@ -354,7 +355,7 @@ METHOD Export() CLASS TDolphinToExcel
          aColumns = {}
          AEval( oQuery:aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
       ENDIF   
-      
+
       IF hb_IsArray( aPictures )
          IF Len( aPictures ) != Len( aColumns )
             aPictures = ASize( aPictures, Len( aColumns ) )
@@ -369,11 +370,29 @@ METHOD Export() CLASS TDolphinToExcel
          IF lAddHeader
             oSheet:Cells( ::nRow, ::nCol ):Value  = cField       
          ENDIF
-         oSheet:Columns( ::nCol ):ColumnWidth  = Max( Len( cField ), oQuery:aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] + 2 )
-         if oQuery:aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
-            oSheet:Columns( ::nCol ):NumberFormat = clp2xlnumpic( aPictures[ ::nCol ] )
-            oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
-         endif
+         IF oQuery:aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] < 255
+            oSheet:Columns( ::nCol ):ColumnWidth  = Max( Len( cField ), oQuery:aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] + 2 )
+         ENDIF
+         DO CASE
+            CASE oQuery:aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
+               oSheet:Columns( ::nCol ):NumberFormat = clp2xlnumpic( aPictures[ ::nCol ] )
+               oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
+            CASE oQuery:aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "D"
+              IF ValType( aPictures[ ::nCol ] ) == 'C' 
+                 oSheet:Columns( ::nCol ):NumberFormat := Lower( aPictures[ ::nCol ] )
+              ELSE
+                 oSheet:Columns( ::nCol ):NumberFormat := Lower( Set( _SET_DATEFORMAT ) )         
+              ENDIF
+              oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
+           CASE oQuery:aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "M"
+              oSheet:Columns( ::nCol ):ColumnWidth  := 254
+              oSheet:Columns( ::nCol ):WrapText  := .T.
+              
+           CASE oQuery:aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] > 254
+              oSheet:Columns( ::nCol ):ColumnWidth  := 254
+              oSheet:Columns( ::nCol ):WrapText  := .T.
+              
+         ENDCASE
       NEXT
       IF lAddHeader
          oSheet:Rows( 1 ):Font:Bold   := .T.
@@ -385,15 +404,22 @@ METHOD Export() CLASS TDolphinToExcel
       ::nCol = 0
       
       //Fill Sheet 
+      
       DO WHILE ! oQuery:Eof()
          FOR EACH cField IN aColumns
    #ifdef __XHARBOUR__
             nId = HB_EnumINdex()
    #else 
             nId = cField:__EnumIndex()
-   #endif      
-            oSheet:Cells( ::nRow, ++::nCol ):Value   := oQuery:FieldGet( cField )
-               
+   #endif   
+         uVal = oQuery:FieldGet( cField )
+         
+         IF oQuery:aStructure[ nId ][ MYSQL_FS_CLIP_TYPE ] = "D"
+            uVal  := DToC( uVal )
+         ENDIF   
+         
+         oSheet:Cells( ::nRow, ++::nCol ):Value   := uVal
+            
          NEXT 
          IF bOnRow != NIL
             Eval( bOnRow, oQuery:RecNo )
@@ -402,7 +428,6 @@ METHOD Export() CLASS TDolphinToExcel
          ::nCol = 0
          oQuery:Skip()
       ENDDO
-   
       //Make Totals
       IF ::lMakeTotals
          ::nCol = 0
@@ -425,7 +450,7 @@ METHOD Export() CLASS TDolphinToExcel
       IF bOnEnd != NIL 
          Eval( bOnEnd, ::oExcel, ::nRow, ::nCol )
       ENDIF
-      
+
       oBook:SaveAs( ::oMain:cFileName )
       
    CATCH oError
