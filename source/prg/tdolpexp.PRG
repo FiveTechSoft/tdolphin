@@ -335,6 +335,7 @@ METHOD ConvertToExcel( uVal, nId ) CLASS TDolphinToExcel
    
    LOCAL cType := ValType( uVal )
    
+   
    SWITCH cType
       CASE "N"
          uVal = Str( uVal, ::oMain:oQuery:aStructure[ nId ][ MYSQL_FS_LENGTH ], ::oMain:oQuery:aStructure[ nId ][ MYSQL_FS_DECIMALS ] )
@@ -366,10 +367,10 @@ METHOD Export() CLASS TDolphinToExcel
    LOCAL bOnEnd    := ::oMain:bOnEnd
    LOCAL aStructure := oQuery:aStructure
    LOCAL uVal, oExcel := ::oExcel
-   LOCAL nRow, nCol, RetVal := ""
+   LOCAL RetVal := ""
    
-   nRow = 1
-   nCol = 0
+   ::nRow = 1
+   ::nCol = 0
 
    TRY 
       oExcel:DisplayAlerts  = .F.
@@ -379,7 +380,7 @@ METHOD Export() CLASS TDolphinToExcel
       oSheet  = oExcel:ActiveSheet()
       
       IF bOnStart != NIL 
-         nRow := Eval( bOnStart, Self )
+         Eval( bOnStart, Self )
       ENDIF
       
       IF Empty( aColumns )
@@ -396,46 +397,46 @@ METHOD Export() CLASS TDolphinToExcel
       ENDIF
       //Make header and cell format
       FOR EACH cField IN aColumns
-         ++nCol
+         ++::nCol
          IF lAddHeader
-            oSheet:Cells( nRow, nCol ):Value  = cField       
+            oSheet:Cells( ::nRow, ::nCol ):Value  = cField       
          ENDIF
-         IF aStructure[ nCol ][ MYSQL_FS_LENGTH ] < 255
-            oSheet:Columns( nCol ):ColumnWidth  = Max( Len( cField ), aStructure[ nCol ][ MYSQL_FS_LENGTH ] + 2 )
+         IF aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] < 255
+            oSheet:Columns( ::nCol ):ColumnWidth  = Max( Len( cField ), aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] + 2 )
          ENDIF
          DO CASE
-            CASE aStructure[ nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
-               oSheet:Columns( nCol ):NumberFormat = clp2xlnumpic( aPictures[ nCol ] )
-               oSheet:Columns( nCol ):HorizontalAlignment := -4152
-            CASE aStructure[ nCol ][ MYSQL_FS_CLIP_TYPE ] = "D"
-              IF ValType( aPictures[ nCol ] ) == 'C' 
-                 oSheet:Columns( nCol ):NumberFormat := Lower( aPictures[ nCol ] )
+            CASE aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
+               oSheet:Columns( ::nCol ):NumberFormat = clp2xlnumpic( aPictures[ ::nCol ] )
+               oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
+            CASE aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "D"
+              IF ValType( aPictures[ ::nCol ] ) == 'C' 
+                 oSheet:Columns( ::nCol ):NumberFormat := Lower( aPictures[ ::nCol ] )
               ELSE
-                 oSheet:Columns( nCol ):NumberFormat := Lower( Set( _SET_DATEFORMAT ) )         
+                 oSheet:Columns( ::nCol ):NumberFormat := Lower( Set( _SET_DATEFORMAT ) )         
               ENDIF
-              oSheet:Columns( nCol ):HorizontalAlignment := -4152
-           CASE aStructure[ nCol ][ MYSQL_FS_CLIP_TYPE ] = "M"
-              oSheet:Columns( nCol ):ColumnWidth  := 254
-              oSheet:Columns( nCol ):WrapText  := .T.
+              oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
+           CASE aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "M"
+              oSheet:Columns( ::nCol ):ColumnWidth  := 254
+              oSheet:Columns( ::nCol ):WrapText  := .T.
               
-           CASE aStructure[ nCol ][ MYSQL_FS_LENGTH ] > 254
-              oSheet:Columns( nCol ):ColumnWidth  := 254
-              oSheet:Columns( nCol ):WrapText  := .T.
+           CASE aStructure[ ::nCol ][ MYSQL_FS_LENGTH ] > 254
+              oSheet:Columns( ::nCol ):ColumnWidth  := 254
+              oSheet:Columns( ::nCol ):WrapText  := .T.
               
          ENDCASE
       NEXT
       IF lAddHeader
-         oSheet:Rows( nRow ):Font:Bold   := .T.
-         oSheet:Range( oSheet:Cells( nRow, 1 ), oSheet:Cells( nRow, nCol ) ):Select()
+         oSheet:Rows( ::nRow ):Font:Bold   := .T.
+         oSheet:Range( oSheet:Cells( ::nRow, 1 ), oSheet:Cells( ::nRow, ::nCol ) ):Select()
          oExcel:Selection:Borders( 9 ):LineStyle := 1   // xlContinuous = 1
          oExcel:Selection:Borders( 9 ):Weight    := -4138   // xlThin = 2, xlHairLine = 1, xlThick = 4, xlMedium = -4138   
-         nRow++  
+         ::nRow++  
       ENDIF
-      nCol = 0
+      ::nCol = 0
       
       //Fill Sheet 
       __OpenClipboard( oExcel:hWnd )
-      nPasteRow = nRow
+      nPasteRow = ::nRow
       DO WHILE ! oQuery:Eof()
          FOR EACH cField IN aColumns
 #ifdef __XHARBOUR__
@@ -455,7 +456,7 @@ METHOD Export() CLASS TDolphinToExcel
             
          NEXT 
          RetVal += CRLF
-         nRow++
+         ::nRow++
 
          IF Len( RetVal ) > 16000
             __OpenClipboard()
@@ -468,13 +469,13 @@ METHOD Export() CLASS TDolphinToExcel
             __EmptyClipboard()
             __CloseClipboard()
             RetVal    = ""
-            nPasteRow = nRow
+            nPasteRow = ::nRow
          ENDIF
          
          IF bOnRow != NIL
             Eval( bOnRow, oQuery:RecNo )
          ENDIF
-         nCol = 0
+         ::nCol = 0
          oQuery:Skip()
       ENDDO
       IF ! Empty( RetVal )
@@ -488,30 +489,30 @@ METHOD Export() CLASS TDolphinToExcel
          __EmptyClipboard()
          __CloseClipboard()
          RetVal    = ""
-         nPasteRow = nRow
+         nPasteRow = ::nRow
       ENDIF      
       
       //Make Totals
       IF ::lMakeTotals
-         nCol = 0
-         oSheet:Rows( nRow ):Font:Bold   := .T.
-         nRow--
-         oSheet:Range( oSheet:Cells( nRow, 1 ), oSheet:Cells( nRow, Len( aColumns ) ) ):Select()
+         ::nCol = 0
+         oSheet:Rows( ::nRow ):Font:Bold   := .T.
+         ::nRow--
+         oSheet:Range( oSheet:Cells( ::nRow, 1 ), oSheet:Cells( ::nRow, Len( aColumns ) ) ):Select()
          oExcel:Selection:Borders( 9 ):LineStyle := 1   
          oExcel:Selection:Borders( 9 ):Weight    := -4138
-         nRow++
+         ::nRow++
          FOR EACH cField IN aColumns
-            IF aStructure[ ++nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
-               oSheet:Cells( nRow, nCol ):Formula := "=" + ::cxlSum + ;
-                                   oSheet:Range( oSheet:Cells( 2, nCol ), ;
-                                   oSheet:Cells( nRow - 1, nCol ) ):Address( .f., .f. ) + ")"
+            IF aStructure[ ++::nCol ][ MYSQL_FS_CLIP_TYPE ] = "N"
+               oSheet:Cells( ::nRow, ::nCol ):Formula := "=" + ::cxlSum + ;
+                                   oSheet:Range( oSheet:Cells( 2, ::nCol ), ;
+                                   oSheet:Cells( ::nRow - 1, ::nCol ) ):Address( .f., .f. ) + ")"
             ENDIF
          NEXT   
       ENDIF
       oSheet:Cells( 1,1 ):Select()
       
       IF bOnEnd != NIL 
-         Eval( bOnEnd, oExcel, nRow, nCol )
+         Eval( bOnEnd, oExcel, ::nRow, ::nCol )
       ENDIF
 //      oExcel:visible        = .T.
       oExcel:ScreenUpdating = .T.
