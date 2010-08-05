@@ -1049,7 +1049,7 @@ HB_FUNC( MYSEEK2 )
       while( uiStart < iMid )
       {
          uii = InternalSeek( result, iMid, uiField, bSoft, cSearch );
-       		 
+
          if( uii == -1 )
             uiStart = iMid;
          else if( uii == 1 )
@@ -1058,6 +1058,7 @@ HB_FUNC( MYSEEK2 )
          {
              iLastFound = iMid;
              uiStart2 = uiStart2 = iLastFound - 1;
+             uii2 = 0;
              while( iLastFound > uiStart2 )
              {
                 uii2 = InternalSeek( result, uiStart2, uiField, bSoft, cSearch );
@@ -1070,6 +1071,10 @@ HB_FUNC( MYSEEK2 )
                   iLastFound = uiStart2;
                   
                 uiStart2 = iLastFound - 1;
+                if( uiStart2 < 0 )
+                {
+                  break;
+                }
              }
              uiOk = iLastFound;
              break;
@@ -1161,6 +1166,10 @@ HB_FUNC( MYLOCATE )
                   iLastFound = uiStart2;
                   
                 uiStart2 = iLastFound - 1;
+                if( uiStart2 < 0 )
+                {
+                  break;
+                }                
              }
              uiOk = iLastFound;
              break;
