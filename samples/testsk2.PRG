@@ -11,7 +11,7 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    
-   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY last" )
+   oQry = oServer:Query( "SELECT * FROM president ORDER BY first_name " )
    
    DEFINE DIALOG oDlg  SIZE 565, 480 
    

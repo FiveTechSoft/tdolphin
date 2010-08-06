@@ -100,7 +100,6 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
    ::oQuery     = oQuery
    ::aColumns   = aColumns
    ::aPictures  = aPictures
-   
    IF Empty( cFileName )
       oQuery:oServer:nInternalError = ERR_INVALIDFILENAME
       oQuery:oServer:CheckError()
@@ -334,7 +333,7 @@ RETURN Self
 METHOD ConvertToExcel( uVal, nId ) CLASS TDolphinToExcel
    
    LOCAL cType := ValType( uVal )
-   
+   LOCAL cDtFmt
    
    SWITCH cType
       CASE "N"
@@ -344,7 +343,11 @@ METHOD ConvertToExcel( uVal, nId ) CLASS TDolphinToExcel
          uVal = If( uVal, ::cxlTrue, ::cxlFalse )
          exit 
       CASE "D"
+         cDtFmt    := Set( _SET_DATEFORMAT )
+         Set( _SET_DATEFORMAT, "YYYY-MM-DD" )
          uVal = DToC( uVal )
+         Set(_SET_DATEFORMAT, cDtFmt )      
+         
          exit 
    ENDSWITCH
    

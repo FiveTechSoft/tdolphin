@@ -16,8 +16,8 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    cls
-   oQry = oServer:Query( "SELECT first, last, salary FROM clientes limit 20" )
-   oExp = oQry:Export( EXP_EXCEL, CurDrive() + ":\" + CurDir() + "\client", , { , , "999,999.99" } )
+   oQry = oServer:Query( "SELECT * FROM clientes limit 20" )
+   oExp = oQry:Export( EXP_EXCEL, CurDrive() + ":\" + CurDir() + "\client", , { , , , , , , "dd-mm-yyyy"} )
    oExp:lMakeTotals = .T.   
    oExp:bOnStart = {| o | Header( o ) }
    oExp:bOnRow = {| n, cText| ShowLine( n, cText, oQry:LastRec() ) }

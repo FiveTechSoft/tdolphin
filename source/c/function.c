@@ -1058,7 +1058,6 @@ HB_FUNC( MYSEEK2 )
          {
              iLastFound = iMid;
              uiStart2 = uiStart2 = iLastFound - 1;
-             uii2 = 0;
              while( iLastFound > uiStart2 )
              {
                 uii2 = InternalSeek( result, uiStart2, uiField, bSoft, cSearch );
