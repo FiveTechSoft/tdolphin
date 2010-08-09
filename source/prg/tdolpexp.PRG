@@ -100,6 +100,7 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
    ::oQuery     = oQuery
    ::aColumns   = aColumns
    ::aPictures  = aPictures
+   
    IF Empty( cFileName )
       oQuery:oServer:nInternalError = ERR_INVALIDFILENAME
       oQuery:oServer:CheckError()
@@ -115,7 +116,9 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
       CASE EXP_EXCEL
          ::oExport = TDolphinToExcel():New( Self )
          EXIT 
-          
+      CASE EXP_DBF
+         ::oExport = TDolphinToDbf():New( Self )
+         EXIT 
    ENDSWITCH 
 
 RETURN Self
@@ -608,4 +611,75 @@ static function clp2xlnumpic( cPic )
    endif
 
 return cFormat
+
+//----------------------------------------// 
+// end export to excel
+//----------------------------------------// 
+
+//----------------------------------------// 
+// Start export to dbf
+//----------------------------------------// 
+
+CLASS TDolphinToDbf FROM TDolphinExport
+
+   DATA cDriver
+   DATA cAlias
+   
+   METHOD New( oMain )
+   
+   METHOD Export()
+
+ENDCLASS
+
+//----------------------------------------// 
+
+METHOD New( oMain ) CLASS TDolphinToDbf
+
+   LOCAL oError
+
+   ::oMain       = oMain
+   ::cAlias      = "TEMP" + StrZero( Round( hb_Random( 100, 999 ), 2 ), 4 )
+
+   IF ! ( ".dbf" $ Lower( ::oMain:cFileName ) )
+      ::oMain:cFileName += ".dbf"
+   ENDIF
+   
       
+RETURN Self
+
+//----------------------------------------// 
+
+METHOD Export() CLASS TDolphinToDbf
+
+   LOCAL aStructure := {}
+   LOCAL uField
+   LOCAL oQry := ::oMain:oQuery
+   LOCAL aColumns := ::oMain:aColumns
+   LOCAL nField
+   
+   DEFAULT ::cDriver TO "DBFNTX"
+
+   IF ! Empty( aColumns )
+      FOR EACH uField IN aColumns
+         nField = oQry:FieldPos( uField )
+         AAdd( aStructure, { oQry:aStructure[ nField ][ MYSQL_FS_NAME ],;
+                             oQry:aStructure[ nField ][ MYSQL_FS_CLIP_TYPE ],;
+                             oQry:aStructure[ nField ][ MYSQL_FS_LENGTH ],;
+                             oQry:aStructure[ nField ][ MYSQL_FS_DECIMALS ] } )
+      NEXT                     
+   ELSE
+      FOR EACH uField IN oQry:aStructure
+         AAdd( aStructure, { uField[ MYSQL_FS_NAME ],;
+                             uField[ MYSQL_FS_CLIP_TYPE ],;
+                             uField[ MYSQL_FS_LENGTH ],;
+                             uField[ MYSQL_FS_DECIMALS ] } )
+      NEXT                     
+   ENDIF
+   
+   DbCreate( ::oMain:cFileName, aStructure, ::cDriver )
+   
+   USE ::oMain:cFileName ALIAS ::cAlias  EXCLUSIVE
+   
+   MsgInfo( )
+   
+RETURN NIL      

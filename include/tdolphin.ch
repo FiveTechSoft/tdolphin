@@ -114,3 +114,4 @@
 //export
 #define EXP_TEXT     1 
 #define EXP_EXCEL    2
+#define EXP_DBF      3
