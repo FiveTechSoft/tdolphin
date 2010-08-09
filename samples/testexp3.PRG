@@ -2,12 +2,11 @@
 
 #include "hbcompat.ch"
 #include "tdolphin.ch"
-#include "fivewin.ch"
 
 FUNCTION Main()
   
-   LOCAL oServer, oDlg, oQry, oBrw
-   LOCAL oExp
+   LOCAL oServer, oQry
+   LOCAL oExp, cTime
   
    D_SetCaseSensitive( .T. )
    
@@ -15,9 +14,12 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    cls
-   oQry = oServer:Query( "SELECT * FROM clientes limit 20" )
-   oExp = oQry:Export( EXP_DBF, "client.dbf")
-   oExp:bOnRow = {| n, cText| ShowLine( n, cText, oQry:LastRec() ) }
+   oQry = oServer:Query( "SELECT * FROM clientes" )
+   
+   oExp = oQry:Export( EXP_DBF, "client.dbf" )
+   oExp:bOnStart = { || QOut( "Started..."), QOut( ""), cTime := Time() }
+   oExp:bOnRow = {| o, n | ShowLine( n, oQry:LastRec() ) }
+   oExp:bOnEnd = { || QOut( "Elapse time: " + ElapTime( cTime, Time() ) ), QOut( "Finished...") }
    
    oExp:Start()
    ?
@@ -25,9 +27,9 @@ FUNCTION Main()
 RETURN NIL
 
 
-PROCEDURE ShowLine( n, cText, nTotal )
+PROCEDURE ShowLine( n, nTotal )
 
-@ 1,1 say Str( n / nTotal * 100 ) + "%"
+@ Row(),1 say Str( n / nTotal * 100 ) + "%"
 
 RETURN
 

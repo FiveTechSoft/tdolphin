@@ -479,7 +479,7 @@ METHOD Export() CLASS TDolphinToExcel
          ENDIF
          
          IF bOnRow != NIL
-            Eval( bOnRow, oQuery:RecNo )
+            Eval( bOnRow, oQuery:RecNo, Self )
          ENDIF
          ::nCol = 0
          oQuery:Skip()
@@ -655,14 +655,21 @@ METHOD Export() CLASS TDolphinToDbf
    LOCAL uField
    LOCAL oQry := ::oMain:oQuery
    LOCAL aColumns := ::oMain:aColumns
-   LOCAL nField
+   LOCAL nField, cFile, cAlias := ::cAlias
+   LOCAL bOnRow    := ::oMain:bOnRow
+   LOCAL bOnStart  := ::oMain:bOnStart
+   LOCAL bOnEnd    := ::oMain:bOnEnd   
    
    DEFAULT ::cDriver TO "DBFNTX"
+
+   IF bOnStart != NIL
+      Eval( bOnStart, Self )
+   ENDIF
 
    IF ! Empty( aColumns )
       FOR EACH uField IN aColumns
          nField = oQry:FieldPos( uField )
-         AAdd( aStructure, { oQry:aStructure[ nField ][ MYSQL_FS_NAME ],;
+         AAdd( aStructure, { Lower( oQry:aStructure[ nField ][ MYSQL_FS_NAME ] ),;
                              oQry:aStructure[ nField ][ MYSQL_FS_CLIP_TYPE ],;
                              oQry:aStructure[ nField ][ MYSQL_FS_LENGTH ],;
                              oQry:aStructure[ nField ][ MYSQL_FS_DECIMALS ] } )
@@ -678,8 +685,22 @@ METHOD Export() CLASS TDolphinToDbf
    
    DbCreate( ::oMain:cFileName, aStructure, ::cDriver )
    
-   USE ::oMain:cFileName ALIAS ::cAlias  EXCLUSIVE
+   cFile = SubStr( ::oMain:cFileName, 1, RAt( ".", ::oMain:cFileName ) - 1 )
    
-   MsgInfo( )
+   USE ( cFile ) ALIAS ( cAlias ) EXCLUSIVE
+   
+   DO WHILE ! oQry:Eof()
+      ( cAlias )->( DbAppend() )
+      AEval( aStructure, { | aRow, nId | ( cAlias )->( FieldPut( nId, oQry:hRow[ "_" + aRow[ MYSQL_FS_NAME ] ] ) ) } )
+      IF bOnRow != NIL 
+         Eval( bOnRow, Self, oQry:RecNo )
+      ENDIF
+      oQry:Skip() 
+   ENDDO   
+
+   IF bOnEnd != NIL 
+      Eval( bOnEnd, Self )
+   ENDIF
+
    
 RETURN NIL      
