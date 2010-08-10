@@ -157,7 +157,7 @@ CLASS TDolphinQry
                                   
    METHOD FieldToNum( cnField ) HIDDEN                                                            
    
-   METHOD FillArray()           /*Fill and return a array with all query information*/
+   METHOD FillArray( bOnFillArray, aColumns ) /*Fill and return a array with all query information*/
 
    METHOD FirstPage()   INLINE ::PrevPage( ::nCurrentPage - 1 )
                                 /*Go to first page in pagination*/
@@ -694,24 +694,38 @@ RETURN nNum
 
 //---------------------------------------
 
-METHOD FillArray( bOnFillArray ) CLASS TDolphinQry
+METHOD FillArray( bOnFillArray, aColumns ) CLASS TDolphinQry
 
-   LOCAL aTable := {}, aRow
-   LOCAL n, aGet, i := 0
+   LOCAL aTable := {}, aRow, uField
+   LOCAL n, aGet, i := 0, aStructure := {}
    
 
    DEFAULT bOnFillArray TO ::bOnFillArray
 
-//   aTable = DolphinFillArray( ::hResult, bOnFillArray, Self )
-
+   IF Empty( aColumns )
+      FOR EACH uField IN ::aStructure
+         AAdd( aStructure, uField[ MYSQL_FS_NAME ] )
+      NEXT
+      aColumns = aStructure  
+   ELSE
+      aStructure = aColumns
+   ENDIF
+   
+#ifndef NOINTERNAL
+   FOR EACH uField IN aColumns
+      ::FieldPos( uField )
+   NEXT 
+#endif
 
    IF ::nRecCount > 0
          
       WHILE ! ::lEof
          aRow = {}
-         FOR n = 1 to ::nFCount
-            AAdd( aRow, ::FieldGet( n ) )
-         NEXT 
+#ifdef USE_HASH         
+         AEval( aStructure, { | cField | AAdd( aRow, ::hRow[ "_" + cField ] ) } ) 
+#else 
+         AEval( aStructure, { | cField | AAdd( aRow, ::aRow[ ::FieldPos( cField ) ] ) } ) 
+#endif         
          IF bOnFillArray != NIL 
             Eval( bOnFillArray, aRow, ++i )
          ENDIF

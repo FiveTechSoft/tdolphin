@@ -5,56 +5,36 @@
 
 PROCEDURE Main()
    
-   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
-   LOCAL oServer   := NIL
-   LOCAL cServer   := hIni["mysql"]["host"],;
-         cUser     := hIni["mysql"]["user"],;
-         cPassword := hIni["mysql"]["psw"],;
-         nPort     := val(hIni["mysql"]["port"]), ;
-         cDBName   := hIni["mysql"]["dbname"], ;
-         nFlags    := val(hIni["mysql"]["flags"])
    LOCAL cText := ""
    LOCAL aData
 
    LOCAL aStruc, aRow, uItem
-   LOCAL oQry, n
+   LOCAL oQry, n, oServer
    
    SET CENTURY ON
    SET DATE FORMAT "dd/mm/yyyy"
    
-   oServer = TDolphinSrv():New( cServer, ;
-                                cUser, ;
-                                cPassword, ;
-                                nPort, nFlags, cDBName,;
-                                {| oServer, nError, lInternal | GetError( oServer, nError, lInternal  ) } )
+   D_SetCaseSensitive( .T. )
    
-   IF ! oServer:lError 
-
-      oQry = TDolphinQry():New( "SELECT * FROM testman", oServer )
-      aData = oQry:FillArray()
-      ? "Array filled"
-      ? "Total Items:" + Str( Len( aData ) )
-      oQry:SetLimit( 10 )
-      aData = oQry:FillArray( { | aRow | qout( aRow[ 2 ] ) } )
-      ? "Change Limit to 10, Array filled"
-      ? "Total Items:" + Str( Len( aData ) )
-      ?
-      
-      
+   IF ( oServer := ConnectTo() ) == NIL
+      RETURN NIL
    ENDIF
+   cls
+   
 
+   oQry = TDolphinQry():New( "SELECT * FROM testman", oServer )
+   aData = oQry:FillArray(, { "name", "last", "birth" } )
+   ? "Array filled"
+   ? "Total Items:" + Str( Len( aData ) )
+   oQry:SetLimit( 10 )
+   oQry:GoTop()
+   aData = oQry:FillArray( { | aRow | qout( aRow[ 2 ] ) } )
+   ? "Change Limit to 10, Array filled"
+   ? "Total Items:" + Str( Len( aData ) )
+   ?
+      
+      
+   
 RETURN
-   
-PROCEDURE GetError( oServer, nError, lInternal )
-   LOCAL cText := ""
-   
-   cText += "Error from Custom Error Message" + CRLF
-   cText += "================================" + CRLF
-   cText += oServer:ErrorTxt() + CRLF
-   cText += "ERROR No: " + Str( nError ) + CRLF
-   cText += "Internal: " + If( lInternal, "Yes", "No" ) + CRLF
-   
-   ? cText + CRLF
-   
-   
-RETURN   
+
+#include "connto.prg"
