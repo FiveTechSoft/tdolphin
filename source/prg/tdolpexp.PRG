@@ -291,6 +291,7 @@ CLASS TDolphinToExcel FROM TDolphinExport
    DATA cxlSum
    DATA cxlTrue
    DATA cxlFalse
+   DATA cxyearformat, cxmonthformat, cxdayformat
    DATA lMakeTotals
    DATA oExcel
    DATA nRow, nCol
@@ -347,7 +348,7 @@ METHOD ConvertToExcel( uVal, nId ) CLASS TDolphinToExcel
          exit 
       CASE "D"
          cDtFmt    := Set( _SET_DATEFORMAT )
-         Set( _SET_DATEFORMAT, "YYYY-MM-DD" )
+         Set( _SET_DATEFORMAT, StrTran( "YYYY-MM-DD", "Y", Upper( ::cxyearformat ) ) )
          uVal = DToC( uVal )
          Set(_SET_DATEFORMAT, cDtFmt )      
          
@@ -373,7 +374,7 @@ METHOD Export() CLASS TDolphinToExcel
    LOCAL bOnEnd    := ::oMain:bOnEnd
    LOCAL aStructure := oQuery:aStructure
    LOCAL uVal, oExcel := ::oExcel
-   LOCAL RetVal := ""
+   LOCAL RetVal := "", cDtFmt
    
    ::nRow = 1
    ::nCol = 0
@@ -416,10 +417,20 @@ METHOD Export() CLASS TDolphinToExcel
                oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
             CASE aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "D"
               IF ValType( aPictures[ ::nCol ] ) == 'C' 
-                 oSheet:Columns( ::nCol ):NumberFormat := Lower( aPictures[ ::nCol ] )
+                 cDtFmt = Lower( aPictures[ ::nCol ] )
               ELSE
-                 oSheet:Columns( ::nCol ):NumberFormat := Lower( Set( _SET_DATEFORMAT ) )         
+                 cDtFmt = Lower( Set( _SET_DATEFORMAT ) )
               ENDIF
+              //convert excel date format
+              //year
+              StrTran( cDtFmt, "y", Lower( ::cxyearformat ) )
+              //month
+              StrTran( cDtFmt, "m", Lower( ::cxmonthformat ) )
+              //day 
+              StrTran( cDtFmt, "d", Lower( ::cxdayformat ) )      
+              oSheet:Columns( ::nCol ):NumberFormat := Lower( aPictures[ ::nCol ] )
+
+              oSheet:Columns( ::nCol ):NumberFormat := cDtFmt
               oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
            CASE aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "M"
               oSheet:Columns( ::nCol ):ColumnWidth  := 254
@@ -457,7 +468,7 @@ METHOD Export() CLASS TDolphinToExcel
          uVal = ::ConvertToExcel( oQuery:aRow[ nId ], nId )
 #endif
          
-         RetVal += uVal + Chr( 9 ) 
+         RetVal += StrTran( StrTran( uVal, CRLF, " ; " ), Chr(9), ' ' ) + Chr( 9 )
          
             
          NEXT 
@@ -557,6 +568,9 @@ METHOD SetExcelLanguage() CLASS TDolphinToExcel
    local nxlLangID  := .f.
 
    nxlLangID := ::oExcel:LanguageSettings:LanguageID( 2 )
+   ::cxyearformat = ::oExcel:International( 19 ) //xlYearCode=19
+   ::cxmonthformat = ::oExcel:International( 20 ) //xlMonthCode=20
+   ::cxdayformat = ::oExcel:International( 19 ) //xlDayCode=21
    do case
       case AScan( aEng, nxlLangID ) > 0 // English
          ::cxlSum      = "SUM("
@@ -567,7 +581,7 @@ METHOD SetExcelLanguage() CLASS TDolphinToExcel
          ::cxlSum      = "SUMA("
          ::cxlTrue     = "VERDADERO"
          ::cxlFalse    = "FALSO"
-         
+
       case nxlLangID == 1040 .or. nxlLangID == 2064 // Italian
          ::cxlSum      = "SOMMA("
          ::cxlTrue     = "VERO"
