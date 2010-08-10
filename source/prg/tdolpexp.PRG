@@ -73,6 +73,8 @@ CLASS TDolphinExport
     DATA aPictures     /* Columns's Picture */
  
     DATA cFileName     /* File name */
+    DATA hFile
+    DATA lAddHeader
     
     DATA nType         /* Export type */
     DATA bOnRow        /* codeblock to evaluate row by row */
@@ -85,6 +87,8 @@ CLASS TDolphinExport
     METHOD New( nType, oQuery, aColumns, aPictures  )
     
     METHOD Start() INLINE ::oExport:Export()
+    METHOD Write( cLine ) INLINE FWrite( ::hFile, cLine += CRLF, Len( cLine ) )
+    METHOD Close()  INLINE FClose( ::hFile )
     
     ERROR HANDLER ONERROR()
  
@@ -119,6 +123,9 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
       CASE EXP_DBF
          ::oExport = TDolphinToDbf():New( Self )
          EXIT 
+      CASE EXP_HTML
+         ::oExport = TDolphinToHtml():New( Self )
+         EXIT          
    ENDSWITCH 
 
 RETURN Self
@@ -158,8 +165,7 @@ CLASS TDolphinToText FROM TDolphinExport
     DATA cTextQualifer
     DATA cFieldDelimiter
     DATA lAppend
-    DATA lAddHeader
-    DATA hFile
+    
     
     METHOD New( oMain )
     METHOD Export()
@@ -212,6 +218,7 @@ METHOD Export() CLASS TDolphinToText
       ENDIF
 
      IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
+        Super:hFile = ::hFile
         IF ::lAppend
            FSeek( ::hFile, 0, FS_END )
         ENDIF
@@ -269,7 +276,7 @@ METHOD Export() CLASS TDolphinToText
          Eval( bOnEnd, Self )
       ENDIF      
       
-      FClose( ::hFile )
+      ::Close()
       
    ENDIF
          
@@ -286,7 +293,6 @@ RETURN NIL
 
 CLASS TDolphinToExcel FROM TDolphinExport
 
-   DATA lAddHeader
    DATA lOpened
    DATA cxlSum
    DATA cxlTrue
@@ -717,4 +723,143 @@ METHOD Export() CLASS TDolphinToDbf
    ENDIF
 
    
+RETURN NIL      
+
+//----------------------------------------// 
+// end export to dbf
+//----------------------------------------// 
+
+//----------------------------------------// 
+// Start export to html
+//----------------------------------------// 
+
+CLASS TDolphinToHtml FROM TDolphinExport
+   
+   DATA cHeader
+   DATA cFooter
+   
+   METHOD New( oMain )
+   
+   METHOD Export()
+
+ENDCLASS
+
+//----------------------------------------// 
+
+METHOD New( oMain ) CLASS TDolphinToHtml
+
+   LOCAL oError
+   LOCAL cExt
+   
+   ::lAddHeader  = .T.
+   
+   ::oMain       = oMain
+   
+   ::cHeader = '<html>' + CRLF +;
+               '<head>' + CRLF +;
+               '<meta http-equiv="'+'Content-Type"' + CRLF + ;
+               'content="' + 'text/html; charset=UTF-8">'+ CRLF +;
+               '</head>'
+               
+   ::cFooter = '</table>'+ CRLF + ;
+               '</body>' + CRLF + ;
+               '</html>' 
+   
+   
+   
+   cExt = Lower( SubStr( oMain:cFileName, Rat( ".", oMain:cFileName ) + 1 ) )
+
+   IF !( cExt $ "htm;html" )
+      oMain:oQuery:oServer:nInternalError = ERR_INVALIDHTMLEXT
+      oMain:oQuery:oServer:CheckError()      
+   ENDIF
+   
+      
+RETURN Self
+
+//----------------------------------------// 
+
+METHOD Export() CLASS TDolphinToHtml
+
+   LOCAL oQuery    := ::oMain:oQuery 
+   LOCAL aColumns  := ::oMain:aColumns
+   LOCAL aPictures := ::oMain:aPictures
+   LOCAL cLine     := "", cField, uField, cTitle
+   LOCAL bOnRow    := ::oMain:bOnRow
+   LOCAL bOnStart  := ::oMain:bOnStart
+   LOCAL bOnEnd    := ::oMain:bOnEnd
+   LOCAL n := 1
+   LOCAL nId
+   
+   
+   
+   IF hb_IsObject( oQuery )
+      IF Empty( aColumns )
+         aColumns = {}
+         AEval( oQuery:aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
+      ENDIF
+      IF hb_IsArray( aPictures )
+         IF Len( aPictures ) != Len( aColumns )
+            aPictures = ASize( aPictures, Len( aColumns ) )
+         ENDIF
+      ELSE 
+         aPictures = Array( Len( aColumns ) )
+      ENDIF
+
+      IF ! File( ::oMain:cFileName )
+        FClose( FCreate( ::oMain:cFileName ) )
+      ENDIF
+
+      IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
+         Super:hFile = ::hFile
+      ENDIF        
+     
+      IF bOnStart != NIL 
+         Eval( bOnStart, Self )
+      ENDIF
+      ::Write( ::cHeader )
+      ::Write( '<body bgcolor="#FFFFFF">' ) 
+      ::Write( '<table border="' + '1">' ) 
+
+     IF ::lAddHeader
+        ::Write( '<tr>' )
+        FOR EACH cTitle IN aColumns
+           cLine = '<td>' + cTitle + '</td>'
+           ::Write( cLine )
+        NEXT 
+        ::Write( '</tr>' )
+     ENDIF
+
+     DO WHILE ! oQuery:Eof()
+        cLine = '<tr>' + CRLF
+        FOR EACH cField IN aColumns
+#ifdef __XHARBOUR__
+            nId = HB_EnumINdex()
+#else 
+            nId = cField:__EnumIndex()
+#endif      
+            uField = Clip2Str( oQuery:FieldGet( cField ), aPictures[ nId ] )
+            cLine += '<td>' + uField + '</td>'
+         NEXT 
+         ::Write( cLine )
+         //Remove Last Delimiter
+         cLine = '</tr>'
+         IF bOnRow != NIL
+            Eval( bOnRow, Self, n, cLine )
+         ENDIF
+         ::Write( cLine )
+         n++
+         oQuery:Skip()
+      ENDDO
+      
+      ::Write( ::cFooter )
+      
+      IF bOnEnd != NIL 
+         Eval( bOnEnd, Self )
+      ENDIF      
+    
+      ::Close()
+      
+   ENDIF
+
 RETURN NIL      
