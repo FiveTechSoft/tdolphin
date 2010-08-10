@@ -1284,7 +1284,7 @@ METHOD Save() CLASS TDolphinQry
          uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
          uOldValue = ::aOldRow[ nIdx ]
 #endif /*USE_HASH*/
-         IF uValue != uOldValue .and. ! lChanged
+         IF ! ( uValue == uOldValue ) .and. ! lChanged
             lChanged = .T.
          ENDIF
       ENDIF
