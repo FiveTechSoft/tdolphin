@@ -429,12 +429,11 @@ METHOD Export() CLASS TDolphinToExcel
               ENDIF
               //convert excel date format
               //year
-              StrTran( cDtFmt, "y", Lower( ::cxyearformat ) )
+              cDtFmt = StrTran( cDtFmt, "y", ::cxyearformat )
               //month
-              StrTran( cDtFmt, "m", Lower( ::cxmonthformat ) )
+              cDtFmt = StrTran( cDtFmt, "m", ::cxmonthformat )
               //day 
-              StrTran( cDtFmt, "d", Lower( ::cxdayformat ) )      
-              oSheet:Columns( ::nCol ):NumberFormat := Lower( aPictures[ ::nCol ] )
+              cDtFmt = StrTran( cDtFmt, "d", ::cxdayformat )      
 
               oSheet:Columns( ::nCol ):NumberFormat := cDtFmt
               oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
@@ -574,9 +573,9 @@ METHOD SetExcelLanguage() CLASS TDolphinToExcel
    local nxlLangID  := .f.
 
    nxlLangID := ::oExcel:LanguageSettings:LanguageID( 2 )
-   ::cxyearformat = ::oExcel:International( 19 ) //xlYearCode=19
-   ::cxmonthformat = ::oExcel:International( 20 ) //xlMonthCode=20
-   ::cxdayformat = ::oExcel:International( 19 ) //xlDayCode=21
+   ::cxyearformat = Lower( ::oExcel:International( 19 ) ) //xlYearCode=19
+   ::cxmonthformat = Lower( ::oExcel:International( 20 ) ) //xlMonthCode=20
+   ::cxdayformat = Lower( ::oExcel:International( 21 ) ) //xlDayCode=21
    do case
       case AScan( aEng, nxlLangID ) > 0 // English
          ::cxlSum      = "SUM("
