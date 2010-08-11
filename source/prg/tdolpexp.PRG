@@ -334,6 +334,7 @@ METHOD New( oMain ) CLASS TDolphinToExcel
       END
    END   
    ::SetExcelLanguage()
+
    
 RETURN Self
 
@@ -354,10 +355,11 @@ METHOD ConvertToExcel( uVal, nId ) CLASS TDolphinToExcel
          exit 
       CASE "D"
          cDtFmt    := Set( _SET_DATEFORMAT )
-         Set( _SET_DATEFORMAT, StrTran( "YYYY-MM-DD", "Y", Upper( ::cxyearformat ) ) )
+//         Set( _SET_DATEFORMAT, StrTran( "YYYY-MM-DD", "Y", Upper( ::cxyearformat ) ) )
+         Set( _SET_DATEFORMAT, "YYYY-MM-DD" )
          uVal = DToC( uVal )
-         Set(_SET_DATEFORMAT, cDtFmt )      
-         
+         Set(_SET_DATEFORMAT, cDtFmt )
+
          exit 
    ENDSWITCH
    
@@ -392,7 +394,7 @@ METHOD Export() CLASS TDolphinToExcel
       oBook   = oExcel:WorkBooks:Add()
       oSheet  = oExcel:ActiveSheet()
       
-      IF bOnStart != NIL 
+      IF bOnStart != NIL
          Eval( bOnStart, Self )
       ENDIF
       
@@ -432,11 +434,11 @@ METHOD Export() CLASS TDolphinToExcel
               cDtFmt = StrTran( cDtFmt, "y", ::cxyearformat )
               //month
               cDtFmt = StrTran( cDtFmt, "m", ::cxmonthformat )
-              //day 
+              //day
               cDtFmt = StrTran( cDtFmt, "d", ::cxdayformat )      
-
               oSheet:Columns( ::nCol ):NumberFormat := cDtFmt
               oSheet:Columns( ::nCol ):HorizontalAlignment := -4152
+
            CASE aStructure[ ::nCol ][ MYSQL_FS_CLIP_TYPE ] = "M"
               oSheet:Columns( ::nCol ):ColumnWidth  := 254
               oSheet:Columns( ::nCol ):WrapText  := .T.
@@ -451,7 +453,7 @@ METHOD Export() CLASS TDolphinToExcel
          oSheet:Rows( ::nRow ):Font:Bold   := .T.
          oSheet:Range( oSheet:Cells( ::nRow, 1 ), oSheet:Cells( ::nRow, ::nCol ) ):Select()
          oExcel:Selection:Borders( 9 ):LineStyle := 1   // xlContinuous = 1
-         oExcel:Selection:Borders( 9 ):Weight    := -4138   // xlThin = 2, xlHairLine = 1, xlThick = 4, xlMedium = -4138   
+         oExcel:Selection:Borders( 9 ):Weight    := -4138   // xlThin = 2, xlHairLine = 1, xlThick = 4, xlMedium = -4138
          ::nRow++  
       ENDIF
       ::nCol = 0
@@ -476,7 +478,7 @@ METHOD Export() CLASS TDolphinToExcel
          RetVal += StrTran( StrTran( uVal, CRLF, " ; " ), Chr(9), ' ' ) + Chr( 9 )
          
             
-         NEXT 
+         NEXT
          RetVal += CRLF
          ::nRow++
 
@@ -576,6 +578,7 @@ METHOD SetExcelLanguage() CLASS TDolphinToExcel
    ::cxyearformat = Lower( ::oExcel:International( 19 ) ) //xlYearCode=19
    ::cxmonthformat = Lower( ::oExcel:International( 20 ) ) //xlMonthCode=20
    ::cxdayformat = Lower( ::oExcel:International( 21 ) ) //xlDayCode=21
+
    do case
       case AScan( aEng, nxlLangID ) > 0 // English
          ::cxlSum      = "SUM("
@@ -701,7 +704,7 @@ METHOD Export() CLASS TDolphinToDbf
                              uField[ MYSQL_FS_DECIMALS ] } )
       NEXT                     
    ENDIF
-   
+
    DbCreate( ::oMain:cFileName, aStructure, ::cDriver )
    
    cFile = SubStr( ::oMain:cFileName, 1, RAt( ".", ::oMain:cFileName ) - 1 )
@@ -861,4 +864,4 @@ METHOD Export() CLASS TDolphinToHtml
       
    ENDIF
 
-RETURN NIL      
+RETURN NIL
