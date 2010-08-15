@@ -40,6 +40,8 @@
 #define ERR_NOEXCELINSTALED              9028
 #define ERR_EXPORTTOEXCEL                9029
 #define ERR_INVALIDHTMLEXT               9030
+#define ERR_NOWORDINSTALED               9031
+#define ERR_EXPORTTOWORD                  9032
 
 //MySql Errort
 

@@ -1,5 +1,5 @@
 /*
- * $Id: 01-Aug-10 12:39:20 PM tdolpexp.PRG Z dgarciagil $
+ * $Id: 8/14/2010 4:14:40 PM tdolpexp.PRG Z dgarciagil $
  */
    
 /*
@@ -126,6 +126,9 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
       CASE EXP_HTML
          ::oExport = TDolphinToHtml():New( Self )
          EXIT          
+      CASE EXP_WORD
+         ::oExport = TDolphinToWord():New( Self )
+         EXIT           
    ENDSWITCH 
 
 RETURN Self
@@ -538,7 +541,6 @@ METHOD Export() CLASS TDolphinToExcel
       IF bOnEnd != NIL 
          Eval( bOnEnd, oExcel, ::nRow, ::nCol )
       ENDIF
-//      oExcel:visible        = .T.
       oExcel:ScreenUpdating = .T.
       oBook:SaveAs( ::oMain:cFileName )
       
@@ -865,3 +867,172 @@ METHOD Export() CLASS TDolphinToHtml
    ENDIF
 
 RETURN NIL
+
+//----------------------------------------// 
+// end export to html
+//----------------------------------------// 
+
+//----------------------------------------// 
+// Start export to word
+//----------------------------------------// 
+
+CLASS TDolphinToWord FROM TDolphinExport
+
+   DATA lOpened
+   DATA oWord
+   
+   METHOD New( oMain )
+   
+   METHOD Export()
+   
+
+ENDCLASS
+
+
+//----------------------------------------// 
+
+METHOD New( oMain ) CLASS TDolphinToWord
+
+   LOCAL oError
+
+   ::oMain       = oMain
+   ::lAddHeader  = .T.
+   ::lOpened     = .F.
+
+   TRY
+      ::oWord   = GetActiveObject( "Word.Application" )      
+      ::lOpened  = .T.
+   CATCH oError
+      TRY 
+         ::oWord   := CreateObject( "Word.Application" )
+      CATCH oError
+         ::oMain:oQuery:oServer:nInternalError = ERR_NOWORDINSTALED
+         ::oMain:oQuery:oServer:CheckError(, Ole2TxtError())
+      END
+   END   
+
+   
+RETURN Self
+
+
+
+//----------------------------------------// 
+
+METHOD Export() CLASS TDolphinToWord
+   
+   LOCAL oSheet, oBook, oError
+   LOCAL cField, aRow, nID
+   LOCAL oQuery    := ::oMain:oQuery
+   LOCAL aColumns  := ::oMain:aColumns
+   LOCAL aPictures := ::oMain:aPictures   
+   LOCAL bOnRow    := ::oMain:bOnRow   
+   LOCAL lAddHeader:= ::oMain:lAddHeader
+   LOCAL bOnStart  := ::oMain:bOnStart
+   LOCAL bOnEnd    := ::oMain:bOnEnd
+   LOCAL aStructure := oQuery:aStructure
+   LOCAL uVal, oWord := ::oWord
+   LOCAL RetVal := "", cDtFmt
+   LOCAL nLen, oTable, n
+
+   TRY 
+      oWord:DisplayAlerts  = .F.
+      oWord:ScreenUpdating = .F.
+      
+      oBook   = oWord:Documents:Add()
+      oSheet  = oWord:ActiveDocument()
+      
+      IF bOnStart != NIL
+         Eval( bOnStart, Self )
+      ENDIF
+      
+      IF Empty( aColumns )
+         aColumns = {}
+         AEval( aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
+      ENDIF   
+
+      IF hb_IsArray( aPictures )
+         IF Len( aPictures ) != Len( aColumns )
+            aPictures = ASize( aPictures, Len( aColumns ) )
+         ENDIF
+      ELSE 
+         aPictures = Array( Len( aColumns ) )
+      ENDIF
+      //Make header
+      IF lAddHeader
+         FOR EACH cField IN aColumns
+            RetVal += ( cField + ";" )
+         NEXT
+         oSheet:Range( 0, 0 ):InsertAfter( RetVal )
+      ENDIF
+      RetVal = ""      
+      nLen := Len( aColumns )
+      DO WHILE !oQuery:Eof()
+         FOR EACH cField IN aColumns
+#ifdef __XHARBOUR__
+            nId = HB_EnumINdex()
+#else 
+            nId = cField:__EnumIndex()
+#endif   
+
+#ifdef USE_HASH   
+            uVal = Clip2Str( oQuery:hRow[ "_" + cField ], aPictures[ nId ] )
+#else          
+            uVal = Clip2Str( oQuery:aRow[ nId ], aPictures[ nId ] )
+#endif
+            RetVal += uVal + ";"
+         
+         NEXT
+
+         IF bOnRow != NIL
+            Eval( bOnRow, Self, oQuery:RecNo )
+         ENDIF 
+         
+         IF Len( RetVal ) > 16000
+            oSheet:content:InsertAfter( RetVal )
+            RetVal = ""
+         ENDIF
+         
+         oQuery:Skip()
+      ENDDO
+      
+      IF Len( RetVal ) > 0
+         oSheet:content:InsertAfter( RetVal )
+         RetVal = ""
+      ENDIF
+      
+      oTable = oSheet:Content:ConvertToTable( ";", oQuery:LastRec() + 1, nLen ) 
+      oTable:AutoFormat( 36 ) //wdTableFormatElegant
+
+      oWord:DisplayAlerts  = .T.
+      oWord:ScreenUpdating = .T.
+      
+      IF bOnEnd != NIL
+         Eval( bOnRow, Self )
+      ENDIF 
+
+      oBook:SaveAs( ::oMain:cFileName )               
+      
+      
+      
+   CATCH oError
+      oWord:DisplayAlerts  = .T.
+      oWord:ScreenUpdating = .T.
+      oError:Description = Ole2TxtError()
+      oBook:Close( .F. )
+      IF ! ::lOpened   
+         oWord:Quit()
+      ENDIF
+
+      oQuery:oServer:nInternalError = ERR_EXPORTTOWORD
+      oQuery:oServer:CheckError( , oError:Description )
+
+   END         
+   
+   IF ! ::lOpened   
+      ::oWord:Quit()
+   ELSE 
+      oBook:Close()
+   ENDIF
+   
+RETURN NIL
+

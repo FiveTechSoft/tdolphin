@@ -1,5 +1,5 @@
 /*
- * $Id: 01-Aug-10 12:39:19 PM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 8/14/2010 4:14:41 PM tdolpsrv.PRG Z dgarciagil $
  */
    
 /*
@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    
-   DATA cBuild     INIT '01-Aug-10 12:39:19 PM'
+   DATA cBuild     INIT '8/14/2010 4:14:41 PM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -1846,24 +1846,25 @@ RETURN cExecute
 FUNCTION Clip2Str( uValue, cPicture )
    
    LOCAL cType := ValType( uValue )
-   LOCAL cValue
+   LOCAL cValue, cdf
    
    SWITCH cType 
       CASE "N"
-         cValue = Transform( Str( uValue ), cPicture )
+         cValue = Transform( uValue, cPicture )
          EXIT 
       CASE "L"
          cValue = If( uValue, ".T.", ".F." )
          EXIT 
       CASE "D"
-         cValue = Transform( DtoC( uValue ), cPicture )
+         cValue = Transform( uValue, cPicture )
+
          EXIT 
 #ifdef __XHARBOUR__
       DEFAULT
 #else 
       OTHERWISE
 #endif   
-      cValue = uValue  
+      cValue = Transform( uValue, cPicture )
    ENDSWITCH
    
 RETURN cValue            
