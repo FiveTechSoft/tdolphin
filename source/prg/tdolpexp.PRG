@@ -896,7 +896,7 @@ METHOD New( oMain ) CLASS TDolphinToWord
    LOCAL oError
 
    ::oMain       = oMain
-   ::lAddHeader  = .T.
+   ::oMain:lAddHeader  = .T.
    ::lOpened     = .F.
 
    TRY
@@ -958,13 +958,15 @@ METHOD Export() CLASS TDolphinToWord
          aPictures = Array( Len( aColumns ) )
       ENDIF
       //Make header
+      RetVal = ""      
       IF lAddHeader
          FOR EACH cField IN aColumns
             RetVal += ( cField + ";" )
          NEXT
-         oSheet:Range( 0, 0 ):InsertAfter( RetVal )
+         oSheet:Range( 0, 0 ):InsertBefore( RetVal )
       ENDIF
       RetVal = ""      
+
       nLen := Len( aColumns )
       DO WHILE !oQuery:Eof()
          FOR EACH cField IN aColumns
@@ -999,7 +1001,6 @@ METHOD Export() CLASS TDolphinToWord
          oSheet:content:InsertAfter( RetVal )
          RetVal = ""
       ENDIF
-      
       oTable = oSheet:Content:ConvertToTable( ";", oQuery:LastRec() + 1, nLen ) 
       oTable:AutoFormat( 36 ) //wdTableFormatElegant
 

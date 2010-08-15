@@ -1856,8 +1856,8 @@ FUNCTION Clip2Str( uValue, cPicture )
          cValue = If( uValue, ".T.", ".F." )
          EXIT 
       CASE "D"
+      
          cValue = Transform( uValue, cPicture )
-
          EXIT 
 #ifdef __XHARBOUR__
       DEFAULT
