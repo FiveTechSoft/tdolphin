@@ -16,7 +16,7 @@ FUNCTION Main()
       RETURN NIL
    ENDIF
    cls
-   oQry = oServer:Query( "SELECT FIRST, LAST, HIREDATE, STREET, CITY FROM clientes limit 20" )
+   oQry = oServer:Query( "SELECT FIRST, LAST, HIREDATE, STREET, CITY FROM clientes limit 100" )
    oExp = oQry:Export( EXP_WORD, CurDrive() + ":\" + CurDir() + "\client", , { "@!", "@!", "DD/MM/YY"} )
    
    oExp:bOnRow = {| o, n| ShowLine( n, oQry:LastRec() ) }

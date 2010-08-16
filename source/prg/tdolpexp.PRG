@@ -880,6 +880,7 @@ CLASS TDolphinToWord FROM TDolphinExport
 
    DATA lOpened
    DATA oWord
+   DATA nRow
    
    METHOD New( oMain )
    
@@ -898,6 +899,8 @@ METHOD New( oMain ) CLASS TDolphinToWord
    ::oMain       = oMain
    ::oMain:lAddHeader  = .T.
    ::lOpened     = .F.
+   ::nRow = 1
+   
 
    TRY
       ::oWord   = GetActiveObject( "Word.Application" )      
@@ -935,6 +938,7 @@ METHOD Export() CLASS TDolphinToWord
    LOCAL nLen, oTable, n
 
    TRY 
+      oWord:Visible = .F.
       oWord:DisplayAlerts  = .F.
       oWord:ScreenUpdating = .F.
       
@@ -958,16 +962,22 @@ METHOD Export() CLASS TDolphinToWord
          aPictures = Array( Len( aColumns ) )
       ENDIF
       //Make header
-      RetVal = ""      
+      RetVal = ""  
+      nLen := Len( aColumns )    
+      oTable = oSheet:Tables():Add( oSheet:Range( 0, 0 ), oQuery:LastRec() , nLen )
       IF lAddHeader
          FOR EACH cField IN aColumns
-            RetVal += ( cField + ";" )
+#ifdef __XHARBOUR__
+            nId = HB_EnumINdex()
+#else 
+            nId = cField:__EnumIndex()
+#endif          
+            oTable:Cell( ::nRow, nId ):Range:InsertBefore( cField )
          NEXT
-         oSheet:Range( 0, 0 ):InsertBefore( RetVal )
       ENDIF
-      RetVal = ""      
 
-      nLen := Len( aColumns )
+      ::nRow++
+      
       DO WHILE !oQuery:Eof()
          FOR EACH cField IN aColumns
 #ifdef __XHARBOUR__
@@ -981,27 +991,18 @@ METHOD Export() CLASS TDolphinToWord
 #else          
             uVal = Clip2Str( oQuery:aRow[ nId ], aPictures[ nId ] )
 #endif
-            RetVal += uVal + ";"
+            oTable:Cell( ::nRow, nId ):Range:InsertBefore( uVal )
          
          NEXT
+         ::nRow++
 
          IF bOnRow != NIL
             Eval( bOnRow, Self, oQuery:RecNo )
          ENDIF 
-         
-         IF Len( RetVal ) > 16000
-            oSheet:content:InsertAfter( RetVal )
-            RetVal = ""
-         ENDIF
-         
+        
          oQuery:Skip()
       ENDDO
       
-      IF Len( RetVal ) > 0
-         oSheet:content:InsertAfter( RetVal )
-         RetVal = ""
-      ENDIF
-      oTable = oSheet:Content:ConvertToTable( ";", oQuery:LastRec() + 1, nLen ) 
       oTable:AutoFormat( 36 ) //wdTableFormatElegant
 
       oWord:DisplayAlerts  = .T.
@@ -1012,7 +1013,6 @@ METHOD Export() CLASS TDolphinToWord
       ENDIF 
 
       oBook:SaveAs( ::oMain:cFileName )               
-      
       
       
    CATCH oError
