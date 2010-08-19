@@ -1439,8 +1439,6 @@ RETURN NIL
 METHOD Skip( nRecords ) CLASS TDolphinQry
 
    LOCAL n := ::nRecNo
-   LOCAL lNeedRefresh := .F.
-   LOCAL lNoMove  := .F.
 
    DEFAULT nRecords TO 1
 

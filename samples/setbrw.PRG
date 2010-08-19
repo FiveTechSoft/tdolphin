@@ -17,9 +17,9 @@ PROCEDURE SetDolphin( oBrw, oQry, lAddCols )
       :bGoBottom := {|| If( oQry:LastRec() > 0, oQry:GoBottom(), nil )  }
       IF oQry:lPagination
          :bSkip     := {| n | If ( n != NIL, If( n + oQry:nRecNo < 1 .AND. oQry:nCurrentPage > 1,;
-                              ( oQry:PrevPage(, .T. ), 0 ), ;
+                              ( oQry:PrevPage(, .T. ), oBrw:GoBottom(), 0 ), ;
                               If( n + oQry:nRecNo > oQry:nRecCount .AND. oQry:nCurrentPage < oQry:nTotalRows,;
-                                 ( oQry:NextPage( , .T. ), 0 ), oQry:Skip( n ) ) ), oQry:Skip( n ) )  }
+                                 ( oQry:NextPage( , .T. ), oBrw:GoTop(), 0 ), oQry:Skip( n ) ) ), oQry:Skip( n ) )  }
       ELSE 
          :bSkip     := {| n | oQry:Skip( n ) }
       ENDIF
