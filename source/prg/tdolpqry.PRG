@@ -1428,7 +1428,7 @@ METHOD SetPages( nLimit ) CLASS TDolphinQry
    
    ::nMaxPages     = Int( ::nTotalRows / nLimit ) + If( ::nTotalRows % nLimit > 0, 1, 0 )
    
-   ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( nLimit ) ) ) 
+   ::SetLimit( AllTrim( Str( ::nCurrentLimit ) ) + "," + AllTrim( Str( nLimit ) ), .F. ) 
    
 
 RETURN NIL
