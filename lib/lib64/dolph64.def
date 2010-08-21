@@ -1,0 +1,4 @@
+LIBRARY dolphm
+
+EXPORTS
+           dummy      @1
