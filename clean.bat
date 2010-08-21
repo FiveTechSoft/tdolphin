@@ -2,10 +2,14 @@
 del objc\*.* /Q
 del objh\*.* /Q
 del objx\*.* /Q
+del objcm\*.* /Q
+del objm\*.* /Q
+del objmx\*.* /Q
 del comp.log
 del tmp
-del lib\dolphin*.lib /Q
+del lib\dolp*.lib /Q
 del lib\*.bak /Q
+del lib\*.exp /Q
 del *.bak /Q
 del .\source\c\*.bak /Q
 del .\source\prg\*.bak /Q
