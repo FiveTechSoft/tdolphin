@@ -1,5 +1,5 @@
 /*
- * $Id: 10-Jul-10 9:40:26 AM dolerr.ch Z dgarciagil $
+ * $Id: 26-Aug-10 10:00:41 AM dolerr.ch Z dgarciagil $
  */
 
 
@@ -41,7 +41,9 @@
 #define ERR_EXPORTTOEXCEL                9029
 #define ERR_INVALIDHTMLEXT               9030
 #define ERR_NOWORDINSTALED               9031
-#define ERR_EXPORTTOWORD                  9032
+#define ERR_EXPORTTOWORD                 9032
+#define ERR_INVALIDTABLES_EXPORTTOSQL    9033
+#define ERR_INVALIDFILE_EXPORTTOSQL      9034
 
 //MySql Errort
 

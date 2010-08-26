@@ -117,3 +117,4 @@
 #define EXP_DBF      3
 #define EXP_HTML     4
 #define EXP_WORD     5
+#define EXP_SQL      6

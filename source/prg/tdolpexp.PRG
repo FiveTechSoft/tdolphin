@@ -1,5 +1,5 @@
 /*
- * $Id: 8/14/2010 4:14:40 PM tdolpexp.PRG Z dgarciagil $
+ * $Id: 26-Aug-10 10:00:40 AM tdolpexp.PRG Z dgarciagil $
  */
    
 /*
@@ -87,7 +87,7 @@ CLASS TDolphinExport
     METHOD New( nType, oQuery, aColumns, aPictures  )
     
     METHOD Start() INLINE ::oExport:Export()
-    METHOD Write( cLine ) INLINE FWrite( ::hFile, cLine += CRLF, Len( cLine ) )
+    METHOD Write( cLine, lNoCRLF ) 
     METHOD Close()  INLINE FClose( ::hFile )
     
     ERROR HANDLER ONERROR()
@@ -129,6 +129,10 @@ METHOD New( nType, oQuery, cFileName, aColumns, aPictures  ) CLASS TDolphinExpor
       CASE EXP_WORD
          ::oExport = TDolphinToWord():New( Self )
          EXIT           
+      CASE EXP_SQL
+         ::oExport = TDolphinToSql():New( Self )
+         EXIT           
+
    ENDSWITCH 
 
 RETURN Self
@@ -157,6 +161,17 @@ METHOD ONERROR( uParam ) CLASS TDolphinExport
 
 RETURN a
 
+METHOD Write( cLine, lNoCRLF ) CLASS TDolphinExport
+
+   local crlf := CRLF
+
+   DEFAULT lNoCRLF TO .F.
+   
+   IF lNoCRLF
+      crlf = ""
+   ENDIF 
+
+RETURN FWrite( ::hFile, cLine += crlf, Len( cLine ) )
 
 //----------------------------------------// 
 // Start export to text
@@ -652,6 +667,10 @@ CLASS TDolphinToDbf FROM TDolphinExport
    METHOD New( oMain )
    
    METHOD Export()
+   
+    METHOD Write()  VIRTUAL
+    METHOD Close()  VIRTUAL
+   
 
 ENDCLASS
 
@@ -1037,3 +1056,141 @@ METHOD Export() CLASS TDolphinToWord
    
 RETURN NIL
 
+//----------------------------------------// 
+// End export to word
+//----------------------------------------// 
+
+//----------------------------------------// 
+// Start export to Sql Scrip
+//----------------------------------------// 
+
+CLASS TDolphinToSql FROM TDolphinExport
+
+   DATA lDropTable
+
+   METHOD New( oMain )
+   
+   METHOD Export()
+   
+
+ENDCLASS
+
+
+//----------------------------------------// 
+
+METHOD New( oMain ) CLASS TDolphinToSql
+
+   LOCAL oError
+
+   IF Len( oMain:oQuery:aTables ) > 1
+      oMain:oQuery:oServer:nInternalError = ERR_INVALIDTABLES_EXPORTTOSQL
+      oMain:oQuery:oServer:CheckError()
+      RETURN Self
+   ENDIF      
+
+   ::oMain       = oMain
+   
+   ::lDropTable = .T.
+
+RETURN Self
+
+
+
+//----------------------------------------// 
+
+METHOD Export() CLASS TDolphinToSql
+
+   LOCAL cTable 
+   LOCAL oQuery := ::oMain:oQuery
+   LOCAL cSql, cCol, aRow, uValue
+   LOCAL aColumns := ::oMain:aColumns
+   LOCAL nID, lSep, nRow
+   LOCAL bOnRow := ::oMain:bOnRow
+   LOCAL bOnStart := ::oMain:bOnStart
+   LOCAL bOnEnd := ::oMain:bOnEnd
+   LOCAL lNull := .F.
+   
+   cTable = oQuery:aTables[ 1 ]
+
+   IF hb_IsObject( oQuery )
+      IF Empty( aColumns )
+         aColumns = {}
+         AEval( oQuery:aStructure, {| aRow | AAdd( aColumns, aRow[ MYSQL_FS_NAME ] ) } )
+      ENDIF
+   ENDIF
+
+   IF File( ::oMain:cFileName )
+     IF FErase( ::oMain:cFileName ) < 0
+        ::oMain:oQuery:oServer:nInternalError = ERR_INVALIDFILE_EXPORTTOSQL
+        ::oMain:oQuery:oServer:CheckError()
+        RETURN NIL
+     ENDIF
+   ENDIF
+
+   FClose( FCreate( ::oMain:cFileName ) )
+
+   IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
+      Super:hFile = ::hFile
+   ENDIF  
+   
+   IF bOnStart != NIL 
+      Eval( bOnStart, Self )
+   ENDIF   
+   
+   IF ::lDropTable
+      cSql = "DROP TABLE IF EXISTS " + cTable + ";" 
+      ::Write( cSql )
+      cSql = oQuery:oServer:CreateInfo( cTable ) + ";"
+      ::Write( cSql )
+   ENDIF 
+   
+   cSql = "INSERT INTO " + cTable + " ("
+   FOR EACH cCol IN aColumns
+      cSql += cCol + ","
+   NEXT
+   //Remove Last colon
+   cSql = Left( cSql, Len( cSql ) - 1 )
+   cSql += ") VALUES "
+   oQuery:GoTop()
+   nRow = 0
+   WHILE nRow < oQuery:nRecCount 
+      cSql  += "("
+      MySqlDataSeek( oQuery:hResult, nRow )
+      aRow = MySqlFetchRow( oQuery:hResult )
+      FOR EACH cCol IN aColumns
+         
+         nID = oQuery:FieldPos( cCol )
+    
+         lSep = oQuery:aStructure[ nID ][ MYSQL_FS_CLIP_TYPE ] $ "CDM"
+         
+         uValue = aRow[ nID ]
+         
+         IF Len( uValue ) == 0 
+            uValue = "NULL"
+            lNull = .T.
+         ENDIF            
+         IF lSep .AND. ! lNull
+            cSql += "'" + MySqlEscape( uValue, oQuery:oServer:hMysql ) + "'" + ","
+         ELSE 
+            cSql += uValue + ","
+         ENDIF
+         lNull = .F.
+      NEXT
+      nRow ++
+      cSql := Left( cSql, Len( cSql ) - 1 )      
+      if nRow != oQuery:nRecCount
+         cSql += "),"
+      else 
+         cSql += ");"
+      endif
+      ::Write( cSql, .T. )
+      cSql = ""
+      IF bOnRow != NIL 
+         Eval( bOnRow, nRow ) 
+      ENDIF
+   ENDDO   
+   IF bOnEnd != NIL 
+      Eval( bOnEnd ) 
+   ENDIF   
+   ::Close()
+RETURN NIL
