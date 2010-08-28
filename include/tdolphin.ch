@@ -1,5 +1,5 @@
 /*
- * $Id: 10-Jul-10 9:40:27 AM tdolphin.ch Z dgarciagil $
+ * $Id: 28-Aug-10 7:49:08 AM tdolphin.ch Z dgarciagil $
  */
 
 
@@ -118,3 +118,83 @@
 #define EXP_HTML     4
 #define EXP_WORD     5
 #define EXP_SQL      6
+
+
+//-------------------
+
+#xcommand SET CASESENSITIVE <on:ON,OFF> => D_SetCaseSensitive( Upper(<(on)>) == "ON" )
+#xcommand SET PADRIGHT <on:ON,OFF> => D_SetPadRight( Upper(<(on)>) == "ON" )
+#xcommand SET LOGICALVALUE <on:ON,OFF> => D_LogicalValue( Upper(<(on)>) == "ON" )
+
+//-------------------
+
+#xcommand CLOSEMYSQL ALL  => _CloseHosts( "ALL" )
+#xcommand CLOSEMYSQL SERVER <on> => _CloseHosts( <on> )
+#xcommand SELECTSERVER <uParam> => _SelectHost( <uParam> )
+#xcommand BEGINMYSQL [ TRANSACTION ] [<oServer>] => _BeginTransaction( [<oServer>] )
+#xcommand COMMITMYSQL [<oServer>] => _CommitTransaction( [<oServer>] )                    
+#xcommand ROLLBACKMYSQL [<oServer>] => _RollBack( [<oServer>] )                    
+
+//-------------------
+#xcommand CONNECT [ <srv: SERVER, MYSQL, OF> ] <oServer> ;
+                  HOST <cHost> ;
+                  USER <cUser> ;
+                  PASSWORD <cPassword>;
+                  [ PORT <nPort> ];
+                  [ FLAGS <nFlags> ];
+                  [ DATABASE <cDBName> ];
+                  [ ON ERRROR <uOnError> ] ;
+                  [ NAME <cName> ];
+       => ;
+          <oServer> := TDolphinSrv():New( <cHost>, <cUser>, <cPassword>, <nPort>, ;
+                                          <nFlags>, <cDBName>, [{| Self, nError, lInternal, cExtra | <uOnError> }], [ <cName> ] )
+
+//-------------------
+
+#xcommand DEFINE QUERY <oQuery> [ <cQuery> ] [ <srv: OF, SERVER, HOST> <uServer> ];
+       => ;
+          <oQuery> := TDolphinQry():New( [ <cQuery> ],[ <uServer> ] )
+
+//-------------------
+
+#xcommand SELECTDB <cdb> <srv: SERVER, MYSQL, OF> <oServer>;
+       => ;
+          <oServer>:SelectDB( <cdb> )
+
+#xcommand SELECTDB <cdb>;
+       => ;
+          GetServerDefault():SelectDB( <cdb> )
+          
+//-------------------
+          
+#xcommand INSERTMYSQL TO <ctable> ;
+                 COLUMNS <acolumns,...> ;
+                 VALUES <avalues,...>;
+                 <srv: OF, SERVER, HOST><oServer>;
+       => ;
+          <oServer>:Insert( <ctable>, {<acolumns>}, {<avalues>} )
+
+#xcommand INSERTMYSQL TO <ctable> ;
+                 COLUMNS <acolumns,...> ;
+                 VALUES <avalues,...>;
+       => ;
+          GetServerDefault():Insert( <ctable>, {<acolumns>}, {<avalues>} )          
+          
+//-------------------          
+          
+#xcommand UPDATEMYSQL TO <ctable> ;
+                 COLUMNS <acolumns,...> ;
+                 VALUES <avalues,...>;
+                 <srv: OF, SERVER, HOST><oServer>;
+                 [ WHERE <cWhere> ];
+       => ;
+          <oServer>:Insert( <ctable>, {<acolumns>}, {<avalues>}, <cWhere> )
+
+#xcommand UPDATEMYSQL TO <ctable> ;
+                 COLUMNS <acolumns,...> ;
+                 VALUES <avalues,...>;
+                 [ WHERE <cWhere> ];
+       => ;
+          GetServerDefault():Insert( <ctable>, {<acolumns>}, {<avalues>}, <cWhere> )
+
+//-------------------          

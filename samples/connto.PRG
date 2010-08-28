@@ -1,3 +1,4 @@
+
 FUNCTION ConnectTo()
    LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
    LOCAL oServer   := NIL
@@ -9,14 +10,13 @@ FUNCTION ConnectTo()
          nFlags    := val(hIni["mysql"]["flags"])
    LOCAL oErr
    
-   
-   
    TRY
-   
-      oServer = TDolphinSrv():New( cServer, ;
-                                cUser, ;
-                                cPassword, ;
-                                nPort, nFlags, cDBName )
+      CONNECT oServer HOST cServer ;
+                      USER cUser ;
+                      PASSWORD cPassword ;
+                      PORT nPort ;
+                      FLAGS nFlags;
+                      DATABASE cDBName
                                 
    CATCH oErr 
      RETURN NIL

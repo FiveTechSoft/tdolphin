@@ -1,5 +1,5 @@
 /*
- * $Id: 26-Aug-10 10:00:39 AM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 28-Aug-10 7:49:06 AM tdolpsrv.PRG Z dgarciagil $
  */
    
 /*
@@ -65,11 +65,13 @@
 #endif /*RGB*/
 #endif/*__HARBOUR__*/
 
-
+static aHost := {}
+static oServerDefault := NIL
 
 CLASS TDolphinSrv
 
    CLASSDATA nQueryId
+   CLASSDATA nServerId  INIT 1
 
    DATA bOnError       /*Custom manager error message
                          ( Self, nError, lInternal ) */
@@ -85,8 +87,9 @@ CLASS TDolphinSrv
    DATA cPassword      /*Data contains the password for user*/
    DATA cHost          /*Host name, may be either a host name or an IP address */
    DATA cUser          /*DAta contains the user's MySQL login ID*/
+   DATA cNameHost
    
-   DATA cBuild     INIT '26-Aug-10 10:00:39 AM'
+   DATA cBuild     INIT '28-Aug-10 7:49:06 AM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -245,6 +248,7 @@ CLASS TDolphinSrv
    
    METHOD SelectTable( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, lWithRoll )
    
+   METHOD SetNameServer( cName )
    
    METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
@@ -264,7 +268,9 @@ ENDCLASS
 
 //----------------------------------------------------//
 
-METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TDolphinSrv
+METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError, cNameHost ) CLASS TDolphinSrv
+
+   DEFAULT nPort TO 3306 
 
    ::cHost          = cHost
    ::cUser          = cUser
@@ -276,7 +282,7 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TD
    ::nInternalError = 0
    ::cDBName        = cDBName
    ::aQueries       = {}
-   
+      
    ::lReConnect     = .T.
 
    ::hMysql         = ::Connect() 
@@ -285,12 +291,22 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError ) CLASS TD
    IF ::lError
       ::End()
    ENDIF
+   
+   DEFAULT  cNameHost TO "TEMP" + Alltrim( Str( ::nServerId++ ) )
+   
+   ::cNameHost = cNameHost
+   
+   AAdd( aHost, { Self, cNameHost } )
+   
+   SetServerDefault( Self )
 
 RETURN Self
 
 //----------------------------------------------------//
 
-METHOD Embedded( cDataBase, aOptions, aGroups, bOnError ) CLASS TDolphinSrv
+METHOD Embedded( cDataBase, aOptions, aGroups, bOnError, cName ) CLASS TDolphinSrv
+   
+   LOCAL cNameHost   
    
    ::lError    := .F.
    ::bOnError  := bOnError
@@ -304,6 +320,17 @@ METHOD Embedded( cDataBase, aOptions, aGroups, bOnError ) CLASS TDolphinSrv
    IF ::lError
       ::End()
    ENDIF
+
+   IF Empty( cName )   
+      cNameHost = "TEMP" + Alltrim( Str( ::nServerId++ ) )
+   ELSE 
+      cNameHost = cName
+   ENDIF   
+
+   AAdd( aHost, { Self, cNameHost } )
+   
+   SetServerDefault( Self )
+
 
 RETURN Self
 
@@ -960,12 +987,19 @@ RETURN ::SqlQuery( cQuery )
 
 
 METHOD End() CLASS TDolphinSrv
+   LOCAL nHost
+
 
    IF ::hMysql > 0
       MySqlClose( ::hMysql )
       ::hMysql = 0
       AEval( ::aQueries, {| o | o:End() } )
    ENDIF
+  
+   nHost = AScan( aHost, { | a | Upper( a[ 2 ] ) == Upper( ::cNameHost ) } ) 
+   ADel( aHost, nHost )
+   ASize( aHost, Len( aHost ) - 1 )
+   
    
 RETURN NIL
 
@@ -1132,6 +1166,9 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n
+   
+   aColumns = CheckArray( aColumns )
+   aValues  = CheckArray( aValues )
 
 #ifndef NOINTERNAL
    IF Empty( aColumns ) .AND. Empty( aValues ) 
@@ -1499,6 +1536,21 @@ RETURN oQuery
 
 //----------------------------------------------------//
 
+METHOD SetNameServer( cName ) CLASS TDolphinSrv
+
+   LOCAL nHost 
+   
+   nHost = AScan( aHost, {| a | Upper( a[ 2 ] ) == Upper( ::cNameHost ) } )   
+   
+   IF nHost > 0 
+      aHost[ nHost ][ 2 ] = cName
+      ::cNameHost = cName
+   ENDIF
+
+RETURN NIL
+
+//----------------------------------------------------//
+
 METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
 
    LOCAL nLen := If( ! Empty( cQuery ), Len( cQuery ), 0 )
@@ -1559,6 +1611,10 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
    LOCAL lError := .F.
    
    DEFAULT cWhere       TO ""
+   
+   aColumns = CheckArray( aColumns )
+   aValues  = CheckArray( aValues )
+
 
 #ifndef NOINTERNAL   
    IF Empty( aColumns ) .OR. Empty( aValues )
@@ -1934,6 +1990,127 @@ FUNCTION D_LogicalValue( lOnOff )
 
 RETURN lOldStatus
    
+//----------------------------------------------------//  
+
+FUNCTION SetServerDefault( oServer ) ; oServerDefault := oServer ; return nil
+
+//----------------------------------------------------//  
+
+FUNCTION GetServerDefault() ; return oServerDefault
+
+//----------------------------------------------------//  
+
+FUNCTION GetServerFromName( cName )
+   LOCAL nHost, oServer
+   
+   IF cName == NIL 
+      RETURN NIL
+   ENDIF
+ 
+   nHost = AScan( aHost, { | a | Upper( a[ 2 ] ) == Upper( cName ) } ) 
+
+   IF nHost > 0
+      oServer = aHost[ nHost ][ 1 ] 
+   ENDIF 
+
+RETURN oServer
+
+
+//----------------------------------------------------//  
+
+FUNCTION _SelectHost( uParam )
+   LOCAL lError := .F.
+   LOCAL nHost, oServer
+   LOCAL cReturn
+
+   IF hb_IsObject( uParam )
+      IF uParam:IsKindOf( "TDOLPHINQRY" )
+         SetServerDefault( uParam:oServer )
+      ELSEIF uParam:IsKindOf( "TDOLPHINSRV" )
+         SetServerDefault( uParam )
+      ELSE 
+         lError = .T.
+      ENDIF
+   ELSEIF hb_IsString( uParam )
+       oServer = GetServerFromName( uParam )
+       IF oServer != NIL
+          SetServerDefault( oServer )
+       ELSE 
+          lError = .T.
+       ENDIF 
+   ENDIF 
+   
+   IF lError 
+      Dolphin_DefError( NIL, ERR_INVALIDHOSTSELECTION, .T. )
+      RETURN NIL
+   ENDIF 
+
+RETURN GetServerDefault():cNameHost
+
+//----------------------------------------------------//  
+
+PROCEDURE _CloseHosts( uParam )
+   
+   LOCAL oServer, nHost
+
+   IF hb_IsObject( uParam )
+      uParam:End()
+   ELSEIF hb_IsString( uParam )
+      uParam = AllTrim( Upper( uParam ) ) 
+      IF uParam == "ALL"
+         AEval( aHost, {| aRow | aRow[ 1 ]:End() } )
+      ELSE 
+         oServer = GetServerFromName( uParam )
+         IF oServer == NIL 
+            Dolphin_DefError( NIL, ERR_INVALIDHOSTSELECTION, .T. )
+            RETURN
+         ENDIF             
+         oServer:End()
+      ENDIF
+   ENDIF 
+
+RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _BeginTransaction( oServer )
+
+   DEFAULT oServer TO GetServerDefault()
+   
+   oServer:BeginTransaction()
+
+RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _CommitTransaction( oServer )
+
+   DEFAULT oServer TO GetServerDefault()
+   oServer:CommitTransaction()
+
+RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _RollBack( oServer )
+
+   DEFAULT oServer TO GetServerDefault()
+   oServer:RollBack()
+
+RETURN
+
+//----------------------------------------------------//  
+
+static function CheckArray( aArray )
+
+   if ValType( aArray ) == 'A' .and. ;
+      Len( aArray ) == 1 .and. ;
+      ValType( aArray[ 1 ] ) == 'A'
+
+      aArray   := aArray[ 1 ]
+   endif
+
+return aArray
    
 //----------------------------------------------------//  
 
@@ -1952,3 +2129,6 @@ PROCEDURE Dolphin_DefError( oServer, nError, lInternal, cExtra )
    Eval( ErrorBlock(), oError )   
 
 RETURN 
+
+
+

@@ -1,5 +1,5 @@
 /*
- * $Id: 26-Aug-10 10:00:38 AM tdolpqry.PRG Z dgarciagil $
+ * $Id: 28-Aug-10 7:49:09 AM tdolpqry.PRG Z dgarciagil $
  */
 
 /*
@@ -249,17 +249,24 @@ ENDCLASS
 //----------------------------------------------------//
 
 
-METHOD New( cQuery, oServer ) CLASS TDolphinQry
+METHOD New( cQuery, uServer ) CLASS TDolphinQry
 
+   DEFAULT uServer TO GetServerDefault()
 
-   IF oServer == NIL
+   IF hb_IsObject( uServer )
+      ::oServer = uServer
+   ELSEIF hb_IsString( uServer )
+      ::oServer = GetServerFromName( uServer )
+   ENDIF
+
+   IF ::oServer == NIL   
+      Dolphin_DefError( NIL, ERR_NODEFINDEDHOST, .T. )
       RETURN NIL 
    ENDIF   
 
-   ::oServer = oServer
    ::cQuery  = cQuery
-   ::nQryId  = oServer:GetQueryId()
-   oServer:AddQuery( Self )
+   ::nQryId  = ::oServer:GetQueryId()
+   ::oServer:AddQuery( Self )
 
    ::nRecCount = 0
    ::nRecNo    = 0

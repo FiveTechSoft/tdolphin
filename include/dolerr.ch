@@ -1,5 +1,5 @@
 /*
- * $Id: 26-Aug-10 10:00:41 AM dolerr.ch Z dgarciagil $
+ * $Id: 28-Aug-10 7:49:07 AM dolerr.ch Z dgarciagil $
  */
 
 
@@ -44,6 +44,8 @@
 #define ERR_EXPORTTOWORD                 9032
 #define ERR_INVALIDTABLES_EXPORTTOSQL    9033
 #define ERR_INVALIDFILE_EXPORTTOSQL      9034
+#define ERR_NODEFINDEDHOST               9035
+#define ERR_INVALIDHOSTSELECTION         9036
 
 //MySql Errort
 
