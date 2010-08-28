@@ -46,6 +46,8 @@
 #define ERR_INVALIDFILE_EXPORTTOSQL      9034
 #define ERR_NODEFINDEDHOST               9035
 #define ERR_INVALIDHOSTSELECTION         9036
+#define ERR_CANNOTCREATEBKFILE           9037
+#define ERR_OPENBACKUPFILE               9038
 
 //MySql Errort
 

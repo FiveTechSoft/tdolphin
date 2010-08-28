@@ -55,6 +55,7 @@
 #include "dbstruct.ch"
 #include "tdolphin.ch"
 #include "dolerr.ch"
+#include "fileio.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )
 
@@ -390,7 +391,7 @@ RETURN lReturn
 
 //----------------------------------------------------//
 
-METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCancel ) CLASS TDolphinSrv
+METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCancel, bOnBackUp ) CLASS TDolphinSrv
    LOCAL hFile  := 0
    LOCAL oQry   := NIL
    LOCAL cQry   := ""
@@ -413,6 +414,11 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
    DEFAULT cHeader TO;
     "-- CLASS TDolphin, for [x]Harbour" + CRLF +;
     "---------------------------------" + CRLF
+   DEFAULT bOnBackUp TO ::bOnBackUp
+
+   aTables = CheckArray( aTables )
+   
+   ::bOnBackUp = bOnBackUp
 
 #ifndef NOINTERNAL
    IF Empty( ::cDBName )
@@ -433,6 +439,31 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       RETURN .F.
    ENDIF
 #endif 
+
+   IF File( cFile ) 
+     IF lOverwrite 
+        IF FErase( cFile ) < 0
+#ifndef NOINTERNAL
+           ::nInternalError = ERR_CANNOTCREATEBKFILE
+           ::CheckError()
+#endif         
+           RETURN .F.
+        ENDIF
+        FClose( FCreate( cFile ) )
+     ENDIF
+   ELSE 
+      FClose( FCreate( cFile ) )
+   ENDIF 
+   
+   IF( ( hFile := FOpen( cFile, FO_WRITE ) ) != -1 )
+      FSeek( hFile, 0, FS_END )
+   ELSE 
+#ifndef NOINTERNAL
+      ::nInternalError = ERR_OPENBACKUPFILE
+      ::CheckError()
+#endif         
+      RETURN .F.
+   ENDIF       
    
    IF ::bOnBackUp != NIL
       Eval( ::bOnBackUp, ST_STARTBACKUP )
@@ -444,26 +475,27 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       cText += "** Table: " + cTable + CRLF
    NEXT
 
-   cText += CRLF
-   cText += CRLF
-
    IF lDrop
+      cText += CRLF
+      cText += CRLF   
       cText += "** Create database **"
       cText += CRLF
       cText += "CREATE DATABASE IF NOT EXISTS " + ::cDBName
-      cText += CRLF
-      cText += CRLF
    ENDIF
 
 
    nTotTable = Len( aTables )
-
-   FOR EACH cTable IN aTables
    
+   FWrite( hFile, cText )      
+   
+   FOR EACH cTable IN aTables
+      cText += CRLF
+      cText += CRLF
       IF lCancel
          EXIT
       ENDIF
       cTable = D_LowerCase( cTable )
+      
    
       IF ::bOnBackUp != NIL
 #ifdef __XHARBOUR__      
@@ -472,8 +504,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          nCurrTable =  cTable:__EnumIndex()
 #endif   
          Eval( ::bOnBackUp, ST_LOADINGTABLE, cTable, nTotTable, nCurrTable )      
-      ENDIF      
-      
+      ENDIF            
       nTRow := ::GetRowsFromTable( cTable )
       cText  += "** BEGIN " + cTable + CRLF
       IF lDrop
@@ -503,12 +534,17 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       ENDIF
 
       nPage := 0
-      
+      FWrite( hFile, cText )      
+      cText = ""
       FOR nRecno := 0 TO nTRow STEP nStep
 
          IF lCancel
             EXIT
          ENDIF
+
+         IF ::bOnBackUp != NIL
+            Eval( ::bOnBackUp, ST_FILLBACKUP, cTable, nTotTable, nCurrTable, nRecno )      
+         ENDIF   
 
          cQry := "SELECT * FROM " + cTable + " LIMIT " 
          cQry += AllTrim( Str( nRecno ) ) + ", "
@@ -536,14 +572,20 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
             cText := Left( cText, len( cText ) - 1 )
             cText += "),"
             oQry:Skip()
+            IF oQry:Eof()
+               cText := Left( cText, len( cText ) - 1 )
+            ENDIF            
          ENDDO
+
+         FWrite( hFile, cText )
+         cText = ""
          oQry:End()
          oQry  := NIL
       NEXT
-      IF nTRow > 0
-         cText := Left( cText, len( cText ) - 1 ) + CRLF
-      ENDIF
-      cText += CRLF
+      IF ::bOnBackUp != NIL
+         Eval( ::bOnBackUp, ST_FILLBACKUP, cTable, nTotTable, nCurrTable, Min( nRecno, nTRow ) )
+      ENDIF         
+      cText = CRLF
       cText += "UNLOCK TABLES"
       cText += CRLF
       cText += CRLF
@@ -563,11 +605,11 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          Eval( ::bOnBackUp, ST_ENDBACKUP, cFile )
       ENDIF   
    
-      hFile := FCreate( cFile )
       FWrite( hFile, cText )
       FClose( hFile )
       RETURN .F.
    ELSE
+      FClose( hFile )
       IF ::bOnBackUp != NIL
          Eval( ::bOnBackUp, ST_BACKUPCANCEL )
       ENDIF   
@@ -2049,6 +2091,28 @@ RETURN GetServerDefault():cNameHost
 
 //----------------------------------------------------//  
 
+PROCEDURE _BackupMySql( oServer, aTables, cFile, lDrop, lOverwrite, ;
+                         nStep, cHeader, cFooter, lCancel, bOnBackup )
+                         
+   DEFAULT oServer TO GetServerDefault()
+   
+   oServer:Backup( aTables, cFile, lDrop, lOverwrite, ;
+                         nStep, cHeader, cFooter, @lCancel, bOnBackup )
+
+RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _BeginTransaction( oServer )
+
+   DEFAULT oServer TO GetServerDefault()
+   
+   oServer:BeginTransaction()
+
+RETURN
+
+//----------------------------------------------------//  
+
 PROCEDURE _CloseHosts( uParam )
    
    LOCAL oServer, nHost
@@ -2073,20 +2137,30 @@ RETURN
 
 //----------------------------------------------------//  
 
-PROCEDURE _BeginTransaction( oServer )
+PROCEDURE _CommitTransaction( oServer )
 
    DEFAULT oServer TO GetServerDefault()
-   
-   oServer:BeginTransaction()
+   oServer:CommitTransaction()
 
 RETURN
 
 //----------------------------------------------------//  
 
-PROCEDURE _CommitTransaction( oServer )
+PROCEDURE _InsertMysql( oServer, cTable, aColumns, aValues )
 
    DEFAULT oServer TO GetServerDefault()
-   oServer:CommitTransaction()
+   
+   oServer:Insert( cTable, aColumns, aValues )
+
+RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _UpdateMysql( oServer, cTable, aColumns, aValues, cWhere  )
+
+   DEFAULT oServer TO GetServerDefault()
+   
+   oServer:Update( cTable, aColumns, aValues, cWhere )
 
 RETURN
 

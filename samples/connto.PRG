@@ -53,10 +53,10 @@ FUNCTION ConnectTo2()
                       NAME "CONNECT2"
                           
     CATCH oError
-       IF aServer[ CONNECT1 ] != NIL 
-         aServer[ CONNECT1 ]:End()
+       IF aServer[ 1 ] != NIL 
+         aServer[ 1 ]:End()
        ENDIF
-       return
+       RETURN nil
     END  
     
 RETURN aServer    

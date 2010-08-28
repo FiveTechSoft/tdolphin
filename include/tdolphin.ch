@@ -103,6 +103,7 @@
 #define ST_LOADINGTABLE  2
 #define ST_ENDBACKUP     3
 #define ST_BACKUPCANCEL  0
+#define ST_FILLBACKUP    4
 
 //Restore Process 
 #define ST_STARTRESTORE  1
@@ -170,31 +171,33 @@
 #xcommand INSERTMYSQL TO <ctable> ;
                  COLUMNS <acolumns,...> ;
                  VALUES <avalues,...>;
-                 <srv: OF, SERVER, HOST><oServer>;
+                 [ <srv: OF, SERVER, HOST><oServer> ];
        => ;
-          <oServer>:Insert( <ctable>, {<acolumns>}, {<avalues>} )
+          _InsertMySql( [<oServer>], <ctable>, {<acolumns>}, {<avalues>} )
 
-#xcommand INSERTMYSQL TO <ctable> ;
-                 COLUMNS <acolumns,...> ;
-                 VALUES <avalues,...>;
-       => ;
-          GetServerDefault():Insert( <ctable>, {<acolumns>}, {<avalues>} )          
-          
 //-------------------          
           
 #xcommand UPDATEMYSQL TO <ctable> ;
                  COLUMNS <acolumns,...> ;
                  VALUES <avalues,...>;
-                 <srv: OF, SERVER, HOST><oServer>;
+                 [ <srv: OF, SERVER, HOST><oServer> ];
                  [ WHERE <cWhere> ];
        => ;
-          <oServer>:Insert( <ctable>, {<acolumns>}, {<avalues>}, <cWhere> )
+          _UpdateMysql( [ <oServer> ], <ctable>, {<acolumns>}, {<avalues>}, <cWhere> )
 
-#xcommand UPDATEMYSQL TO <ctable> ;
-                 COLUMNS <acolumns,...> ;
-                 VALUES <avalues,...>;
-                 [ WHERE <cWhere> ];
-       => ;
-          GetServerDefault():Insert( <ctable>, {<acolumns>}, {<avalues>}, <cWhere> )
+//-------------------    
 
-//-------------------          
+#xcommand BACKUPMYSQL [ <srv: OF, SERVER, HOST><oServer> ];
+                TABLES <aTables,...>;
+                FILE <cFile>;
+                [ < lDrop: DROP > ];
+                [ < lOverwrite: OVERWRITE > ];
+                [ STEP <nStep> ];
+                [ HEADER <cHeader> ];
+                [ FOOTER <cFooter> ];
+                [ <lCan: CANCEL> <lCancel> ];
+                [ ON BACKUP <uOnBackup> ];
+       =>;
+           _BackUpMysql( [ <oServer> ], {<aTables>}, <cFile>, [<.lDrop.>], [<.lOverwrite.>], ;
+                         [<nStep>], [<cHeader>], [<cFooter>], [if( <.lCan.>, @<lCancel>,)],;
+                         [{| nStatus, cTabFile, nTotTable, nCurrTable, nRecNo | <uOnBackup> }] )
