@@ -15,7 +15,7 @@ set hdir=c:\harbour
 set hdirl=%hdir%\lib
 set vcdir=c:\vc64
 
-%hdir%\bin\harbour %1 /n /i%fwh%\include;%hdir%\include;..\include /w /p %2 %3 > comp.log
+%hdir%\bin\harbour %1 /n /i%fwh%\include;%hdir%\include;..\..\include /w /p %2 %3 > comp.log
 IF ERRORLEVEL 1 GOTO COMPILEERRORS
 @type comp.log
 
