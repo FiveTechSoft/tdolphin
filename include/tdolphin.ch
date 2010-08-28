@@ -187,9 +187,9 @@
 
 //-------------------    
 
-#xcommand BACKUPMYSQL [ <srv: OF, SERVER, HOST><oServer> ];
-                TABLES <aTables,...>;
+#xcommand BACKUPMYSQL TABLES <aTables,...>;
                 FILE <cFile>;
+                [ <srv: OF, SERVER, HOST><oServer> ];
                 [ < lDrop: DROP > ];
                 [ < lOverwrite: OVERWRITE > ];
                 [ STEP <nStep> ];
@@ -201,3 +201,15 @@
            _BackUpMysql( [ <oServer> ], {<aTables>}, <cFile>, [<.lDrop.>], [<.lOverwrite.>], ;
                          [<nStep>], [<cHeader>], [<cFooter>], [if( <.lCan.>, @<lCancel>,)],;
                          [{| nStatus, cTabFile, nTotTable, nCurrTable, nRecNo | <uOnBackup> }] )
+                         
+//-------------------    
+
+#xcommand RESTOREMYSQL FILE <cFile>;
+                [ <srv: OF, SERVER, HOST><oServer> ];
+                [ <lCan: CANCEL> <lCancel> ];
+                [ ON RESTORE <uOnRestore> ];
+       =>;
+           _RestoreMysql( [ <oServer> ], ;
+                          <cFile>,;
+                          [if( <.lCan.>, @<lCancel>,)],;
+                          [{| nStatus, cTable, nTotLine, nIdx | <uOnRestore> }] )                         

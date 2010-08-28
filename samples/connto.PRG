@@ -1,15 +1,26 @@
 
-FUNCTION ConnectTo()
-   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
-   LOCAL oServer   := NIL
-   LOCAL cServer   := hIni["mysql"]["host"],;
-         cUser     := hIni["mysql"]["user"],;
-         cPassword := hIni["mysql"]["psw"],;
-         nPort     := val(hIni["mysql"]["port"]), ;
-         cDBName   := hIni["mysql"]["dbname"], ;
-         nFlags    := val(hIni["mysql"]["flags"])
+FUNCTION ConnectTo( n )
+   LOCAL c 
+   LOCAL hIni      
+   LOCAL oServer   
+   LOCAL cServer, cUser, cPassword, nPort, cDBName,nFlags    
    LOCAL oErr
+
+   c = "mysql"
    
+   if n != NIL 
+      c = "mysql" + AllTrim( Str( n ) )
+   endif
+   
+   hIni      := HB_ReadIni( ".\connect.ini" )
+   oServer   := NIL
+   cServer   := hIni[ c ]["host"]
+   cUser     := hIni[ c ]["user"]
+   cPassword := hIni[ c ]["psw"]
+   nPort     := val(hIni[ c ]["port"])
+   cDBName   := hIni[ c ]["dbname"]
+   nFlags    := val(hIni[ c ]["flags"])
+      
    TRY
       CONNECT oServer HOST cServer ;
                       USER cUser ;

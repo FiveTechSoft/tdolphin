@@ -21,9 +21,9 @@ PROCEDURE Main()
    
    cTime := time()
    cls
-   BACKUPMYSQL OF oServer ;
-               TABLES "testman", "clientes";
+   BACKUPMYSQL TABLES "testman";
                FILE "bcktest2.txt";
+               OF oServer ;
                DROP OVERWRITE;
                STEP 2000 ;
                HEADER "Custom header backup process";

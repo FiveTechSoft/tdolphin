@@ -486,7 +486,8 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
 
    nTotTable = Len( aTables )
    
-   FWrite( hFile, cText )      
+   FWrite( hFile, cText )   
+   cText = ""   
    
    FOR EACH cTable IN aTables
       cText += CRLF
@@ -1416,7 +1417,7 @@ RETURN ::SqlQuery( cQry )
 
 //---------------------------------------------//
 
-METHOD Restore( cFile, lCancel ) CLASS TDolphinSrv
+METHOD Restore( cFile, lCancel, bOnRestore ) CLASS TDolphinSrv
    LOCAL aLine  := {}
    LOCAL cLine  := ""
    LOCAL cText  := ""
@@ -1429,6 +1430,10 @@ METHOD Restore( cFile, lCancel ) CLASS TDolphinSrv
    LOCAL nIdx
    
    DEFAULT lCancel TO .F.
+   
+   DEFAULT bOnRestore TO ::bOnRestore
+   
+   ::bOnRestore = bOnRestore
    
 #ifndef NOINTERNAL
    IF ! File( cFile )
@@ -2161,6 +2166,16 @@ PROCEDURE _UpdateMysql( oServer, cTable, aColumns, aValues, cWhere  )
    DEFAULT oServer TO GetServerDefault()
    
    oServer:Update( cTable, aColumns, aValues, cWhere )
+
+RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _RestoreMySql( oServer, cFile, lCancel, bOnRestote )
+                         
+   DEFAULT oServer TO GetServerDefault()
+   
+   oServer:Restore( cFile, @lCancel, bOnRestote )
 
 RETURN
 
