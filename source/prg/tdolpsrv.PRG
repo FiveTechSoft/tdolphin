@@ -395,7 +395,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
    LOCAL hFile  := 0
    LOCAL oQry   := NIL
    LOCAL cQry   := ""
-   LOCAL cText  := ""
+   LOCAL cText  := "", cText2 := ""
    LOCAL cCol   := ""
    LOCAL nCol   := 0
    LOCAL cTable := ""
@@ -524,17 +524,18 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          cText += CRLF
          cText += CRLF
          cText += "LOCK TABLES " + cTable + " WRITE;" + CRLF
-         cText  += "INSERT INTO " + cTable + " ("
+         cText2  = "INSERT INTO " + cTable + " ("
          FOR nCol := 1 TO oQry:FCount()
-            cText += oQry:FieldName( nCol ) + ","
+            cText2 += oQry:FieldName( nCol ) + ","
          NEXT
-         cText := Left( cText, len( cText ) - 1 )
-         cText += ") VALUES "
+         cText2 = Left( cText2, len( cText2 ) - 1 )
+         cText2 += ") VALUES "
          oQry:End()
          oQry  := NIL
       ENDIF
 
       nPage := 0
+      
       FWrite( hFile, cText )      
       cText = ""
       FOR nRecno := 0 TO nTRow STEP nStep
@@ -574,11 +575,12 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
             cText += "),"
             oQry:Skip()
             IF oQry:Eof()
-               cText := Left( cText, len( cText ) - 1 )
+               cText := Left( cText, len( cText ) - 1 ) + CRLF
             ENDIF            
          ENDDO
-
-         FWrite( hFile, cText )
+         IF nTRow > nRecno
+            FWrite( hFile, cText2 + cText )
+         ENDIF
          cText = ""
          oQry:End()
          oQry  := NIL
@@ -593,6 +595,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       cText += "** END " + cTable + CRLF
       cText += CRLF
       cText += CRLF
+      cText2 = ""
    NEXT
 
    IF ! lCancel

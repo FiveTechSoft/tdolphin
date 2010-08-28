@@ -6,7 +6,7 @@
 PROCEDURE Main()
    
    local oServer
-   local cTime
+   local cTime := time()
    local lCancel
    
    SET CENTURY ON
