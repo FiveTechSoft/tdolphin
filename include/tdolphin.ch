@@ -212,4 +212,13 @@
            _RestoreMysql( [ <oServer> ], ;
                           <cFile>,;
                           [if( <.lCan.>, @<lCancel>,)],;
-                          [{| nStatus, cTable, nTotLine, nIdx | <uOnRestore> }] )                         
+                          [{| nStatus, cTable, nTotLine, nIdx | <uOnRestore> }] )        
+                          
+//-------------------    
+
+#xcommand EXECUTEESCRIPT FILE <cFile>;
+                [ <srv: OF, SERVER, HOST><oServer> ];
+                [ ON SCRIPT <uOnScript> ];    
+ =>;
+           _ExecuteScript( [ <oServer> ], ;
+                          <cFile>, [{| nID, nTotal | <uOnScript> }] )                                                               

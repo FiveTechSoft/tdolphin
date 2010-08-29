@@ -180,6 +180,8 @@ CLASS TDolphinSrv
                                 A return value of zero means that no error occurred.*/
                                 
    METHOD Execute( cQuery )   INLINE ::SqlQuery( cQuery )  
+   
+   METHOD ExecuteScript( cFile ) 
 
    METHOD GetAutoIncrement( cTable )
                                 /*Retrieve next Auto increment value in specified table;
@@ -1049,6 +1051,31 @@ METHOD End() CLASS TDolphinSrv
    
 RETURN NIL
 
+//----------------------------------------------------//
+
+METHOD ExecuteScript( cFile, bOnScrip ) CLASS TDolphinSrv
+
+   LOCAL cText
+   LOCAL aLine
+
+   IF Empty( cFile )
+      RETURN NIL
+   ENDIF
+
+#ifndef NOINTERNAL
+   IF ! File( cFile )
+      ::nInternalError = ERR_INVALIDBACKUPFILE
+      ::CheckError()
+      RETURN .F.
+   ENDIF
+#endif 
+   cText  = D_ReadFile( cFile )
+
+   aLine := hb_ATokens( cText, ";" )
+   
+   ::MultiQuery( aLine, , bOnScrip )
+
+RETURN NIL
 
 //----------------------------------------------------//
 
@@ -1334,6 +1361,7 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
    LOCAL cQuery
    LOCAL cLast
    LOCAL nIdx
+   LOCAL nTotal
    
 
    DEFAULT lTransaction TO .T.
@@ -1354,19 +1382,22 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
          ::BeginTransaction()
       ENDIF
       
-      
+      nTotal = Len( aQueries ) - 1
       FOR EACH cQuery IN aQueries
          cLast = cQuery
-         ::SqlQuery( cQuery )
-         
-         IF ::bOnMultiQry != NIL
-#ifdef __HARBOUR__
-            nIdx = cQuery:__EnumIndex() 
-#else                      
-            nIdx = HB_EnumIndex()
-#endif 
-            Eval( ::bOnMultiQry, nIdx )
+         cQuery = StrTran( cQuery, CRLF, "" )
+         IF ! Empty( cQuery )
+            ::SqlQuery( cQuery )
             
+            IF ::bOnMultiQry != NIL
+#ifdef __HARBOUR__
+               nIdx = cQuery:__EnumIndex() 
+#else                      
+               nIdx = HB_EnumIndex()
+#endif 
+               Eval( ::bOnMultiQry, nIdx, nTotal )
+            
+            ENDIF
          ENDIF
       NEXT
       
@@ -2151,6 +2182,15 @@ PROCEDURE _CommitTransaction( oServer )
    oServer:CommitTransaction()
 
 RETURN
+
+//----------------------------------------------------//  
+
+PROCEDURE _ExecuteScript( oServer, cFile, bOnScrip )
+
+   DEFAULT oServer TO GetServerDefault()
+   oServer:ExecuteScript( cFile, bOnScrip )
+
+RETURN  
 
 //----------------------------------------------------//  
 

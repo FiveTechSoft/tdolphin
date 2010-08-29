@@ -1109,6 +1109,7 @@ METHOD Export() CLASS TDolphinToSql
    LOCAL bOnStart := ::oMain:bOnStart
    LOCAL bOnEnd := ::oMain:bOnEnd
    LOCAL lNull := .F.
+   LOCAL cInsert
    
    cTable = oQuery:aTables[ 1 ]
 
@@ -1144,17 +1145,17 @@ METHOD Export() CLASS TDolphinToSql
       ::Write( cSql )
    ENDIF 
    
-   cSql = "INSERT INTO " + cTable + " ("
+   cInsert = "INSERT INTO " + cTable + " ("
    FOR EACH cCol IN aColumns
-      cSql += cCol + ","
+      cInsert += cCol + ","
    NEXT
    //Remove Last colon
-   cSql = Left( cSql, Len( cSql ) - 1 )
-   cSql += ") VALUES "
+   cInsert = Left( cInsert, Len( cInsert ) - 1 )
+   cInsert += ") VALUES "
    oQuery:GoTop()
    nRow = 0
    WHILE nRow < oQuery:nRecCount 
-      cSql  += "("
+      cSql  = "("
       MySqlDataSeek( oQuery:hResult, nRow )
       aRow = MySqlFetchRow( oQuery:hResult )
       FOR EACH cCol IN aColumns
@@ -1178,12 +1179,8 @@ METHOD Export() CLASS TDolphinToSql
       NEXT
       nRow ++
       cSql := Left( cSql, Len( cSql ) - 1 )      
-      if nRow != oQuery:nRecCount
-         cSql += "),"
-      else 
-         cSql += ");"
-      endif
-      ::Write( cSql, .T. )
+      cSql += ");" + CRLF
+      ::Write( cInsert + cSql, .T. )
       cSql = ""
       IF bOnRow != NIL 
          Eval( bOnRow, nRow ) 
