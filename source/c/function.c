@@ -1043,11 +1043,15 @@ HB_FUNC( MYSEEK2 )
          uiEnd = mysql_num_rows( result );
       else 
       	 uiEnd = hb_parni( 5 ); 
-      
+      //we need check first record
+      uii = InternalSeek( result, 0, uiField, bSoft, cSearch );
+      if( uii == 0 ) 
+         uiOk = 0;
+         
       iMid = ( uiEnd + uiStart ) / 2;
-      
-      while( uiStart < iMid )
+      while( uiStart < iMid && uiOk < 0 )
       {
+
          uii = InternalSeek( result, iMid, uiField, bSoft, cSearch );
 
          if( uii == -1 )
@@ -1078,7 +1082,7 @@ HB_FUNC( MYSEEK2 )
              uiOk = iLastFound;
              break;
          }
-         iMid = ( uiEnd + uiStart ) / 2;
+          iMid = ( uiEnd + uiStart ) / 2;
       }      	 
 
    }
