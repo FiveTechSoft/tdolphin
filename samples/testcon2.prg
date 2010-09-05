@@ -11,13 +11,14 @@ PROCEDURE Main()
    IF ( aServer := ConnectTo2() ) == NIL
       RETURN 
    ENDIF   
+   
 
    SELECTDB "dolphin_man" OF aServer[ CONNECT1 ]
    
    //we already selected CONNECT2, was last connection opened
    SELECTDB "tdolphin_test" 
    
-   DEFINE QUERY aQuery[ CONNECT1 ] "SELECT * FROM testman LIMIT 10" OF "CONNECT1"
+   DEFINE QUERY aQuery[ CONNECT1 ] "SELECT * FROM testman LIMIT 5" OF "CONNECT1"
    
    //we already selected CONNECT2, was last connection opened
    DEFINE QUERY aQuery[ CONNECT2 ] "SELECT * FROM testman"

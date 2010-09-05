@@ -27,7 +27,8 @@ FUNCTION ConnectTo( n )
                       PASSWORD cPassword ;
                       PORT nPort ;
                       FLAGS nFlags;
-                      DATABASE cDBName
+                      DATABASE cDBName ;
+                      ON GETERROR onError( Self, nErrorSrv )                      
                                 
    CATCH oErr 
      RETURN NIL
@@ -54,7 +55,7 @@ FUNCTION ConnectTo2()
                       PASSWORD aPassword[ 1 ] ;
                       PORT aPort[ 1 ] ;
                       FLAGS aFlags[ 1 ];
-                      NAME "CONNECT1"
+                      NAME "CONNECT1";
    
       CONNECT aServer[ 2 ] HOST aHost[ 2 ] ;
                       USER aUser[ 2 ] ;
@@ -71,3 +72,7 @@ FUNCTION ConnectTo2()
     END  
     
 RETURN aServer    
+
+function onError( oObj, nError )
+
+return nil

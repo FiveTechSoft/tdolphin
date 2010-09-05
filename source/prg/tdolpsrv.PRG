@@ -1588,10 +1588,10 @@ METHOD SelectDB( cDBName ) CLASS TDolphinSrv
    ENDIF
 #endif
 
-   IF ( nError := MysqlSelectDB( ::hMysql, cDBName ) ) != 0   // table not exist
+   IF ( MysqlSelectDB( ::hMysql, cDBName ) ) != 0   // table not exist
       ::cDBName :=""
       ::lError  := .T.
-      ::CheckError( nError )
+      ::CheckError()
    ELSE                                       // table exist
       ::cDBName := cDBName
       ::lError  := .F.
@@ -2230,6 +2230,23 @@ PROCEDURE _RollBack( oServer )
    oServer:RollBack()
 
 RETURN
+
+//----------------------------------------------------//  
+
+FUNCTION _SelectTable( oServer, aColumns, aTables, cWhere,;
+                       cGroup, cHaving, cOrder, cLimit, lWithRoll )
+
+   LOCAL oQuery
+
+   DEFAULT oServer TO GetServerDefault()
+   
+   aColumns = CheckArray( aColumns )
+   aTables  = CheckArray( aTables )
+   
+   oQuery = oServer:SelectTable( aColumns, aTables, cWhere, cGroup, ;
+                                 cHaving, cOrder, cLimit, lWithRoll )
+
+RETURN oQuery                                    
 
 //----------------------------------------------------//  
 

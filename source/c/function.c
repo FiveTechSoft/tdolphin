@@ -69,23 +69,23 @@ char * SQL2ClipType( long lType, BOOL bLogical );
 
 static PHB_SYMB symClip2MySql = NULL;
 
-LPSTR LToStr( long w )
-{
-   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
-   sprintf( dbl, "%f", ( double ) w );
-   * strchr( dbl, '.' ) = 0;
-   
-   return ( char * ) dbl;
-}  
-
-LPSTR DToStr( double w )
-{
-   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
-   sprintf( dbl, "%f", w );
- //  * strchr( dbl, '.' ) = 0;
-   
-   return ( char * ) dbl;
-} 
+//LPSTR LToStr( long w )
+//{
+//   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+//   sprintf( dbl, "%f", ( double ) w );
+//   * strchr( dbl, '.' ) = 0;
+//   
+//   return ( char * ) dbl;
+//}  
+//
+//LPSTR DToStr( double w )
+//{
+//   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+//   sprintf( dbl, "%f", w );
+// //  * strchr( dbl, '.' ) = 0;
+//   
+//   return ( char * ) dbl;
+//} 
 
 //------------------------------------------------//
 //
@@ -832,12 +832,6 @@ HB_FUNC( SQL2CLIPTYPE )
 HB_FUNC( SQLTYPE2CHAR )
 {
 	hb_retc( SQLType2Char( hb_parnl( 1 ) ) );
-}
-
-//------------------------------------------------//
-HB_FUNC( GETTICKCOUNT )
-{
-   hb_retnl( GetTickCount() );
 }
 
 //------------------------------------------------//

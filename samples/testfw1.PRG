@@ -21,7 +21,7 @@ FUNCTION Main()
    SET DATE FORMAT "dd/mm/yyyy"   
       
    //Activated Case sensitive
-   D_SetCaseSensitive( .T. )
+   SET CASESENSITIVE ON
    
    IF ( oServer := ConnectTo() ) == NIL
       RETURN NIL
@@ -48,9 +48,11 @@ PROCEDURE DataBrowse( oServer, oWnd )
    
    DEFINE FONT oFont NAME "Times New Roman" SIZE 8, 12
    DEFINE BRUSH oBrush FILE "..\bitmaps\bluewhit.bmp"
-   
-   oQry = oServer:Query( "SELECT * FROM clientes ORDER BY first LIMIT 10" )
-   
+
+   oServer:SetNameServer( "TESTING" )
+
+   DEFINE QUERY oQry "SELECT * FROM clientes ORDER BY first LIMIT 10" OF "TESTING"
+
    DEFINE DIALOG oDlg RESOURCE "DATAS" OF oWnd FONT oFont BRUSH oBrush ;
           TITLE "TDolphin Build " + oServer:cBuild
    
@@ -163,28 +165,4 @@ RETURN
 
 //--------------------------------------//
 
-FUNCTION ConnectTo()
-   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
-   LOCAL oServer   := NIL
-   LOCAL cServer   := hIni["mysql"]["host"],;
-         cUser     := hIni["mysql"]["user"],;
-         cPassword := hIni["mysql"]["psw"],;
-         nPort     := val(hIni["mysql"]["port"]), ;
-         cDBName   := hIni["mysql"]["dbname"], ;
-         nFlags    := val(hIni["mysql"]["flags"])
-   LOCAL oErr
-   
-   
-   
-   TRY
-   
-      oServer = TDolphinSrv():New( cServer, ;
-                                cUser, ;
-                                cPassword, ;
-                                nPort, nFlags, cDBName )
-                                
-   CATCH oErr 
-     RETURN NIL
-   END
-   
-RETURN oServer
+#include "connto.prg"

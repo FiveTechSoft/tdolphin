@@ -144,7 +144,7 @@
                   [ PORT <nPort> ];
                   [ FLAGS <nFlags> ];
                   [ DATABASE <cDBName> ];
-                  [ ON ERRROR <uOnError> ] ;
+                  [ ON ERROR <uOnError> ] ;
                   [ NAME <cName> ];
        => ;
           <oServer> := TDolphinSrv():New( <cHost>, <cUser>, <cPassword>, <nPort>, ;
@@ -221,4 +221,18 @@
                 [ ON SCRIPT <uOnScript> ];    
  =>;
            _ExecuteScript( [ <oServer> ], ;
-                          <cFile>, [{| nID, nTotal | <uOnScript> }] )                                                               
+                          <cFile>, [{| nID, nTotal | <uOnScript> }] )      
+                          
+#xcommand SELECTTABLES TO <oQuery>;
+                 TABLES <cTable,...>;
+                 [ COLUMNS <cColumns,...> ];
+                 [ WHERE <cWhere> ];
+                 [ GROUP <cGroup> ];
+                 [ HAVING <cHaving> ];
+                 [ ORDER BY <cOrder> ];
+                 [ LIMIT <cLimit> ];
+                 [ <lWithRoll: WITROLL> ];
+                 [ <srv: OF, SERVER, HOST><oServer> ];
+       =>;
+          <oQuery> := _SelectTable( [<oServer>], [{<cColumns>}], {<cTable>}, [<cWhere>],;
+                        [<cGroup>], [<cOrder>], [<cLimit>], [<.lWithRoll.>] )
