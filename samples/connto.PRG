@@ -28,7 +28,7 @@ FUNCTION ConnectTo( n )
                       PORT nPort ;
                       FLAGS nFlags;
                       DATABASE cDBName ;
-                      ON GETERROR onError( Self, nErrorSrv )                      
+                      ON ERROR onError( Self, nError )                      
                                 
    CATCH oErr 
      RETURN NIL
