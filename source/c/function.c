@@ -68,15 +68,16 @@
 char * SQL2ClipType( long lType, BOOL bLogical );
 
 static PHB_SYMB symClip2MySql = NULL;
+static char * szLang;
 
-//LPSTR LToStr( long w )
-//{
-//   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
-//   sprintf( dbl, "%f", ( double ) w );
-//   * strchr( dbl, '.' ) = 0;
-//   
-//   return ( char * ) dbl;
-//}  
+LPSTR LToStr( long w )
+{
+   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+   sprintf( dbl, "%f", ( double ) w );
+   * strchr( dbl, '.' ) = 0;
+   
+   return ( char * ) dbl;
+}  
 //
 //LPSTR DToStr( double w )
 //{
@@ -185,7 +186,8 @@ HB_FUNC( MYSEEK )
          	   pulFieldLengths[ uiField ] = strlen( cSearch );
        	  
          	if( row )
-         		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( long ) pulFieldLengths[ uiField ] );
+             uii = strcoll( ( const char * ) row[ uiField ], cSearch );         	  
+//         		 uii = hb_strnicmp( ( const char * ) row[ uiField ], ( const char * ) cSearch, ( long ) pulFieldLengths[ uiField ] );
    
            if( uii == 0 )
            { 
@@ -995,11 +997,13 @@ HB_FUNC( MYSQLEMBEDDED )
 
 //------------------------------------
 
-unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, BOOL bSoft, const char * cSearch )
+unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, BOOL bSoft, char * cSearch )
 {
    MYSQL_ROW row;
    unsigned long * pulFieldLengths;
    unsigned int uii;
+   char szSource[256];
+   int iLen = strlen( cSearch );
    
    mysql_data_seek(presult, iData);
    row = mysql_fetch_row( presult );
@@ -1008,9 +1012,20 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
    if( pulFieldLengths[ uiField ] != 0 )
    {
       if( bSoft )
-         pulFieldLengths[ uiField ] = strlen( cSearch );
-         	
-      uii = hb_strnicmp( ( const char * ) row[ uiField ], cSearch, ( long ) pulFieldLengths[ uiField ] );
+      {
+         hb_strncpy( szSource, row[ uiField ], iLen );
+         hb_strLower( szSource, iLen  );
+         hb_strLower( cSearch, iLen );
+      }
+      else
+         hb_strncpy( szSource, row[ uiField ], *pulFieldLengths );
+         
+      
+//         pulFieldLengths[ uiField ] = strlen( cSearch );
+      setlocale( LC_COLLATE, szLang );
+      
+      uii = strcoll( ( const char * ) szSource, cSearch );         
+//      uii = hb_stricmp( ( const char * ) szSource, cSearch );//, ( long ) pulFieldLengths[ uiField ] );
    }
    return uii;
 }
@@ -1030,7 +1045,7 @@ HB_FUNC( MYSEEK2 )
    int iMid;
    int iLastFound;
    
-   
+//   MessageBox( 0, )
    if (result > 0)
    {
       if( ! ISNUM( 5 ) )
@@ -1045,7 +1060,6 @@ HB_FUNC( MYSEEK2 )
       iMid = ( uiEnd + uiStart ) / 2;
       while( uiStart < iMid && uiOk < 0 )
       {
-
          uii = InternalSeek( result, iMid, uiField, bSoft, cSearch );
 
          if( uii == -1 )
@@ -1103,7 +1117,8 @@ unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PH
       { 
    	    lField = hb_arrayGetNL( pFields, j + 1 ) - 1;
    	    cSearch = hb_arrayGetC( pValues, j + 1 );
-   	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+//   	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+        uii = strcoll( ( const char * ) row[ lField ], cSearch );
    	    if( uii != 0 )
    	    {
    	        break; 
@@ -1112,6 +1127,17 @@ unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PH
    }
 
    return uii;
+}
+
+//------------------------------------------------//
+
+HB_FUNC( SET_MYLANG )
+{
+   char * szl = szLang;
+   if( hb_pcount() > 0 )
+      szLang = ( char * )hb_parc( 1 );
+      
+   hb_retc( szl );
 }
 
 //------------------------------------------------//
@@ -1214,7 +1240,8 @@ HB_FUNC( MYFIND )
             { 
          	    lField = hb_arrayGetNL( pArrayFields, j + 1 ) - 1;
          	    cSearch = hb_arrayGetC( pArrayValues, j + 1 );
-         	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+//         	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+              uii = strcoll( ( const char * ) row[ lField ], cSearch );
          	    if( uii != 0 )
          	    {
          	        break; 

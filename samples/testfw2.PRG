@@ -17,6 +17,7 @@ FUNCTION Main()
       
    //Activated Case sensitive
    D_SetCaseSensitive( .T. )
+   Set_MyLang( "esp" )
    
    IF ( oServer := ConnectTo() ) == NIL
       RETURN NIL
@@ -56,33 +57,5 @@ PROCEDURE DataBrowse( oServer, oWnd )
 
 RETURN 
 
-//--------------------------------------//
-
-FUNCTION ConnectTo()
-   LOCAL hIni      := HB_ReadIni( ".\connect.ini" )
-   LOCAL oServer   := NIL
-   LOCAL cServer   := hIni["mysql"]["host"],;
-         cUser     := hIni["mysql"]["user"],;
-         cPassword := hIni["mysql"]["psw"],;
-         nPort     := val(hIni["mysql"]["port"]), ;
-         cDBName   := hIni["mysql"]["dbname"], ;
-         nFlags    := val(hIni["mysql"]["flags"])
-   LOCAL oErr
-   
-   
-   
-   TRY
-   
-      oServer = TDolphinSrv():New( cServer, ;
-                                cUser, ;
-                                cPassword, ;
-                                nPort, nFlags, cDBName )
-                                
-   CATCH oErr 
-     RETURN NIL
-   END
-   
-RETURN oServer
-
-
+#include "connto.prg"
 #include "setbrw.prg"
