@@ -1,5 +1,5 @@
 /*
- * $Id: 8/14/2010 4:14:42 PM function.c Z dgarciagil $
+ * $Id: 22-Sep-10 9:27:21 PM function.c Z dgarciagil $
  */
 
 /*
@@ -58,6 +58,7 @@
 #include <hbvm.h>
 #include <mysql.h>
 #include <winnls.h>
+#include <locale.h>
 
 
 
@@ -65,7 +66,7 @@
 #define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
 #endif //__HARBOUR__
 
-char * SQL2ClipType( long lType, BOOL bLogical );
+const char * SQL2ClipType( long lType, BOOL bLogical );
 
 static PHB_SYMB symClip2MySql = NULL;
 static char * szLang;
@@ -420,7 +421,7 @@ HB_FUNC( MYSQLOPTION )
 	MYSQL *mysql = ( MYSQL * ) hb_parnl( 1 );
   int iret = 1;
 	if( mysql )
-	   iret = mysql_options( mysql, hb_parnl( 2 ), arg );
+	   iret = mysql_options( mysql, ( enum mysql_option )hb_parnl( 2 ), arg );
 	   
 	hb_retni( iret );
 }
@@ -608,9 +609,9 @@ HB_FUNC( MYSQLSTORERESULT ) // -> MYSQL_RES
 
 //------------------------------------------------//
 // convert MySql field type to clipper field type
-char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type 
+const char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type 
 {
-	 char * sType;
+	 const char * sType;
 	 
    switch ( lType ){
 
@@ -712,9 +713,9 @@ char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type
 
 //------------------------------------------------//
 // convert MySql field type to char
-char * SQLType2Char( long lType ) //-> Clipper field type 
+const char * SQLType2Char( long lType ) //-> Clipper field type 
 {
-	 char * sType;
+	 const char * sType;
 	 
    switch ( lType ){
 
@@ -842,13 +843,13 @@ HB_FUNC( FILETOSQLBINARY )
 {
    BOOL bResult = FALSE ;
    char *szFile = ( char * )hb_parc( 1 );
-   int fHandle;
+   HB_FHANDLE fHandle;
    ULONG iSize;
    char *ToBuffer;
    char *FromBuffer;
    if ( szFile && hb_parclen( 1 ) )
    {
-     fHandle    = hb_fsOpen( ( BYTE * ) szFile,2 );
+     fHandle    = hb_fsOpen( ( const char * ) szFile,2 );
      if ( fHandle > 0 )
      {
        iSize      = hb_fsFSize( szFile, FALSE );
@@ -891,7 +892,7 @@ HB_FUNC( FILETOSQLBINARY )
 HB_FUNC( D_READFILE )
 {
    char *szFile = ( char * )hb_parc( 1 );
-   int fHandle;
+   HB_FHANDLE fHandle;
    ULONG iSize;
    char *ToBuffer;
    char *FromBuffer;
@@ -899,7 +900,7 @@ HB_FUNC( D_READFILE )
    
    if ( szFile && hb_parclen( 1 ) )
    {
-     fHandle    = hb_fsOpen( ( BYTE * ) szFile, HB_FA_ALL );
+     fHandle    = hb_fsOpen( ( const char * ) szFile, HB_FA_ALL );
      if ( fHandle > 0 )
      {
        iSize      = hb_fsFSize( szFile, FALSE );
@@ -936,37 +937,44 @@ HB_FUNC( MYSQLEMBEDDED )
 	 PHB_ITEM pArrayGroup   = hb_param( 3, HB_IT_ARRAY );
 	 PHB_ITEM pItem;
 	 INT j, argc, iGroups;
-	 char *server_options, *server_groups;
+	 char **server_options;
+	 char **server_groups;
 	 INT iError = 0; 
 
    //build server options
 	 argc           = hb_arrayLen( pArrayOption );
    if( argc > 0 ){
-   	  server_options = ( char * )hb_xgrab( sizeof( char ) * argc );
+      char * p;
+   	  server_options = ( char ** )hb_xgrab( sizeof( char *) * ( argc + 1 ) ) ;
       for( j = 0; j < argc; j++ )
       {
    	    pItem = hb_itemArrayGet( pArrayOption, j + 1 );
-       	server_options[ j ] = *hb_itemGetC( pItem );
+   	    p = hb_itemGetC( pItem ) ;
+   	    server_options[ j ] = p;
       }
+      server_options[ j ] = (char *) NULL ;
       hb_itemRelease( pItem );
    }
    
    //build groups
    iGroups       = hb_arrayLen( pArrayGroup );
    if( iGroups > 0 ) {
-      server_groups = ( char * )hb_xgrab( sizeof( char * )* iGroups  );
+      char * p;
+      server_groups = ( char ** )hb_xgrab( sizeof( char * )* ( iGroups + 1) );
       for( j = 0; j < iGroups; j++ )
       {
-   	    pItem = hb_itemArrayGet( pArrayOption, j + 1 );
-       	server_groups[ j ] = *hb_itemGetC( pItem );
+   	    pItem = hb_itemArrayGet( pArrayGroup, j + 1 );
+   	    p = hb_itemGetC( pItem ) ;
+       	server_groups[ j ] = p;
       }
+      server_groups[ j ] = ( char *) NULL;
       hb_itemRelease( pItem );
    }
-   
 
    //Initialize MySQL Embedded libmysqld.
-   if( mysql_library_init(argc, &server_options, &server_groups ) == 0 )
+   if( mysql_library_init(argc, server_options, server_groups ) == 0 )
    { 
+
       //Initialize MySQL Library. */
       if( ( mysql = mysql_init( NULL ) ) != NULL )
       {
@@ -1045,7 +1053,6 @@ HB_FUNC( MYSEEK2 )
    int iMid;
    int iLastFound;
    
-//   MessageBox( 0, )
    if (result > 0)
    {
       if( ! ISNUM( 5 ) )

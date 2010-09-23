@@ -30,6 +30,9 @@ del *.obj /Q
 del *.exe /Q
 del *.c /Q
 del *.tds /Q
+del *.tmp /Q
+del *.lib /Q
+del *.exp /Q
 cd ..
 cls
 @echo on

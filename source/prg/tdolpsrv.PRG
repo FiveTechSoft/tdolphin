@@ -1,5 +1,5 @@
 /*
- * $Id: 28-Aug-10 7:49:06 AM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 22-Sep-10 9:27:25 PM tdolpsrv.PRG Z dgarciagil $
  */
    
 /*
@@ -90,7 +90,7 @@ CLASS TDolphinSrv
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    DATA cNameHost
    
-   DATA cBuild     INIT '28-Aug-10 7:49:06 AM'
+   DATA cBuild     INIT '22-Sep-10 9:27:25 PM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -307,15 +307,19 @@ RETURN Self
 
 //----------------------------------------------------//
 
-METHOD Embedded( cDataBase, aOptions, aGroups, bOnError, cName ) CLASS TDolphinSrv
+METHOD Embedded( cDataBase, aOptions, aGroups, bOnError, cNameHost ) CLASS TDolphinSrv
    
-   LOCAL cNameHost   
-   
-   ::lError    := .F.
-   ::bOnError  := bOnError
+   ::lError         = .F.
+   ::bOnError       = bOnError
+   ::nInternalError = 0
+   ::cDBName        = cDataBase
+   ::aQueries       = {}
    
    DEFAULT aGroups TO {}
    DEFAULT aOptions TO {}
+
+   aGroups  = CheckArray( aGroups )
+   aOptions = CheckArray( aOptions )
 
    ::hMysql   :=  MysqlEmbedded( cDataBase, aOptions, aGroups )
 
@@ -324,11 +328,10 @@ METHOD Embedded( cDataBase, aOptions, aGroups, bOnError, cName ) CLASS TDolphinS
       ::End()
    ENDIF
 
-   IF Empty( cName )   
-      cNameHost = "TEMP" + Alltrim( Str( ::nServerId++ ) )
-   ELSE 
-      cNameHost = cName
-   ENDIF   
+
+   DEFAULT  cNameHost TO "TEMP" + Alltrim( Str( ::nServerId++ ) )
+
+   ::cNameHost = cNameHost
 
    AAdd( aHost, { Self, cNameHost } )
    
@@ -640,6 +643,7 @@ RETURN NIL
 METHOD CheckError( nError, cExtra ) CLASS TDolphinSrv
 
    LOCAL lInternal := .F.
+
 
    DEFAULT nError TO ::ErrorNo()
 
@@ -1642,7 +1646,7 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
       IF ::bDebug != NIL 
          Eval( ::bDebug, cQuery, ProcName( 1 ), ProcLine( 1 ) )      
       ENDIF
-#endif      
+#endif   
       IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
          ::CheckError()
       ENDIF

@@ -179,3 +179,4 @@ PROCEDURE SetOrderDolphin( oCol, oQry )
    oCol:oBrw:Refresh()
 
 RETURN 
+
