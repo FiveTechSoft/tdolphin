@@ -1026,8 +1026,7 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
          hb_strLower( cSearch, iLen );
       }
       else
-         hb_strncpy( szSource, row[ uiField ], *pulFieldLengths );
-         
+         hb_strncpy( szSource, row[ uiField ], pulFieldLengths[uiField] );
       
 //         pulFieldLengths[ uiField ] = strlen( cSearch );
       setlocale( LC_COLLATE, szLang );
