@@ -1124,6 +1124,7 @@ unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PH
    	    lField = hb_arrayGetNL( pFields, j + 1 ) - 1;
    	    cSearch = hb_arrayGetC( pValues, j + 1 );
 //   	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
+        setlocale( LC_COLLATE, szLang );
         uii = strcoll( ( const char * ) row[ lField ], cSearch );
    	    if( uii != 0 )
    	    {
@@ -1226,7 +1227,6 @@ HB_FUNC( MYFIND )
 	 long lField;
 	 char * cSearch;
    
-   
    if (result > 0)
    {
       if( ! ISNUM( 5 ) )
@@ -1246,8 +1246,9 @@ HB_FUNC( MYFIND )
             { 
          	    lField = hb_arrayGetNL( pArrayFields, j + 1 ) - 1;
          	    cSearch = hb_arrayGetC( pArrayValues, j + 1 );
+         	    if( row[ lField ] )
 //         	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
-              uii = strcoll( ( const char * ) row[ lField ], cSearch );
+                 uii = strcoll( ( const char * ) row[ lField ], cSearch );
          	    if( uii != 0 )
          	    {
          	        break; 

@@ -14,10 +14,10 @@ PROCEDURE Main()
    ENDIF
    
 
-   oQry = TDolphinQry():New( "SELECT * FROM test ORDER BY id", oServer )
-   ? If( oQry:Seek( "3", "ID" ) > 0, "Found 3", "No found 3" )
-   ? If( oQry:Seek( "10", "ID" ) > 0, "Found 10", "No found 10" )
-   ? If( oQry:Seek( "WILLIAM", "name" ) > 0, "Found William", "No found William" )
+   oQry = TDolphinQry():New( "SELECT * FROM test", oServer )
+   ? If( oQry:Find( {"3"}, {"ID"} ) > 0, "Found 3", "No found 3" )
+   ? If( oQry:Find( {"10"}, {"ID"} ) > 0, "Found 10", "No found 10" )
+   ? If( oQry:Find( {"WILLIAM"}, {"name"} ) > 0, "Found William", "No found William" )
    ?
       
 
