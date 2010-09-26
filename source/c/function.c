@@ -1010,7 +1010,7 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
    MYSQL_ROW row;
    unsigned long * pulFieldLengths;
    unsigned int uii;
-   char szSource[256];
+   char * szSource;
    int iLen = strlen( cSearch );
    
    mysql_data_seek(presult, iData);
@@ -1021,17 +1021,21 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
    {
       if( bSoft )
       {
+         szSource = ( char * ) hb_xgrab( iLen );        
          hb_strncpy( szSource, row[ uiField ], iLen );
          hb_strLower( szSource, iLen  );
          hb_strLower( cSearch, iLen );
       }
       else
+      {
+         szSource = ( char * ) hb_xgrab(  pulFieldLengths[uiField] );
          hb_strncpy( szSource, row[ uiField ], pulFieldLengths[uiField] );
-      
+      }
 //         pulFieldLengths[ uiField ] = strlen( cSearch );
       setlocale( LC_COLLATE, szLang );
       
       uii = strcoll( ( const char * ) szSource, cSearch );         
+      hb_xfree( szSource );
 //      uii = hb_stricmp( ( const char * ) szSource, cSearch );//, ( long ) pulFieldLengths[ uiField ] );
    }
    return uii;
@@ -1111,8 +1115,9 @@ unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PH
    MYSQL_ROW row;
    unsigned int uii;
    int i, j;
-   long lField;
+   long lField, lLen;
    char * cSearch;
+   char * szSource;
    
    mysql_data_seek(presult, iData);
    row = mysql_fetch_row( presult );
@@ -1123,9 +1128,13 @@ unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PH
       { 
    	    lField = hb_arrayGetNL( pFields, j + 1 ) - 1;
    	    cSearch = hb_arrayGetC( pValues, j + 1 );
+   	    lLen = strlen( cSearch );
+   	    szSource = hb_xgrab( lLen );
+   	    hb_strncpy( szSource, row[ lField ], lLen );
 //   	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
         setlocale( LC_COLLATE, szLang );
-        uii = strcoll( ( const char * ) row[ lField ], cSearch );
+        uii = strcoll( ( const char * ) szSource, cSearch );
+        hb_xfree( szSource );
    	    if( uii != 0 )
    	    {
    	        break; 
@@ -1224,8 +1233,9 @@ HB_FUNC( MYFIND )
    int uiEnd, uiOk = -1, i, j;
 	 PHB_ITEM pArrayFields  = hb_param( 2, HB_IT_ARRAY );
 	 PHB_ITEM pArrayValues  = hb_param( 3, HB_IT_ARRAY );
-	 long lField;
+	 long lField, lencSearch;
 	 char * cSearch;
+	 char * cSrc;
    
    if (result > 0)
    {
@@ -1247,8 +1257,13 @@ HB_FUNC( MYFIND )
          	    lField = hb_arrayGetNL( pArrayFields, j + 1 ) - 1;
          	    cSearch = hb_arrayGetC( pArrayValues, j + 1 );
          	    if( row[ lField ] )
+         	    {
 //         	    uii = hb_strnicmp( ( const char * ) row[ lField ], cSearch, strlen( cSearch ) );
-                 uii = strcoll( ( const char * ) row[ lField ], cSearch );
+                 cSrc = ( char * )hb_xgrab( ( lencSearch = strlen( cSearch ) ) );
+                 hb_strncpy( cSrc, row[ lField ], lencSearch );
+                 uii = strcoll( ( const char * ) cSrc, cSearch );
+                 hb_xfree( cSrc );
+              }
          	    if( uii != 0 )
          	    {
          	        break; 
