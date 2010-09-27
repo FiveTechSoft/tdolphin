@@ -745,14 +745,15 @@ RETURN aTable
 
 //----------------------------------------------------//
 
-METHOD Find( aValues, aFields, nStart, nEnd, lRefresh ) CLASS TDolphinQry
+METHOD Find( aValues, aFields, nStart, nEnd, lRefresh, lSoft ) CLASS TDolphinQry
 
    LOCAL nNum
    LOCAL nSeek
    LOCAL uValue, cField, nId
    
    DEFAULT lRefresh TO .T.
-
+   DEFAULT lSoft TO .F.
+   
    IF ::nRecCount == 0 
       RETURN 0
    ENDIF
@@ -770,7 +771,7 @@ METHOD Find( aValues, aFields, nStart, nEnd, lRefresh ) CLASS TDolphinQry
       uValue = ClipValue2SQL( uValue, ::aStructure[ aFields[ nId ] ][ MYSQL_FS_CLIP_TYPE ], .F. )
    NEXT
    
-   nSeek = MyFind( ::hResult, aFields, aValues, nStart, nEnd )
+   nSeek = MyFind( ::hResult, aFields, aValues, nStart, nEnd, lSoft )
    
    IF nSeek > 0 
       IF lRefresh
@@ -1057,13 +1058,14 @@ RETURN NIL
 
 //----------------------------------------------------//
 
-METHOD Locate( aValues, aFields, nStart, nEnd, lRefresh ) CLASS TDolphinQry
+METHOD Locate( aValues, aFields, nStart, nEnd, lRefresh, lSoft ) CLASS TDolphinQry
 
    LOCAL nNum
    LOCAL nSeek
    LOCAL uValue, cField, nId
    
    DEFAULT lRefresh TO .T.
+   DEFAULT lSoft TO .F.
 
    IF ::nRecCount == 0 
       RETURN 0
@@ -1082,7 +1084,7 @@ METHOD Locate( aValues, aFields, nStart, nEnd, lRefresh ) CLASS TDolphinQry
       uValue = ClipValue2SQL( uValue, ::aStructure[ aFields[ nId ] ][ MYSQL_FS_CLIP_TYPE ], .F. )
    NEXT
    
-   nSeek = MyLocate( ::hResult, aFields, aValues, nStart, nEnd )
+   nSeek = MyLocate( ::hResult, aFields, aValues, nStart, nEnd, lSoft )
 
    IF nSeek > 0 
       IF lRefresh
