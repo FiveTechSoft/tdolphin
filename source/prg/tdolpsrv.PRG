@@ -1699,6 +1699,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
    
    aColumns = CheckArray( aColumns )
    aValues  = CheckArray( aValues )
+   aStruc   = ::TableStructure( cTable )
 
 
 #ifndef NOINTERNAL   
@@ -1728,14 +1729,22 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
 #else                      
             n = cField:__EnumIndex() 
 #endif 
+      nPos = AScan( aStruc, {| aRow | Lower( AllTrim( aRow[ MYSQL_FS_NAME ] ) )  == Lower( cField ) } )
+#ifndef NOINTERNAL         
+      IF nPos == 0
+         ::nInternalError = ERR_INVALIDFIELDNAME
+         ::CheckError()
+         RETURN .F.
+      ENDIF
+#endif      
       IF HB_IsArray( aValues[ n ] ) 
-         cValue   = ClipValue2SQL( aValues[ n ][ 1 ] )
+         cValue   = ClipValue2SQL( aValues[ n ][ 1 ], aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] )
          IF aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] == "M"
             cExecute += cField + " = CONCAT(" + cField + ", " + cValue + "),"
             cExecute += cField + " = " + cField + " + " + cValue + ","
          ENDIF         
       ELSE 
-         cValue   = ClipValue2SQL( aValues[ n ] )
+         cValue   = ClipValue2SQL( aValues[ n ], aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] )
          cExecute += cField + " = " + cValue + ","
       ENDIF
 
@@ -1803,9 +1812,6 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt, lNoNull ) // Compatibility wint TMys
          EXIT
 
       CASE "M"
-         cValue := cTxt + AllTrim( Value ) + cTxt
-         EXIT
-      CASE "B"
          IF Empty( Value)
             cValue := "" + cTxt + cTxt + ""
          ELSE
