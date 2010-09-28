@@ -53,7 +53,7 @@ PROCEDURE LoadFile( oServer )
       DEFINE DIALOG oDlg TITLE "File <" + cFile + "> already loaded" SIZE 330, 60 PIXEL
       
       @ 5, 5 BUTTON "Save" SIZE 75, 20 OF oDlg PIXEL ;
-             ACTION ( If( oServer:Update( "files", { "filename", "file" }, { GetOnlyName( cFile ), uData }, "id=2" ),;
+              ACTION ( If( oServer:Insert( "files", { "filename", "file" }, { GetOnlyName( cFile ), uData } ),;
                         MsgInfo( "File Saved in Table" ), MsgInfo( "Record no Saved" ) ), oDlg:End() )
       @ 5, 85 BUTTON "Cancel" SIZE 75, 20 OF oDlg PIXEL ;
               ACTION oDlg:End()
