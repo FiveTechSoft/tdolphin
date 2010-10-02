@@ -1021,20 +1021,20 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
    {
       if( bSoft )
       {
-         szSource = ( char * ) hb_xgrab( iLen );        
+         szSource = ( char * ) hb_xgrab( sizeof( char *) * iLen );        
          hb_strncpy( szSource, row[ uiField ], iLen );
          hb_strLower( szSource, iLen  );
          hb_strLower( cSearch, iLen );
       }
       else
       {
-         szSource = ( char * ) hb_xgrab(  pulFieldLengths[uiField] );
+         szSource = ( char * ) hb_xgrab( sizeof( char *) * pulFieldLengths[uiField] );
          hb_strncpy( szSource, row[ uiField ], pulFieldLengths[uiField] );
       }
 //         pulFieldLengths[ uiField ] = strlen( cSearch );
       setlocale( LC_COLLATE, szLang );
-      
       uii = strcoll( ( const char * ) szSource, cSearch );         
+
       hb_xfree( szSource );
 //      uii = hb_stricmp( ( const char * ) szSource, cSearch );//, ( long ) pulFieldLengths[ uiField ] );
    }
@@ -1130,7 +1130,7 @@ unsigned int InternalLocate( MYSQL_RES* presult, int iData, PHB_ITEM pFields, PH
         {
            cSearch = hb_arrayGetC( pValues, j + 1 );
       	   lLen = strlen( cSearch );
-      	   szSource = ( char * )hb_xgrab( lLen );
+      	   szSource = ( char * )hb_xgrab( sizeof( char * ) * lLen );
            if( bSoft )
            {
               hb_strncpy( szSource, row[ lField ], lLen );
@@ -1275,7 +1275,7 @@ HB_FUNC( MYFIND )
 
          	    if( row[ lField ] )
          	    {
-                 cSrc = ( char * )hb_xgrab( ( lencSearch = strlen( cSearch ) ) );
+                 cSrc = ( char * )hb_xgrab( ( sizeof( char * ) * ( lencSearch = strlen( cSearch ) ) ) );
                  if( bSoft )
                  {
                     hb_strncpy( cSrc, row[ lField ], lencSearch );
