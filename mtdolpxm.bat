@@ -1,1 +1,0 @@
-c:\bcc582\bin\make -ftdolpm.mak HPATH=\xharbourm VCDIR=c:\vc2008 LIBNAME=dolpxm OBJS=objmx HARBOUR=
