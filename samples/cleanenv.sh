@@ -1,0 +1,12 @@
+export PRG_COMPILER=
+export PRG_COMP_PATH=
+export PRG_COMP_BIN_PATH=
+export PRG_COMP_LIB_PATH=
+export PRG_COMP_INC_PATH=
+export C_COMPILER=
+export C_COMP_PATH=
+export C_COMP_BIN_PATH=
+export C_COMP_LIB_PATH=
+export C_COMP_INC_PATH=
+export LIBNAME=
+export DOLPHIN_INC=
