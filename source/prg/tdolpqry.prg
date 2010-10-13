@@ -1,5 +1,5 @@
 /*
- * $Id: 22-Sep-10 9:27:23 PM tdolpqry.PRG Z dgarciagil $
+ * $Id: 10/13/2010 5:51:31 PM tdolpqry.prg Z dgarciagil $
  */
 
 /*
@@ -131,10 +131,10 @@ CLASS TDolphinQry
                                /*Compatibility with CheckError from TDolphinSrv*/
 
    METHOD Delete( lAll )       /*Delete current record active*/
-   
+#ifdef __WIN__   
    METHOD Export( nType, cFieldName, aColumns, aPictures )   ;
                        INLINE TDolphinExport():New( nType, Self, cFieldName, aColumns, aPictures )
-
+#endif __WIN__
    METHOD Eof()        INLINE ::lEof  
                       
    METHOD FCount()     INLINE    ::nFCount
@@ -1011,16 +1011,15 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
       ::BuildDatas()
    ENDIF
    
-   IF ::hResult != 0
-      MySqlFreeResult( ::hResult )
-      ::hResult = 0
+   IF ::hResult != NIL
+//      MySqlFreeResult( ::hResult ) /* NOTE: Deprecated */
+      ::hResult = NIL
    ENDIF
    
    ::hResult := MySqlStoreResult( oServer:hMysql )
    
-   IF ! ( ::hResult == 0 )
+   IF ! ( ::hResult == NIL )
       ::aStructure = MySqlResultStructure( ::hResult, lCaseSen, D_LogicalValue() ) 
-
       ::nRecCount := MySqlNumRows( ::hResult )
       ::nRecNo    = Max( 1, ::nRecNo )
       ::nFCount   = Len( ::aStructure )

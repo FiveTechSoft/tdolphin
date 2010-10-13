@@ -1,5 +1,5 @@
 /*
- * $Id: 22-Sep-10 9:27:22 PM tdolpexp.PRG Z dgarciagil $
+ * $Id: 10/13/2010 5:51:31 PM tdolpexp.prg Z dgarciagil $
  */
    
 /*
@@ -50,6 +50,7 @@
  *
  */
 
+#ifdef __WIN__
 #include "hbclass.ch"
 #include "common.ch"
 #include "dbstruct.ch"
@@ -1191,3 +1192,4 @@ METHOD Export() CLASS TDolphinToSql
    ENDIF   
    ::Close()
 RETURN NIL
+#endif __WIN__

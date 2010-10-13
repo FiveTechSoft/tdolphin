@@ -1,5 +1,5 @@
 /*
- * $Id: 22-Sep-10 9:27:25 PM tdolpsrv.PRG Z dgarciagil $
+ * $Id: 10/13/2010 5:51:32 PM tdolpsrv.prg Z dgarciagil $
  */
    
 /*
@@ -170,7 +170,7 @@ CLASS TDolphinSrv
    
    METHOD End()               
    
-   METHOD ErrorTxt()          INLINE  If( ::hMysql != 0, MySqlError( ::hMysql ), "" )
+   METHOD ErrorTxt()          INLINE  If( ::hMysql != NIL, MySqlError( ::hMysql ), "" )
                               /* Returns a string containing the error message for 
                                  the most recently invoked API function that failed.*/
    
@@ -682,8 +682,8 @@ METHOD CloseQuery( nId ) CLASS TDolphinSrv
    
    IF nPos > 0 
       oQry = ::aQueries[ nPos ]
-      IF oQry:hResult != 0
-         MySqlFreeResult( oQry:hResult )
+      IF oQry:hResult != NIL
+         //MySqlFreeResult( oQry:hResult )/* NOTE: Deprecated */
          oQry:hResult = NIL 
       ENDIF 
       ADel( ::aQueries, nPos )
@@ -1041,11 +1041,10 @@ RETURN ::SqlQuery( cQuery )
 METHOD End() CLASS TDolphinSrv
    LOCAL nHost
 
-
-   IF ::hMysql > 0
-      MySqlClose( ::hMysql )
-      ::hMysql = 0
-      AEval( ::aQueries, {| o | o:End() } )
+   IF ::hMysql != NIL
+      AEval( ::aQueries, {| o | If( o != NIL, o:End(), ) } )
+      //MySqlClose( ::hMysql )/* NOTE: Deprecated */      
+      ::hMysql = NIL
    ENDIF
   
    nHost = AScan( aHost, { | a | Upper( a[ 2 ] ) == Upper( ::cNameHost ) } ) 
@@ -1286,13 +1285,15 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
 
    hRes = MySqlListFields( ::hMysql, cTable, cField )
    
-   IF hRes == 0 
+   IF hRes != NIL
       ::CheckError() 
    ELSE   
       aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive(), D_LogicalValue() ) 
-      MySqlFreeResult( hRes )
+      //MySqlFreeResult( hRes )/* NOTE: Deprecated */
       lAuto = IS_AUTO_INCREMENT( aStruct[ 1, MYSQL_FS_FLAGS ] )
    ENDIF
+   
+   hRes = NIL
    
 RETURN lAuto 
 
@@ -1339,7 +1340,6 @@ RETURN nlast
 
 METHOD ListDBs( cWild ) CLASS TDolphinSrv
    LOCAL aList
-      
    aList = MySqlListDBs( ::hMysql, cWild ) 
    ::CheckError()
    
@@ -1671,13 +1671,12 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
 
    hRes = MySqlListFields( ::hMysql, cTable )
    
-   IF hRes == 0 
+   IF hRes != NIL
       ::CheckError() 
    ELSE
       aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive(), D_LogicalValue() ) 
-      
-      MySqlFreeResult( hRes )
-      
+      //MySqlFreeResult( hRes ) /* NOTE: Deprecated */
+      hRes = NIL      
       IF Len( aStruct ) == 0
          ::CheckError()
       ENDIF
