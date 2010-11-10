@@ -1285,7 +1285,7 @@ METHOD IsAutoIncrement( cField, cTable ) CLASS TDolphinSrv
 
    hRes = MySqlListFields( ::hMysql, cTable, cField )
    
-   IF hRes != NIL
+   IF hRes == NIL
       ::CheckError() 
    ELSE   
       aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive(), D_LogicalValue() ) 
@@ -1671,7 +1671,7 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
 
    hRes = MySqlListFields( ::hMysql, cTable )
    
-   IF hRes != NIL
+   IF hRes == NIL
       ::CheckError() 
    ELSE
       aStruct = MySqlResultStructure( hRes, D_SetCaseSensitive(), D_LogicalValue() ) 
