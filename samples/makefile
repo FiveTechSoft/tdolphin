@@ -7,7 +7,8 @@ ifeq ($(BLD_TYPE),gtgui)
 		testfw3 \
 		testpag \
 		testsk2 \
-		testvar
+		testvar \
+		sped
    _OUT = Graphic
 endif
 

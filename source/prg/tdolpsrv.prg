@@ -59,7 +59,7 @@
 
 #define CRLF Chr( 13 ) + Chr( 10 )
 
-#ifdef __HARBOUR__
+#ifndef __XHARBOUR__
 #include "hbcompat.ch"
 #ifndef RGB
 #define RGB( nR,nG,nB )  ( nR + ( nG * 256 ) + ( nB * 256 * 256 ) )
