@@ -7,7 +7,7 @@
  * this sample show how use METHOD Insert, Execute and MultiQuery, transactions
  */
 
-#include "hbcompat.ch" // is necesary form compatibility with xharbour
+//#include "hbcompat.ch" // is necesary form compatibility with xharbour
 #include "tdolphin.ch"
 
 

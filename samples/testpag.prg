@@ -1,7 +1,7 @@
 #include "fivewin.ch"
 #include "xbrowse.ch"
 #include "ribbon.ch"
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #include "tdolphin.ch"
 
 FUNCTION Main()

@@ -1,5 +1,5 @@
 #include <Fivewin.ch>
-#include <hbcompat.ch>
+//#include <hbcompat.ch>
 #include <tdolphin.ch>
 #include <XBrowse.ch>
 

@@ -170,6 +170,25 @@
 #define EXP_SQL      6
 
 
+
+#ifndef __XHARBOUR__
+#xcommand TRY  => BEGIN SEQUENCE WITH {|oErr| Break( oErr )}
+#xcommand CATCH [<!oErr!>] => RECOVER [USING <oErr>] <-oErr->
+#xcommand FINALLY => ALWAYS  
+
+#xtranslate hb_ReadIni([<x,...>])       => hb_IniRead(<x>)
+#xtranslate HASH([<x,...>])             => hb_HASH(<x>)
+#xtranslate HGETPOS([<x,...>])          => hb_HPOS(<x>)
+#xtranslate HSET([<x,...>])             => hb_HSET(<x>)
+#xtranslate HSETCASEMATCH([<x,...>])    => hb_HSETCASEMATCH(<x>)
+#xtranslate HCLONE([<x,...>])           => hb_HCLONE(<x>)
+ 
+//#include "hbcompat.ch"
+#ifndef RGB
+#define RGB( nR,nG,nB )  ( nR + ( nG * 256 ) + ( nB * 256 * 256 ) )
+#endif /*RGB*/
+#endif/*__HARBOUR__*/
+
 //-------------------
 
 #xcommand SET CASESENSITIVE <on:ON,OFF> => D_SetCaseSensitive( Upper(<(on)>) == "ON" )

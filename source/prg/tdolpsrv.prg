@@ -59,13 +59,6 @@
 
 #define CRLF Chr( 13 ) + Chr( 10 )
 
-#ifndef __XHARBOUR__
-#include "hbcompat.ch"
-#ifndef RGB
-#define RGB( nR,nG,nB )  ( nR + ( nG * 256 ) + ( nB * 256 * 256 ) )
-#endif /*RGB*/
-#endif/*__HARBOUR__*/
-
 static aHost := {}
 static oServerDefault := NIL
 

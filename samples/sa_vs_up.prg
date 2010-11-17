@@ -1,4 +1,4 @@
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #include "tdolphin.ch"
 #include "xbrowse.ch"
 #include "fivewin.ch"

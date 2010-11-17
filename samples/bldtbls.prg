@@ -9,7 +9,7 @@
  * this aample show how use METHOD CreateTable, Execute and MultiQuery
  */
 
-#include "hbcompat.ch" // is necesary form compatibility with xharbour
+//#include "hbcompat.ch" // is necesary form compatibility with xharbour
 #include "tdolphin.ch"
 
 

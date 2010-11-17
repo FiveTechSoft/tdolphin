@@ -1,6 +1,6 @@
 // export to dbf
 
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #include "tdolphin.ch"
 
 FUNCTION Main()

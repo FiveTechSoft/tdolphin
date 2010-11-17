@@ -1,4 +1,4 @@
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #include "adordd.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )

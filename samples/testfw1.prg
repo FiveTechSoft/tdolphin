@@ -2,7 +2,7 @@
  * $Id: 11-Jul-10 9:43:51 AM testfw1.PRG Z dgarciagil $
  */
 
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #include "tdolphin.ch"
 #include "fivewin.ch"
 #include "ribbon.ch"

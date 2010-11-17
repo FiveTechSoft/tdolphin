@@ -2,7 +2,7 @@
  * $Id: 20-Jul-10 3:30:59 PM testupd.PRG Z dgarciagil $
  */
 
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #include "tdolphin.ch"
 
 

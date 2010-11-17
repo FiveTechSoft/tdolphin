@@ -63,9 +63,13 @@
 
 
 
-#ifdef __HARBOUR__
+#ifndef __XHARBOUR__ //(__HARBOUR__)
 #define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
-#endif //__HARBOUR__
+#else
+#if HB_PCODE_VER < 10
+#define HB_FHANDLE FHANDLE
+#endif
+#endif //! __XHARBOUR__
 
 const char * SQL2ClipType( long lType, BOOL bLogical );
 
@@ -126,7 +130,8 @@ static HB_GARBAGE_FUNC( MYSQL_RES_release )
 }
 
 //------------------------------------------------//
-#ifndef __XHARBOUR__    
+#ifndef __XHARBOUR__ 
+#if HB_PCODE_VER > 2  
 static const HB_GC_FUNCS s_gcMYSQLFuncs =
 {
    MYSQL_release,
@@ -138,7 +143,7 @@ static const HB_GC_FUNCS s_gcMYSQL_RESFuncs =
    MYSQL_RES_release,
    hb_gcDummyMark
 };
-
+#endif
 #endif //__XHARBOUR__
 
 //------------------------------------------------//
@@ -147,8 +152,12 @@ static void hb_MYSQL_ret( MYSQL * p )
 {
    if( p )
    {
-#ifndef __XHARBOUR__    
+#ifndef __XHARBOUR__
+#if HB_PCODE_VER > 2
       void ** ph = ( void ** ) hb_gcAllocate( sizeof( MYSQL * ), &s_gcMYSQLFuncs );
+#else
+      void ** ph = ( void ** ) hb_gcAllocate( sizeof( MYSQL * ), MYSQL_release );
+#endif      
 #else
       void ** ph = ( void ** ) hb_gcAlloc( sizeof( MYSQL * ), MYSQL_release );
 #endif //__XHARBOUR__
@@ -168,7 +177,11 @@ static void hb_MYSQL_RES_ret( MYSQL_RES * p )
    if( p )
    {
 #ifndef __XHARBOUR__
+#if HB_PCODE_VER > 2  
       void ** ph = ( void ** ) hb_gcAllocate( sizeof( MYSQL_RES * ), &s_gcMYSQL_RESFuncs );
+#else 
+      void ** ph = ( void ** ) hb_gcAllocate( sizeof( MYSQL_RES * ), MYSQL_RES_release );
+#endif
 #else      
       void ** ph = ( void ** ) hb_gcAlloc( sizeof( MYSQL_RES * ), MYSQL_RES_release );
 #endif
@@ -184,7 +197,11 @@ static void hb_MYSQL_RES_ret( MYSQL_RES * p )
 static MYSQL * hb_MYSQL_par( int iParam )
 {
 #ifndef __XHARBOUR__      
+#if HB_PCODE_VER > 2  
    void ** ph = ( void ** ) hb_parptrGC( &s_gcMYSQLFuncs, iParam );
+#else
+   void ** ph = ( void ** ) hb_parptrGC( MYSQL_release, iParam );
+#endif
 #else
    void ** ph = ( void ** ) hb_parptrGC( MYSQL_release, iParam );
 #endif //__XHARBOUR__
@@ -197,7 +214,11 @@ static MYSQL * hb_MYSQL_par( int iParam )
 static MYSQL_RES * hb_MYSQL_RES_par( int iParam )
 {
 #ifndef __XHARBOUR__  
+#if HB_PCODE_VER > 2  
    void ** ph = ( void ** ) hb_parptrGC( &s_gcMYSQL_RESFuncs, iParam );
+#else
+   void ** ph = ( void ** ) hb_parptrGC( MYSQL_RES_release, iParam );
+#endif
 #else 
    void ** ph = ( void ** ) hb_parptrGC( MYSQL_RES_release, iParam );
 #endif   
@@ -364,7 +385,11 @@ HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
 HB_FUNC( MYSQLCLOSE )//->none
 {
 #ifndef __XHARBOUR__  
+#if HB_PCODE_VER > 2  
    void ** ph = ( void ** ) hb_parptrGC( &s_gcMYSQLFuncs, 1 );
+#else 
+   void ** ph = ( void ** ) hb_parptrGC( MYSQL_release, 1 );
+#endif
 #else
    void ** ph = ( void ** ) hb_parptrGC( MYSQL_release, 1 );
 #endif //__XHARBOUR__   
@@ -978,7 +1003,7 @@ HB_FUNC( FILETOSQLBINARY )
    char *FromBuffer;
    if ( szFile && hb_parclen( 1 ) )
    {
-     fHandle    = hb_fsOpen( ( const char * ) szFile,2 );
+     fHandle    = ( HB_FHANDLE ) hb_fsOpen( ( const char * ) szFile,2 );
      if ( fHandle > 0 )
      {
        iSize      = hb_fsFSize( szFile, FALSE );
@@ -1029,7 +1054,7 @@ HB_FUNC( D_READFILE )
    
    if ( szFile && hb_parclen( 1 ) )
    {
-     fHandle    = hb_fsOpen( ( const char * ) szFile, HB_FA_ALL );
+     fHandle    = ( HB_FHANDLE ) hb_fsOpen( ( const char * ) szFile, HB_FA_ALL );
      if ( fHandle > 0 )
      {
        iSize      = hb_fsFSize( szFile, FALSE );

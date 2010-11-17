@@ -58,7 +58,7 @@
 #include "dolerr.ch"
 
 #ifndef __XHARBOUR__
-   #include "hbcompat.ch"
+//   #include "hbcompat.ch"
 #endif
 
 

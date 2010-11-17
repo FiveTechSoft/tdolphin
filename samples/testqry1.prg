@@ -4,7 +4,7 @@
  * This sample show ho get query datas
  */
 
-#include "hbcompat.ch" // is necesary form compatibility with xharbour
+//#include "hbcompat.ch" // is necesary form compatibility with xharbour
 #include "tdolphin.ch"
 
 

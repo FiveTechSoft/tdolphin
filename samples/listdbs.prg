@@ -1,5 +1,5 @@
 #include "tdolphin.ch"
-#include "hbcompat.ch"
+//#include "hbcompat.ch"
 #define CRLF Chr( 13 ) + Chr( 10 )
 
 PROCEDURE Main()
