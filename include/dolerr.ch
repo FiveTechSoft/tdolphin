@@ -95,6 +95,7 @@
 #define ERR_INVALIDHOSTSELECTION         9036
 #define ERR_CANNOTCREATEBKFILE           9037
 #define ERR_OPENBACKUPFILE               9038
+#define ERR_INSUFFICIENT_MEMORY          9039
 
 //MySql Errort
 
