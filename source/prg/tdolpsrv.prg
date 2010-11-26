@@ -637,13 +637,12 @@ METHOD CheckError( nError, cExtra ) CLASS TDolphinSrv
 
    LOCAL lInternal := .F.
 
-
-   IF ::hMysql == 0 
+   IF ! hb_IsPointer( ::hMysql )
       nError = ERR_INSUFFICIENT_MEMORY
    ELSE
       DEFAULT nError TO ::ErrorNo()
    ENDIF
-
+   
    IF nError == 0 
       IF ::nInternalError > 0 
          nError = ::nInternalError
