@@ -1,5 +1,5 @@
 /*
- * $Id: 10/13/2010 5:51:30 PM function.c Z dgarciagil $
+ * $Id: 12/13/2010 12:06:00 PM function.c Z dgarciagil $
  */
 
 /*
@@ -348,6 +348,12 @@ HB_FUNC( MYSERVERINFO )
 	hb_retc( mysql_get_server_info( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
 }
 
+//------------------------------------------------//
+// mysql_get_server_info(MYSQL *mysql)
+HB_FUNC( MYCLIENTINFO )
+{
+	hb_retc( mysql_get_client_info() );
+}
 
 //------------------------------------------------//
 // my_bool mysql_commit(MYSQL *mysql)

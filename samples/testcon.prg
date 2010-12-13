@@ -15,7 +15,8 @@ PROCEDURE Main()
       cText += "Connection OK" + CRLF
       cText += "Host: " + oServer:cHost +CRLF
       cText += "Database: " +oServer:cDBName + CRLF
-      cText += oServer:GetInfo()
+      cText += oServer:GetServerInfo() + CRLF 
+      cText += oServer:GetClientInfo()
 
       ? cText + CRLF
 

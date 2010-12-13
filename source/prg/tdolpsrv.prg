@@ -1,5 +1,5 @@
 /*
- * $Id: 10/13/2010 5:51:32 PM tdolpsrv.prg Z dgarciagil $
+ * $Id: 12/13/2010 12:06:00 PM tdolpsrv.prg Z dgarciagil $
  */
    
 /*
@@ -179,9 +179,14 @@ CLASS TDolphinSrv
    METHOD GetAutoIncrement( cTable )
                                 /*Retrieve next Auto increment value in specified table;
                                  in current database selected*/   
-   
-   METHOD GetInfo()           INLINE If( ::hMysql != NIL, MyServerInfo( ::hMysql ), "" ) 
+
+   METHOD GetServerInfo()       INLINE If( ::hMysql != NIL, MyServerInfo( ::hMysql ), "" ) 
                                 /*Returns a string that represents the server version number.*/
+
+   
+   METHOD GetClientInfo()       INLINE If( ::hMysql != NIL, MyClientInfo(), "" ) 
+                                /*Return a string that represents the MySQL client library version.*/
+
    
    METHOD GetPrivileges()
    
