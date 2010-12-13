@@ -15,14 +15,11 @@ PROCEDURE Main()
       cText += "Connection OK" + CRLF
       cText += "Host: " + oServer:cHost +CRLF
       cText += "Database: " +oServer:cDBName + CRLF
+      cText += oServer:GetInfo()
 
-      ? oServer:Query( "select * from test")
-      ? oServer:query( "select get_lock('2',180 )" )
-      ? oServer:query( "select release_lock('2')" )
-      ? cText 
+      ? cText + CRLF
 
    ENDIF
-   inkey(180)
 
    oServer:End()
 

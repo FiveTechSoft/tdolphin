@@ -341,6 +341,12 @@ HB_FUNC( MYSEEK )
    hb_retnl( ( long ) uiOk  );
 }
 
+//------------------------------------------------//
+// mysql_get_server_info(MYSQL *mysql)
+HB_FUNC( MYSERVERINFO )
+{
+	hb_retc( mysql_get_server_info( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+}
 
 
 //------------------------------------------------//

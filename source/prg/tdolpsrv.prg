@@ -180,6 +180,9 @@ CLASS TDolphinSrv
                                 /*Retrieve next Auto increment value in specified table;
                                  in current database selected*/   
    
+   METHOD GetInfo()           INLINE If( ::hMysql != NIL, MyServerInfo( ::hMysql ), "" ) 
+                                /*Returns a string that represents the server version number.*/
+   
    METHOD GetPrivileges()
    
    METHOD GetQueryId()   
