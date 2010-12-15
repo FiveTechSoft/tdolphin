@@ -1398,10 +1398,10 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
             ::SqlQuery( cQuery )
             
             IF ::bOnMultiQry != NIL
-#ifdef __HARBOUR__
-               nIdx = cQuery:__EnumIndex() 
-#else                      
+#ifdef __XHARBOUR__             
                nIdx = HB_EnumIndex()
+#else 
+               nIdx = cQuery:__EnumIndex()
 #endif 
                Eval( ::bOnMultiQry, nIdx, nTotal )
             
