@@ -79,7 +79,8 @@ CLASS TDolphinQry
         bEof,;        //codeblock to evaluate if the value is the last row
         bOnFillArray,;//codeblock to evaluate while is filling array
         bOnChangePage,; //codeblock to evaluate when paginmation is activated and change page
-        bOnLoadQuery  //codeblock to evaluate before load new Query
+        bOnLoadQuery,;  //codeblock to evaluate before load new Query
+        bOnNewFilter   //codeblock to evaluate before set new query, should return .t./.f. to call BuildQuery
    
    DATA cQuery,;        // copy of query that generated this object
         cWhere,;        // copy of WHERE command
@@ -98,6 +99,7 @@ CLASS TDolphinQry
    DATA lEof                   // End of Query, compatibility with dbf*/
    DATA lAppend
    DATA lPagination
+   DATA lInverted              // Seek in inverted order
 
    DATA nFCount                // number of fields in the query
    DATA nRecCount              // number of rows in the current query
@@ -284,6 +286,7 @@ METHOD New( cQuery, uServer ) CLASS TDolphinQry
    ::aOldRow       = {}
    
    ::lPagination   = .F.
+   ::lInverted     = .F.
    
 #ifdef USE_HASH     
    ::hRow      = Hash()
@@ -1327,15 +1330,15 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
    LOCAL nNum
    LOCAL nSeek
    
-   DEFAULT lSoft TO .F.
-   DEFAULT lRefresh TO .T.
+   DEFAULT lSoft     TO .F.
+   DEFAULT lRefresh  TO .T.
 
    IF ::nRecCount == 0 
       RETURN 0
    ENDIF
 
    nNum := ::FieldToNum( cnField )
-   
+
    IF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "N"
       uSeek = If( ValType( uSeek ) != "N", Val( uSeek ),uSeek )
    ELSEIF ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ] == "D"
@@ -1343,12 +1346,14 @@ METHOD Seek( uSeek, cnField, nStart, nEnd, lSoft, lRefresh ) CLASS TDolphinQry
       RETURN 0
    ENDIF
 
-   nSeek = MySeek2( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft )
+   nSeek = MySeek2( ::hResult, nNum, ClipValue2SQL( uSeek, ::aStructure[ nNum ][ MYSQL_FS_CLIP_TYPE ], .F. ), nStart, nEnd, lSoft, ::lInverted )
 
    IF nSeek > 0 
       IF lRefresh
          ::GetRow( nSeek )
       ENDIF
+   ELSE 
+      nSeek = 0
    ENDIF
 
 RETURN nSeek 
@@ -1381,6 +1386,7 @@ RETURN NIL
 
 METHOD SetNewFilter( nType, cFilter, lRefresh ) CLASS TDolphinQry 
    LOCAL cOldFilter
+   LOCAL l := .T.
 
    DEFAULT lRefresh TO .T.
    
@@ -1412,8 +1418,22 @@ METHOD SetNewFilter( nType, cFilter, lRefresh ) CLASS TDolphinQry
          EXIT
    ENDSWITCH
 
-   ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit )
- 
+   if ::bOnNewFilter != NIL
+      // if you want change query, do it here, 
+      // return .F. to skip BuildQuery and call BuildDatas()
+      // return .T. to call BuildQuery()
+      // isn't recommended return .T. with Sub-Select
+      l = Eval( ::bOnNewFilter, Self, nType )
+      // Convert automatically to logical value 
+      l = ValType( l ) == "L" .and. l
+   endif 
+   if l 
+      ::cQuery := ::BuildQuery( ::aColumns, ::aTables, ::cWhere, ::cGroup, ::cHaving, ::cOrder, ::cLimit )
+   else 
+      ::BuildDatas( ::cQuery )
+   endif 
+   
+   
    IF lRefresh 
       ::LoadQuery( .F. )
    ENDIF

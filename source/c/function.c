@@ -76,23 +76,37 @@ const char * SQL2ClipType( long lType, BOOL bLogical );
 static PHB_SYMB symClip2MySql = NULL;
 static char * szLang;
 
-//char * LToStr( long w )
-//{
-//   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
-//   sprintf( dbl, "%f", ( double ) w );
-//   * strchr( dbl, '.' ) = 0;
-//   
-//   return ( char * ) dbl;
-//}  
-//
-//LPSTR DToStr( double w )
-//{
-//   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
-//   sprintf( dbl, "%f", w );
-// //  * strchr( dbl, '.' ) = 0;
-//   
-//   return ( char * ) dbl;
-//} 
+
+/*
+LPSTR LToStr( double w )
+{
+   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+   sprintf( dbl, "%f", ( double ) w );
+   * strchr( dbl, '.' ) = 0;
+   
+   return ( char * ) dbl;
+} */
+ 
+
+LPSTR DToStr( double w )
+{
+   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+   sprintf( dbl, "%f", w );
+   * strchr( dbl, '.' ) = 0;
+   
+   return ( char * ) dbl;
+} 
+
+LPSTR IToStr( double w )
+{
+   static char dbl[ HB_MAX_DOUBLE_LENGTH ];
+   itoa (w,dbl,10);
+   return ( char * ) dbl;
+} 
+void msg( int w, char * t )
+{
+   MessageBox( 0, IToStr( w ), t, 0 );	
+}
 
 //------------------------------------------------//
 
@@ -1175,7 +1189,7 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
 {
    MYSQL_ROW row;
    unsigned long * pulFieldLengths;
-   unsigned int uii=0;
+   unsigned int uii=-1;
    char * szSource;
    int iLen = strlen( cSearch );
    char * ctempSearch = ( char * ) hb_xgrab( sizeof( char * ) * iLen );
@@ -1204,11 +1218,21 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
       setlocale( LC_COLLATE, szLang );
       
       uii = strcoll( ( const char * ) szSource, ctempSearch );         
-      hb_xfree( szSource );
-      hb_xfree( ctempSearch );
+      hb_xfree( szSource );      
 //      uii = hb_stricmp( ( const char * ) szSource, cSearch );//, ( long ) pulFieldLengths[ uiField ] );
    }
+   hb_xfree( ctempSearch );
    return uii;
+}
+
+static void ChkInverted( ULONG * uStar, ULONG * uEnd, ULONG uValue, BOOL bInvert ) 
+{
+	if( bInvert ){
+		*uStar = uValue;
+	}
+  else {
+  	*uEnd = uValue;
+  }	
 }
 
 //------------------------------------------------//
@@ -1217,39 +1241,48 @@ HB_FUNC( MYSEEK2 )
 {
    MYSQL_RES * result = ( MYSQL_RES * ) hb_MYSQL_RES_par( 1 );
    unsigned int uii, uii2;
-   int uiStart = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) - 1 : 0 ;
+   int uiStart;
    int uiStart2;
    int uiEnd, uiOk = -1;
    unsigned int uiField = hb_parni( 2 ) - 1;
    char * cSearch = ( char *) hb_parc( 3 );
-   BOOL bSoft = hb_parl( 6 );
+   BOOL bSoft     = hb_parl( 6 );
+   BOOL bInverted = hb_pcount() > 6 ? hb_parl( 7 ) : FALSE;
    int iMid;
    int iLastFound;
+   char * l;
+   
+   ChkInverted( &uiEnd, &uiStart, ( ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) - 1 : 0 ), bInverted );
    
    if (result > 0)
    {
       if( ! ISNUM( 5 ) )
-         uiEnd = mysql_num_rows( result );
+      	ChkInverted( &uiStart, &uiEnd, mysql_num_rows( result ), bInverted );
       else 
-      	 uiEnd = hb_parni( 5 ); 
+        ChkInverted( &uiStart, &uiEnd, hb_parni( 5 ), bInverted );
+
+
       //we need check first record
       uii = InternalSeek( result, 0, uiField, bSoft, cSearch );
       if( uii == 0 ) 
          uiOk = 0;
-         
+      
       iMid = ( uiEnd + uiStart ) / 2;
-      while( uiStart < iMid && uiOk < 0 )
+      
+      while( ( bInverted ? uiStart > iMid : uiStart < iMid ) && uiOk < 0 )
       {
          uii = InternalSeek( result, iMid, uiField, bSoft, cSearch );
 
-         if( uii == -1 )
-            uiStart = iMid;
-         else if( uii == 1 )
-            uiEnd = iMid; 
+         if( uii == ( bInverted ? 1 : -1 ) )
+         	  ChkInverted( &uiEnd, &uiStart, iMid, bInverted );
+         else if( uii == ( bInverted ? -1 : 1 ) )
+         	  ChkInverted( &uiStart, &uiEnd, iMid, bInverted );
+//            uiEnd = iMid; 
          else 
          {
              iLastFound = iMid;
-             uiStart2 = uiStart2 = iLastFound - 1;
+             uiStart2 = iLastFound - 1;
+
              while( iLastFound > uiStart2 )
              {
                 uii2 = InternalSeek( result, uiStart2, uiField, bSoft, cSearch );
