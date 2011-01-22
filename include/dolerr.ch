@@ -96,6 +96,7 @@
 #define ERR_CANNOTCREATEBKFILE           9037
 #define ERR_OPENBACKUPFILE               9038
 #define ERR_INSUFFICIENT_MEMORY          9039
+#define ERR_TABLENOEXIST                 9040
 
 //MySql Errort
 

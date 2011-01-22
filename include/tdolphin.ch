@@ -182,7 +182,9 @@
 #xtranslate HSET([<x,...>])             => hb_HSET(<x>)
 #xtranslate HSETCASEMATCH([<x,...>])    => hb_HSETCASEMATCH(<x>)
 #xtranslate HCLONE([<x,...>])           => hb_HCLONE(<x>)
- 
+#xtranslate HGETKEYS([<x,...>])         => hb_HKEYS(<x>) 
+
+
 //#include "hbcompat.ch"
 #ifndef RGB
 #define RGB( nR,nG,nB )  ( nR + ( nG * 256 ) + ( nB * 256 * 256 ) )

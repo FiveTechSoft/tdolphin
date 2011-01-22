@@ -201,6 +201,8 @@ CLASS TDolphinSrv
                                /*Retrieve total row avalaible in  specified query;
                                 in current database selected*/    
    
+   METHOD hInsert( ctable, hValues )
+   
    METHOD Insert( cTable, aColumns, aValues )  
                               /*inserts new rows into an existing table.*/
 
@@ -214,12 +216,12 @@ CLASS TDolphinSrv
    
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
-                                 wild may contain the wildcard characters “%” or “_”, 
+                                 wild may contain the wildcard characters ï¿½%ï¿½ or ï¿½_ï¿½, 
                                  or may be a "" to match all databases.*/
    
    METHOD ListTables( cWild ) /* Returns a array set consisting of tables names in current satabase 
                                  that match the simple regular expression specified by the wild parameter. 
-                                 wild may contain the wildcard characters “%” or “_”, 
+                                 wild may contain the wildcard characters ï¿½%ï¿½ or ï¿½_ï¿½, 
                                  or may be a "" to match all tables.*/
                                  
    METHOD MultiQuery( aQuery, lTransaction )
@@ -256,17 +258,23 @@ CLASS TDolphinSrv
    
    METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
-                              you should not add a terminating semicolon (“;”) or \g to the statement. 
+                              you should not add a terminating semicolon (ï¿½;ï¿½) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
  
    METHOD TableExist( cTable )      INLINE If( ! Empty( cTable ), Len( ::ListTables( D_LowerCase( cTable ) ) ) > 0, .F. )
                               /* verify is table exist, return logical value*/ 
+
+   METHOD TableInitValues( cTable )
    
    METHOD TableStructure( cTable )  
    
+   METHOD hUpdate( cTable, hValues, cWhere ) 
+                             /*update specific rows into an existing table from a hash, ;
+                               the index of hash shold be field name.*/
+                             
    METHOD Update( cTable, aColumns, aValues, cWhere )
-                             /*inserts new rows into an existing table.*/
+                             /*update specific row into an existing table.*/
                                  
 ENDCLASS
 
@@ -1242,6 +1250,24 @@ RETURN nTotal
 
 //----------------------------------------------------//
 
+METHOD hInsert( cTable, hValues ) CLASS TDolphinSrv
+
+   local lRet := .F. 
+   local aValues := {}
+   local aColumns := HGetKeys( hValues )
+   local n
+   
+   for n = 1 to Len( aColumns )
+      AAdd( aValues, hValues[ aColumns[ n ] ] )
+   next 
+   
+   lRet := ::Insert( cTable, aColumns, aValues )
+
+
+RETURN lRet
+
+//----------------------------------------------------//
+
 METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
 
    LOCAL cExecute
@@ -1666,6 +1692,96 @@ RETURN nRet == 0
 
 //----------------------------------------------------//
 
+METHOD TableInitValues( cTable ) CLASS TDolphinSrv
+
+
+   local aStructure
+   local hRow
+   local uItem
+   local uValue, cType, nPad
+   
+#ifndef NOINTERNAL
+   IF ! ::TableExist( cTable )
+      ::oServer:nInternalError = ERR_TABLENOEXIST
+      ::oServer:CheckError()
+      RETURN NIL 
+   ENDIF
+#endif 
+
+   aStructure = ::TableStructure( cTable )
+   
+   hRow = Hash()
+   
+   FOR EACH uItem IN aStructure
+
+      cType := uItem[ MYSQL_FS_CLIP_TYPE ]
+      SWITCH cType
+      
+      CASE "M"
+         // we can not use PadR in  memo field
+         IF uItem[ MYSQL_FS_DEF ] != NIL
+            uValue = uItem[ MYSQL_FS_DEF ]
+         ELSE 
+            uValue = ""
+         ENDIF 
+         EXIT         
+      CASE "C"
+         IF D_SetPadRight()
+            nPad = Min( If( uItem[ MYSQL_FS_MAXLEN ] > uItem[ MYSQL_FS_LENGTH ],;
+                      uItem[ MYSQL_FS_MAXLEN ], uItem[ MYSQL_FS_LENGTH] ), MAX_BLOCKSIZE )
+         ELSE 
+            nPad = 0 
+         ENDIF
+         IF uItem[ MYSQL_FS_DEF ] != NIL
+            uValue = PadR( uItem[ MYSQL_FS_DEF ], Max( Len( uItem[ MYSQL_FS_DEF ] ), nPad ) )
+         ELSE 
+            uValue = Space( nPad )
+         ENDIF 
+         EXIT
+
+      CASE "N"
+      CASE "I"
+         IF uItem[ MYSQL_FS_DEF ] != NIL
+            uValue = Val( uItem[ MYSQL_FS_DEF ] )
+         ELSE 
+            uValue = 0
+         ENDIF 
+         EXIT
+
+      CASE "L"
+         IF uItem[ MYSQL_FS_DEF ] != NIL
+            uValue = uItem[ MYSQL_FS_DEF ] == "1"
+         ELSE 
+            uValue = .F.
+         ENDIF 
+         
+         EXIT
+
+      CASE "D"
+         IF uItem[ MYSQL_FS_DEF ] != NIL
+            uValue = SqlDate2Clip( uItem[ MYSQL_FS_DEF ] )
+         ELSE 
+            uValue = CToD("")
+         ENDIF 
+      
+         EXIT
+
+#ifdef __XHARBOUR__
+      DEFAULT
+#else 
+      OTHERWISE
+#endif
+         uValue := nil
+      END
+      
+      HSet( hRow, Lower( uItem[ MYSQL_FS_NAME ] ) , uValue )
+
+   NEXT
+
+return hRow
+
+//----------------------------------------------------//
+
 METHOD TableStructure( cTable )  CLASS TDolphinSrv
 
    LOCAL aStruct := {}
@@ -1688,6 +1804,24 @@ METHOD TableStructure( cTable )  CLASS TDolphinSrv
    
 RETURN aStruct
    
+//----------------------------------------------------//   
+
+METHOD hUpdate( cTable, hValues, cWhere ) CLASS TDolphinSrv
+
+   local lRet := .F. 
+   local aValues := {}
+   local aColumns := HGetKeys( hValues )
+   local n
+   
+   for n = 1 to Len( aColumns )
+      AAdd( aValues, hValues[ aColumns[ n ] ] )
+   next 
+   
+   lRet := ::Update( cTable, aColumns, aValues, cWhere )
+
+
+RETURN lRet
+
 //----------------------------------------------------//   
    
 METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv

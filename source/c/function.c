@@ -85,7 +85,7 @@ LPSTR LToStr( double w )
    * strchr( dbl, '.' ) = 0;
    
    return ( char * ) dbl;
-} */
+} 
  
 
 LPSTR DToStr( double w )
@@ -97,16 +97,20 @@ LPSTR DToStr( double w )
    return ( char * ) dbl;
 } 
 
+
 LPSTR IToStr( double w )
 {
    static char dbl[ HB_MAX_DOUBLE_LENGTH ];
    itoa (w,dbl,10);
    return ( char * ) dbl;
 } 
+
+
 void msg( int w, char * t )
 {
    MessageBox( 0, IToStr( w ), t, 0 );	
 }
+*/
 
 //------------------------------------------------//
 
@@ -1225,7 +1229,7 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
    return uii;
 }
 
-static void ChkInverted( ULONG * uStar, ULONG * uEnd, ULONG uValue, BOOL bInvert ) 
+static void ChkInverted( int * uStar, int * uEnd, ULONG uValue, BOOL bInvert ) 
 {
 	if( bInvert ){
 		*uStar = uValue;
