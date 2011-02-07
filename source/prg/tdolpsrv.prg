@@ -49,6 +49,7 @@
  * If you do not wish that, delete this exception notice.
  *
  */
+// test
 
 #include "hbclass.ch"
 #include "common.ch"
@@ -58,9 +59,12 @@
 #include "fileio.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )
+#define DEBUG
+
 
 static aHost := {}
 static oServerDefault := NIL
+
 
 CLASS TDolphinSrv
 
