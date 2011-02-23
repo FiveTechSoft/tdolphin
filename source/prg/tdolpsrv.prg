@@ -59,7 +59,7 @@
 #include "fileio.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )
-#define DEBUG
+//#define DEBUG
 
 
 static aHost := {}
@@ -423,6 +423,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
    LOCAL nRecno := 0
    LOCAL nPage  := 0
    LOCAL nError := 0
+   LOCAL uField, cType
 
    DEFAULT lOverwrite TO .F.
    DEFAULT lDrop TO .F.
@@ -572,20 +573,21 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          oQry := ::Query( cQry )
 
          WHILE !oQry:eof() .AND. ! lCancel
-         
+            uField = oQry:FieldGet( nCol )
+            cType = oQry:FieldType( nCol )
             cText    += "("
             FOR nCol := 1 TO oQry:FCount()
-               IF oQry:FieldType( nCol ) == "D"
+               IF cType == "D"
                   cText += "'"
-                  cText += dtos(oQry:FieldGet( nCol ))
+                  cText += If( Empty( uField ), '0000-00-00', dtos( uField ) )
                   cText += "',"
-               ELSEIF oQry:FieldType( nCol ) == "N"
-                  cText += AllTrim( Str( oQry:FieldGet( nCol ) ) ) + ","
-               ELSEIF oQry:FieldType( nCol ) == "L"
-                  cText += If( oQry:FieldGet( nCol ), "1", "0" ) + ","
+               ELSEIF cType == "N"
+                  cText += AllTrim( Str( uField ) ) + ","
+               ELSEIF cType == "L"
+                  cText += If( uField, "1", "0" ) + ","
                ELSE
                   cText += "'"
-                  cText += MySqlEscape( D_LowerCase( oQry:FieldGet( nCol ) ), ::hMysql )
+                  cText += MySqlEscape( uField, ::hMysql )
                   cText += "',"
                ENDIF
             NEXT
