@@ -157,9 +157,9 @@ endif
 # PRG FLAGS 
 # --------------------------------------------------------
 ifeq ($(SAMPLE),)
-	PRG_FLAGS=-D$(USER_DEFINE) -D$(DEBUG) -q0 /N /W /w /es2 /O$(DOLPHIN_OBJ)$(SEPARATOR) /I$(DOLPHIN_INC);$(PRG_COMP_INC_PATH);$(USER_INCLUDE)
+	PRG_FLAGS=-D$(USER_DEFINE) -D__WIN__ -D$(DEBUG) -q0 /N /W /w /es2 /O$(DOLPHIN_OBJ)$(SEPARATOR) /I$(DOLPHIN_INC);$(PRG_COMP_INC_PATH);$(USER_INCLUDE)
 else
-	PRG_FLAGS=-D$(USER_DEFINE) -D$(DEBUG) -q0 /n /i$(DOLPHIN_INC);$(PRG_COMP_INC_PATH);$(USER_INCLUDE);$(GUI_INC)
+	PRG_FLAGS=-D$(USER_DEFINE) -D__WIN__ -D$(DEBUG) -q0 /n /i$(DOLPHIN_INC);$(PRG_COMP_INC_PATH);$(USER_INCLUDE);$(GUI_INC)
 endif
 # --------------------------------------------------------
 # LIBRARIES
@@ -191,7 +191,9 @@ ifeq ($(PRG_COMPILER),HARBOUR)
 		hbwin \
 		hbct \
 		hbtip \
-		hbzlib
+		hbzlib \
+		xhb \
+		hbcpage
 	endif
 else	
 	ifeq ($(C_COMPILER),MINGW32)
