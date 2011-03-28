@@ -74,6 +74,7 @@ CLASS TDolphinQry
         aRow,;        // info currect record selected
         aStructure    // type of each field, a copy is here a copy inside each row
    DATA aOldRow       // Value copy
+   DATA aRowOriginal  // Original data values (without changes, like return from mysql)
         
    DATA bBof,;        //codeblock to evaluate if the value is the first row
         bEof,;        //codeblock to evaluate if the value is the last row
@@ -160,6 +161,7 @@ CLASS TDolphinQry
    METHOD FieldToNum( cnField ) HIDDEN                                                            
    
    METHOD FillArray( bOnFillArray, aColumns ) /*Fill and return a array with all query information*/
+   METHOD FillHRow( lEmpty )                  /*Fill (or not) and return a Hash with current record selected*/
 
    METHOD FirstPage()   INLINE ::PrevPage( ::nCurrentPage - 1 )
                                 /*Go to first page in pagination*/
@@ -534,17 +536,17 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
 //   ::Cargo:cTitle = Time() + " " + Str( ::xLock )
 
 #ifdef USE_HASH
-      IF HB_IsNumeric( cnField )
-         cFieldName = "_" + ::FieldName( cnField )
-         nNum = cnField
+      IF HB_IsNumeric( cnField )         
+         uValue = ::aRowOriginal[ cnField ]
+         nNum   = cnField
       ELSE 
          nNum := ::FieldToNum( cnField )   
          cFieldName := "_" + D_LowerCase( cnField )
-      ENDIF
-      IF hGetPos( ::hRow, cFieldName ) > 0
-         uValue = ::hRow[ cFieldName ] 
-      ELSE
-         lError = .T.
+         IF hGetPos( ::hRow, cFieldName ) > 0
+            uValue = ::hRow[ cFieldName ] 
+         ELSE
+            lError = .T.
+         ENDIF
       ENDIF
 #else      
       IF nNum > 0
@@ -748,6 +750,20 @@ RETURN aTable
 
 //----------------------------------------------------//
 
+METHOD FillHRow( lEmpty ) CLASS TDolphinQry
+   LOCAL uField
+   LOCAL hData := Hash() 
+   
+   DEFAULT lEmpty TO .F.
+
+   FOR EACH uField IN ::aStructure
+      HSet( hData, uField[ MYSQL_FS_NAME ], if( lEmpty, NIL, ::FieldGet( uField[ MYSQL_FS_NAME ] ) ) )
+   NEXT   
+
+RETURN hData
+
+//----------------------------------------------------//
+
 METHOD Find( aValues, aFields, nStart, nEnd, lRefresh, lSoft ) CLASS TDolphinQry
 
    LOCAL nNum
@@ -927,6 +943,7 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
       MySqlDataSeek( ::hResult, nRow - 1 )
 
       aRow    = MySqlFetchRow( ::hResult )
+      ::aRowOriginal = aRow
       
 #ifndef USE_HASH
       ::aRow    = Array( Len( aRow ) )
