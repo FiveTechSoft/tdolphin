@@ -379,9 +379,12 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
             IF Empty( ::cLimit )
                ::cLimit  := AllTrim( SubStr( cItem, 7 ) )
             ENDIF
-            IF Val(::cLimit) <= 1
-               ::cLimit := ""
+            IF ! ::lPagination
+               IF Val(::cLimit) <= 1
+                  ::cLimit := ""
+               ENDIF
             ENDIF
+
             EXIT 
 
          CASE 6 //"ORDER"
@@ -402,15 +405,22 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
             IF ! Empty( ::cOrder )
               ::cOrder  += " DESC"
             ENDIF 
+            IF ! ::lPagination
+               IF Val(::cLimit) <= 1
+                  ::cLimit := ""
+               ENDIF
+            ENDIF            
             EXIT
             
          CASE 9 //"ASC" 
             IF ! Empty( ::cOrder )
               ::cOrder  += " ASC"
             ENDIF
-            EXIT
-            
-
+            IF ! ::lPagination
+               IF Val(::cLimit) <= 1
+                  ::cLimit := ""
+               ENDIF
+            ENDIF            
             EXIT
       ENDSWITCH
    NEXT
