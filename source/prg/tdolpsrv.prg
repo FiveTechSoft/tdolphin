@@ -287,16 +287,17 @@ ENDCLASS
 METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError, cNameHost ) CLASS TDolphinSrv
 
    DEFAULT nPort TO 3306 
+   DEFAULT cDBName TO ""
 
-   ::cHost          = cHost
-   ::cUser          = cUser
-   ::cPassword      = cPassword
+   ::cHost          = AllTrim( cHost )
+   ::cUser          = AllTrim( cUser )
+   ::cPassword      = AllTrim( cPassword )
    ::nPort          = nPort
    ::nFlags         = nFlags
    ::lError         = .F.
    ::bOnError       = bOnError
    ::nInternalError = 0
-   ::cDBName        = cDBName
+   ::cDBName        = AllTRim( cDBName )
    ::aQueries       = {}
       
    ::lReConnect     = .T.
@@ -573,10 +574,10 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          oQry := ::Query( cQry )
 
          WHILE !oQry:eof() .AND. ! lCancel
-            uField = oQry:FieldGet( nCol )
-            cType = oQry:FieldType( nCol )
             cText    += "("
             FOR nCol := 1 TO oQry:FCount()
+               uField = oQry:FieldGet( nCol )
+               cType = oQry:FieldType( nCol )
                IF cType == "D"
                   cText += "'"
                   cText += If( Empty( uField ), '0000-00-00', dtos( uField ) )
@@ -1627,7 +1628,8 @@ METHOD SelectDB( cDBName ) CLASS TDolphinSrv
       RETURN .F.
    ENDIF
 #endif
-
+   cDBName = AllTRim( cDBName )
+   
    IF ( MysqlSelectDB( ::hMysql, cDBName ) ) != 0   // table not exist
       ::cDBName :=""
       ::lError  := .T.
