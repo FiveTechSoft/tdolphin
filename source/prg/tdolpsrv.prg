@@ -1065,10 +1065,12 @@ METHOD End() CLASS TDolphinSrv
       //MySqlClose( ::hMysql )/* NOTE: Deprecated */      
       ::hMysql = NIL
    ENDIF
-  
-   nHost = AScan( aHost, { | a | Upper( a[ 2 ] ) == Upper( ::cNameHost ) } ) 
-   ADel( aHost, nHost )
-   ASize( aHost, Len( aHost ) - 1 )
+   
+   IF ::hMysql != NIL
+      nHost = AScan( aHost, { | a | Upper( a[ 2 ] ) == Upper( ::cNameHost ) } ) 
+      ADel( aHost, nHost )
+      ASize( aHost, Len( aHost ) - 1 )
+   ENDIF
    
    
 RETURN NIL
