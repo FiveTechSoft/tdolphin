@@ -230,6 +230,9 @@ CLASS TDolphinSrv
                                  
    METHOD MultiQuery( aQuery, lTransaction )
    
+   METHOD NextResult() INLINE mysql_next_result( ::hMysql )
+                               /* Use only for MULTIPLE STATEMENT or stored PROCEDURE/FUNCTION */   
+   
    METHOD Ping()                  INLINE If( MySqlPing( ::hMysql ) > 0, ( ::CheckError(), .F.), .T. )
                               /* Checks whether the connection to the server is working. 
                                  If the connection has gone down and auto-reconnect is enabled an attempt 
@@ -259,6 +262,8 @@ CLASS TDolphinSrv
    METHOD SelectTable( aColumns, aTables, cWhere, cGroup, cHaving, cOrder, cLimit, lWithRoll )
    
    METHOD SetNameServer( cName )
+   
+   METHOD SetMultiStatement( lOnOf ) INLINE SetMultiStatement( ::hMysql, lOnOf )
    
    METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
@@ -1281,9 +1286,11 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n
+   LOCAL lMulti := .F.
    
    aColumns = CheckArray( aColumns )
-   aValues  = CheckArray( aValues )
+   
+  lMulti := ValType( aValues ) == 'A' .and. ValType( aValues[ 1 ] ) == 'A'      
 
 #ifndef NOINTERNAL
    IF Empty( aColumns ) .AND. Empty( aValues ) 
@@ -1298,14 +1305,21 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
       RETURN .F. 
    ENDIF 
    
-   IF Len( aColumns ) # Len( aValues )
+   IF lMulti    
+      n = Len( aValues[ 1 ] )
+   ELSE
+      n = Len( aValues )
+   ENDIF
+   
+   IF Len( aColumns ) # n
       ::nInternalError = ERR_NOMATCHCOLUMNSVALUES
       ::CheckError()
       RETURN .F. 
    ENDIF 
+   
 #endif 
 
-   cExecute = BuildInsert( cTable, aColumns, aValues )
+   cExecute = BuildInsert( cTable, aColumns, aValues, , lMulti )
    lRet = ::SqlQuery( cExecute )  
   
 RETURN lRet
@@ -2107,33 +2121,56 @@ RETURN cQuery
 
 //----------------------------------------------------//  
 
-FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue  )  
+FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue, lMulti  )  
 
    LOCAL cExecute
    LOCAL cValues  := ""
    LOCAL cColumns := ""
    LOCAL uValue
-   LOCAL n
+   LOCAL n, aRow, uData
    
    DEFAULT lForceValue TO .F.
+   DEFAULT lMulti TO .F.
    
-   FOR n = 1 TO Len( aColumns )
-      cColumns += aColumns[ n ] + ","
-      IF ValType( aValues[ n ] ) == "C" .AND. ! lForceValue
-         uValue = Val2Escape( aValues[ n ] ) 
-      ELSE 
-         uValue = aValues[ n ]
-      ENDIF
-      cValues += ClipValue2SQL( uValue ) + ","
-   NEXT 
-   
-   //Delete last coma 
-   cColumns = SubStr( cColumns, 1, Len( cColumns ) - 1 ) + ") VALUES ( "
-   cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + ")"
+   IF lMulti
+      FOR n = 1 TO Len( aColumns )
+         cColumns += aColumns[ n ] + ","
+      NEXT 
+      FOR EACH aRow IN aValues
+         cValues += "("
+         FOR EACH uData IN aRow
+            IF ValType( uData ) == "C" .AND. ! lForceValue
+               uValue = Val2Escape( uData ) 
+            ELSE 
+               uValue = uData
+            ENDIF
+            cValues += ClipValue2SQL( uData ) + ","
+         NEXT
+         cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + "),"
+      NEXT
+      //Delete last coma 
+      cColumns = SubStr( cColumns, 1, Len( cColumns ) - 1 ) + ") VALUES"
+      cValues  = SubStr( cValues, 1, Len( cValues ) - 1 )     
+   ELSE   
+      FOR n = 1 TO Len( aColumns )
+         cColumns += aColumns[ n ] + ","
+         IF ValType( aValues[ n ] ) == "C" .AND. ! lForceValue
+            uValue = Val2Escape( aValues[ n ] ) 
+         ELSE 
+            uValue = aValues[ n ]
+         ENDIF
+         cValues += ClipValue2SQL( uValue ) + ","
+      NEXT 
+      //Delete last coma 
+      cColumns = SubStr( cColumns, 1, Len( cColumns ) - 1 ) + ") VALUES ( "
+      cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + ")"      
+   ENDIF
    
    cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues
 
 RETURN cExecute
+
+
 
 //----------------------------------------------------//  
 
@@ -2406,6 +2443,12 @@ FUNCTION _SelectTable( oServer, aColumns, aTables, cWhere,;
 RETURN oQuery                                    
 
 //----------------------------------------------------//  
+
+FUNCTION setMultiStatement( hMyslq, lOnOf )
+return _setMultiStatement( hMyslq, lOnOf )
+
+//----------------------------------------------------//  
+
 
 static function CheckArray( aArray )
 

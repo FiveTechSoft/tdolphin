@@ -399,6 +399,7 @@ HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
    unsigned int flags = ISNUM( 5 ) ? ( unsigned int ) hb_parni( 5 ) :  0;
    const char *szdb = ISCHAR( 6 ) ? ( const char * ) hb_parc( 6 ): 0;
    mysql = mysql_init( NULL );
+
    if ( ( mysql != NULL ) )
    {
    	  mysql_real_connect( mysql, szHost, szUser, szPass, szdb, port, NULL, flags );
@@ -409,6 +410,14 @@ HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
      hb_retptr( NULL );
    }
 }  
+
+
+//int mysql_next_result(MYSQL *mysql)
+HB_FUNC( MYSQL_NEXT_RESULT )
+{
+	 hb_retni( mysql_next_result( ( MYSQL * ) hb_MYSQL_par( 1 ) ) ) ;
+}
+
 
 //------------------------------------------------//
 //void mysql_close(MYSQL *mysql)
@@ -792,6 +801,13 @@ HB_FUNC( MYSQLSTORERESULT ) // -> MYSQL_RES
 }
 
 //------------------------------------------------//
+// MYSQL_RES *mysql_use_result(MYSQL *mysql)
+HB_FUNC( MYSQLUSERESULT ) // -> MYSQL_RES 
+{
+   hb_MYSQL_RES_ret( mysql_use_result( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+}
+
+//------------------------------------------------//
 // convert MySql field type to clipper field type
 const char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type 
 {
@@ -800,31 +816,20 @@ const char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type
    switch ( lType ){
 
       case FIELD_TYPE_DECIMAL     :
-         sType = "N";
-         break;
-
       case FIELD_TYPE_NEWDECIMAL  :
+      case FIELD_TYPE_SHORT       :
+      case FIELD_TYPE_LONG        :
+      case FIELD_TYPE_FLOAT       :
+      case FIELD_TYPE_DOUBLE      :
+      case FIELD_TYPE_LONGLONG    :
+      case FIELD_TYPE_INT24       :
+      case FIELD_TYPE_YEAR        :
          sType = "N";
          break;
 
+      case FIELD_TYPE_BIT         :      	
       case FIELD_TYPE_TINY        :
          sType = bNoLogical ? "L" : "N";
-         break;
-
-      case FIELD_TYPE_SHORT       :
-         sType = "N";
-         break;
-         
-      case FIELD_TYPE_LONG        :
-         sType = "N";
-         break;
-         
-      case FIELD_TYPE_FLOAT       :
-         sType = "N";
-         break;
-         
-      case FIELD_TYPE_DOUBLE      :
-         sType = "N";
          break;
          
       case FIELD_TYPE_NULL        :
@@ -835,53 +840,23 @@ const char * SQL2ClipType( long lType, BOOL bNoLogical ) //-> Clipper field type
          sType = "T";
          break;
          
-      case FIELD_TYPE_LONGLONG    :
-         sType = "N";
-         break;
-         
-      case FIELD_TYPE_INT24       :
-         sType = "N";
-         break;
-         
       case FIELD_TYPE_DATE        :
          sType = "D";
          break;
          
+      case FIELD_TYPE_STRING      :
+      case MYSQL_TYPE_VAR_STRING  :
       case FIELD_TYPE_TIME        :
-         sType = "C";
-         break;
-         
       case FIELD_TYPE_DATETIME    :
          sType = "C";
          break;
          
-      case FIELD_TYPE_YEAR        :
-         sType = "N";
-         break;
-         
       case FIELD_TYPE_MEDIUM_BLOB :
-         sType = "M";
-         break;
-      	
       case FIELD_TYPE_LONG_BLOB   :
-         sType = "M";
-         break;
-
       case FIELD_TYPE_BLOB        :
          sType = "M";
          break;
 
-      case FIELD_TYPE_STRING      :
-         sType = "C";
-         break;
-
-      case MYSQL_TYPE_VAR_STRING  :
-         sType = "C";
-         break;
-         
-      case FIELD_TYPE_BIT         :      	
-         sType = bNoLogical ? "L" : "N";
-         break;
       case FIELD_TYPE_NEWDATE     :
       case FIELD_TYPE_ENUM        :
       case FIELD_TYPE_SET         :
@@ -1517,6 +1492,20 @@ HB_FUNC( MYFIND )
    }
    uiOk = uiOk >=0 ? uiOk + 1 : 0;
    hb_retnl( ( long ) uiOk  );
+}
+
+HB_FUNC( _SETMULTISTATEMENT )
+{
+	MYSQL * hMysql =  ( MYSQL * )hb_MYSQL_par( 1 );
+	BOOL bStatement = hb_parnl( 2 );
+	BOOL bRet;
+	
+	if( bStatement )
+	   bRet = mysql_set_server_option( hMysql, MYSQL_OPTION_MULTI_STATEMENTS_ON );
+	else 
+		 bRet = mysql_set_server_option( hMysql, MYSQL_OPTION_MULTI_STATEMENTS_OFF );
+  
+  hb_retl( bRet );	
 }
 
 #ifdef __WIN__

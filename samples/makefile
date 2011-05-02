@@ -47,7 +47,8 @@ ifeq ($(BLD_TYPE),gtwin)
 			testset \
 			teststru \
 			testupd \
-			testusr		
+			testproc \
+			testms
 		else
 			PRG_FILES= testemb1
 		endif

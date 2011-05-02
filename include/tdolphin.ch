@@ -79,6 +79,9 @@
 #define  MYSQL_VAR_STRING_TYPE   253
 #define  MYSQL_STRING_TYPE       254
 
+#define CLIENT_MULTI_STATEMENTS (0x10000) /* Enable/disable multi-stmt support */
+#define CLIENT_MULTI_RESULTS    (0x20000) /* Enable/disable multi-results */
+
 #ifndef MAX_BLOCKSIZE
 #define MAX_BLOCKSIZE            65535
 #endif

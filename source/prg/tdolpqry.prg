@@ -194,7 +194,9 @@ CLASS TDolphinQry
    METHOD LastRec()    INLINE     ::nRecCount
                                /*returns the number of rows in the current query, compatibility with dbf*/
 
-   METHOD LoadQuery()          /*Load anf fill current query*/
+   METHOD LoadQuery()          /*Load and fill current query*/
+   METHOD LoadNextQuery( lBuildData ) 
+                               /*Load next result with multiple statement*/
    
    METHOD Locate( aValues, aFields, nStart, nEnd, lSoft, lRefresh )
                                
@@ -206,7 +208,6 @@ CLASS TDolphinQry
                                       If( nPage < ::nCurrentPage, ::PrevPage( ::nCurrentPage - nPage ), ) )
        
    METHOD NextPage( nSkip )    /* Go to next page avalaible with pagination active */
-   
    
    METHOD PrevPage( nSkip )    /* Go to previous page avalaible with pagination active */
                               
@@ -1018,6 +1019,73 @@ RETURN ::aRow( cnField ) == ::aOldRow( cnField )
 //----------------------------------------------------//
 
 
+METHOD LoadNextQuery() CLASS TDolphinQry
+
+   LOCAL oServer := ::oServer
+   LOCAL cQuery  := ::cQuery
+   LOCAL aField, nIdx, cCol
+   LOCAL lCaseSen := D_SetCaseSensitive()
+   LOCAL nNext
+
+   nNext = ::oServer:NextResult()
+
+   IF nNext == -1
+      RETURN 	NIL
+   ELSEIF nNext > 0 
+      ::oServer:CheckError()
+      RETURN NIL
+   ENDIF
+
+   IF ::bOnLoadQuery != NIL 
+      Eval( ::bOnLoadQuery, Self )
+   ENDIF
+   
+   IF ::hResult != NIL
+      ::hResult = NIL
+   ENDIF
+   
+   ::hResult := MySqlStoreResult( oServer:hMysql )
+   
+   IF ! ( ::hResult == NIL )
+      ::aStructure = MySqlResultStructure( ::hResult, lCaseSen, D_LogicalValue() ) 
+      ::nRecCount := MySqlNumRows( ::hResult )
+      ::nRecNo    = Max( 1, ::nRecNo )
+      ::nFCount   = Len( ::aStructure )
+   
+      IF ::nRecCount > 0
+         ::lEof      := .F.
+         ::lBof      := .T.
+      ELSE
+         ::lEof      := .T.
+         ::lBof      := .T.
+      ENDIF   
+
+#ifdef USE_HASH
+      //Build Hash
+      //Disable case sensitive
+      //all fieldname should be lower case
+      hSetCaseMatch( ::hRow    , .F. )
+      hSetCaseMatch( ::hOldRow , .F. )
+      //set hash
+      FOR each aField in ::aStructure
+         cCol = aField[ MYSQL_FS_NAME ]
+         ::SetData( cCol, NIL )
+      NEXT
+#endif /*USE_HASH*/
+      ::GetRow()
+      
+   ELSE
+      IF MySqlFieldCount( oServer:hMysql ) == 0
+         oServer:CheckError()
+      ENDIF    
+   ENDIF  
+   
+RETURN NIL 
+
+
+//----------------------------------------------------//
+
+
 METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
 
    LOCAL oServer := ::oServer
@@ -1047,6 +1115,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    ENDIF
    
    ::hResult := MySqlStoreResult( oServer:hMysql )
+//   ::hResult := MySqlUseResult( oServer:hMysql )
    
    IF ! ( ::hResult == NIL )
       ::aStructure = MySqlResultStructure( ::hResult, lCaseSen, D_LogicalValue() ) 
