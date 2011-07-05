@@ -887,6 +887,7 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    IF nLenStruct > 0
    
       FOR EACH aField IN aStruct
+         aField[ DBS_TYPE ]:= upper(aField[ DBS_TYPE ])
          SWITCH aField[ DBS_TYPE ]
          CASE "C"
             cQuery += aField[ DBS_NAME ] + " char(" + AllTrim( Str( aField[ DBS_LEN ] ) ) + ")" + ;

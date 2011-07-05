@@ -752,7 +752,11 @@ METHOD FillArray( bOnFillArray, aColumns ) CLASS TDolphinQry
          IF bOnFillArray != NIL 
             Eval( bOnFillArray, aRow, ++i )
          ENDIF
-         AAdd( aTable, aRow )
+         IF Len( aColumns ) == 1
+            AAdd( aTable, aRow[ 1 ] )
+         ELSE
+            AAdd( aTable, aRow )
+         ENDIF
          ::Skip()
       END 
    ENDIF
