@@ -219,9 +219,11 @@
                   [ DATABASE <cDBName> ];
                   [ ON ERROR <uOnError> ] ;
                   [ NAME <cName> ];
+                  [ DECRYPT <uDecrypt> ];
        => ;
           <oServer> := TDolphinSrv():New( <cHost>, <cUser>, <cPassword>, <nPort>, ;
-                                          <nFlags>, <cDBName>, [{| Self, nError, lInternal, cExtra | <uOnError> }], [ <cName> ] )
+                                          <nFlags>, <cDBName>, [{| Self, nError, lInternal, cExtra | <uOnError> }], ;
+                                          [ <cName> ], [{| cValue |<uDecrypt>}]  )
 
 
 //-------------------
@@ -232,9 +234,10 @@
                   [ GROUPS <groups,...> ];
                   [ ON ERROR <uOnError> ] ;
                   [ NAME <cName> ];
+                  [ DECRYPT <uDecrypt> ];
        => ;
           <oServer> := TDolphinSrv():Embedded( <cDBName>, \{<options>\}, \{<groups>\},;
-                          [{| Self, nError, lInternal, cExtra | <uOnError> }], [ <cName> ] )
+                          [{| Self, nError, lInternal, cExtra | <uOnError> }], [ <cName> ], [{|cValue|<uDecrypt>}] )
 
 //-------------------
 

@@ -392,17 +392,24 @@ HB_FUNC( MYSQLCOMMIT )
 HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
 {
    MYSQL * mysql;
-   const char *szHost = ( const char * ) hb_parc( 1 );
-   const char *szUser = ( const char * ) hb_parc( 2 );
-   const char *szPass = ( const char * ) hb_parc( 3 );
+//   const char *szHost = ( const char * ) hb_parc( 1 );
+//   const char *szUser = ( const char * ) hb_parc( 2 );
+//   const char *szPass = ( const char * ) hb_parc( 3 );
    unsigned int port  = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) :  MYSQL_PORT;
    unsigned int flags = ISNUM( 5 ) ? ( unsigned int ) hb_parni( 5 ) :  0;
-   const char *szdb = ISCHAR( 6 ) ? ( const char * ) hb_parc( 6 ): 0;
+//   const char *szdb = ISCHAR( 6 ) ? ( const char * ) hb_parc( 6 ): 0;
+   PHB_ITEM pcbDecrypt = hb_param( 7, HB_IT_BLOCK );	
+   	
    mysql = mysql_init( NULL );
-
+   
    if ( ( mysql != NULL ) )
    {
-   	  mysql_real_connect( mysql, szHost, szUser, szPass, szdb, port, NULL, flags );
+   	  mysql_real_connect( mysql, 
+   	                      hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 1, HB_IT_ANY ) ) ), 
+   	                      hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 2, HB_IT_ANY ) ) ), 
+   	                      hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 3, HB_IT_ANY ) ) ), 
+   	                      hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 6, HB_IT_ANY ) ) ),
+   	                      port, NULL, flags );
    	  hb_MYSQL_ret( mysql );
    }
    else
@@ -1562,3 +1569,5 @@ HB_FUNC( __CLOSECLIPBOARD )   // ()  --> lSuccess
    hb_retl( CloseClipboard() );
 }
 #endif //__WIN__
+
+

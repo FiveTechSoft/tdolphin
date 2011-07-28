@@ -71,6 +71,7 @@ CLASS TDolphinSrv
    CLASSDATA nQueryId
    CLASSDATA nServerId  INIT 1
 
+   DATA bDecrypt       /*codeblock to evaluate in connect process (C Level), to decrpty Host, User, Password and Database*/
    DATA bOnError       /*Custom manager error message
                          ( Self, nError, lInternal ) */
    DATA bOnBackUp      /*codeblock to evaluate in backup process*/
@@ -289,20 +290,24 @@ ENDCLASS
 
 //----------------------------------------------------//
 
-METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError, cNameHost ) CLASS TDolphinSrv
+METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError, cNameHost, bDecrypt ) CLASS TDolphinSrv
 
    DEFAULT nPort TO 3306 
    DEFAULT cDBName TO ""
+   
+   DEFAULT bDecrypt TO { | x | x }
 
-   ::cHost          = AllTrim( cHost )
-   ::cUser          = AllTrim( cUser )
-   ::cPassword      = AllTrim( cPassword )
+   ::bDecrypt = bDecrypt
+   
+   ::cHost          = cHost
+   ::cUser          = cUser
+   ::cPassword      = cPassword
    ::nPort          = nPort
    ::nFlags         = nFlags
    ::lError         = .F.
    ::bOnError       = bOnError
    ::nInternalError = 0
-   ::cDBName        = AllTRim( cDBName )
+   ::cDBName        = AllTrim( cDBName )
    ::aQueries       = {}
       
    ::lReConnect     = .T.
@@ -764,8 +769,9 @@ METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphin
    DEFAULT nFlags    TO ::nFlags
    DEFAULT cDBName   TO ::cDBName
    
+   
 
-RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName )
+RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, ::bDecrypt )
 
 //-----------------------------------------------------------
 

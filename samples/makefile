@@ -48,7 +48,8 @@ ifeq ($(BLD_TYPE),gtwin)
 			teststru \
 			testupd \
 			testproc \
-			testms
+			testms   \
+			testcon3
 		else
 			PRG_FILES= testemb1
 		endif
