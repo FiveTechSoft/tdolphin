@@ -130,7 +130,7 @@ CLASS TDolphinSrv
 
    METHOD Compact( cTable )
  
-   METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )	
+   METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )    
                               /*to establish a connection to a MySQL database engine running on server*/
 
    METHOD CommitTransaction()       INLINE MySqlCommit( ::hMySql ) == 0
@@ -219,12 +219,12 @@ CLASS TDolphinSrv
    
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
-                                 wild may contain the wildcard characters �%� or �_�, 
+                                 wild may contain the wildcard characters ï¿½%ï¿½ or ï¿½_ï¿½, 
                                  or may be a "" to match all databases.*/
    
    METHOD ListTables( cWild ) /* Returns a array set consisting of tables names in current satabase 
                                  that match the simple regular expression specified by the wild parameter. 
-                                 wild may contain the wildcard characters �%� or �_�, 
+                                 wild may contain the wildcard characters ï¿½%ï¿½ or ï¿½_ï¿½, 
                                  or may be a "" to match all tables.*/
                                  
    METHOD MultiQuery( aQuery, lTransaction )
@@ -238,7 +238,7 @@ CLASS TDolphinSrv
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
 
-   METHOD Query( cQuery )   INLINE 	TDolphinQry():New( cQuery, Self )
+   METHOD Query( cQuery )   INLINE      TDolphinQry():New( cQuery, Self )
    
    METHOD ReConnect()
 
@@ -266,7 +266,7 @@ CLASS TDolphinSrv
    
    METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
-                              you should not add a terminating semicolon (�;�) or \g to the statement. 
+                              you should not add a terminating semicolon (ï¿½;ï¿½) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
  
@@ -835,8 +835,8 @@ METHOD CreateTable( cTable, aStruct, cPrimaryKey, cUniqueKey, cAuto, cExtra, lIf
    LOCAL aField
    LOCAL cQuery   
    LOCAL bDefault := { | aRow | If( ! ValType( aRow[ DBS_DEFAULT ] ) == "U", ;
-   	                             " DEFAULT " + ClipValue2SQL( aRow[ DBS_DEFAULT ] ), ;
-   	                             "" ) }
+                                     " DEFAULT " + ClipValue2SQL( aRow[ DBS_DEFAULT ] ), ;
+                                     "" ) }
      
    LOCAL lAutoIncrement
    LOCAL lRet := .T.
@@ -2482,7 +2482,4 @@ PROCEDURE Dolphin_DefError( oServer, nError, lInternal, cExtra )
    
    Eval( ErrorBlock(), oError )   
 
-RETURN 
-
-
-
+RETURN
