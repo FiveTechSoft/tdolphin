@@ -49,8 +49,6 @@
  * If you do not wish that, delete this exception notice.
  *
  */
-// test
-
 #include "hbclass.ch"
 #include "common.ch"
 #include "dbstruct.ch"
