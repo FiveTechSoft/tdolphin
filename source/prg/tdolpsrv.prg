@@ -1,4 +1,4 @@
-/*
+﻿/*
  * $Id: 12/13/2010 12:06:00 PM tdolpsrv.prg Z dgarciagil $
  */
    
@@ -59,7 +59,7 @@
 #include "fileio.ch"
 
 #define CRLF Chr( 13 ) + Chr( 10 )
-//#define DEBUG
+#define DEBUG
 
 
 static aHost := {}
@@ -1449,7 +1449,7 @@ METHOD MultiQuery( aQueries, lTransaction, bOnMultiQry ) CLASS TDolphinSrv
       nTotal = Len( aQueries ) - 1
       FOR EACH cQuery IN aQueries
          cLast = cQuery
-         cQuery = StrTran( cQuery, CRLF, "" )
+         //cQuery = StrTran( cQuery, CRLF, "" )
          IF ! Empty( cQuery )
             ::SqlQuery( cQuery )
             
