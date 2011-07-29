@@ -400,29 +400,24 @@ METHOD BuildDatas( cQuery ) CLASS TDolphinQry
                ::aTables := ArrayFromSQLString( cTables )
             ENDIF
             EXIT
-            
-            
-         CASE 8//"DESC" 
-            IF ! Empty( ::cOrder )
-              ::cOrder  += " DESC"
-            ENDIF 
-            IF ! ::lPagination
-               IF Val(::cLimit) <= 1
-                  ::cLimit := ""
+
+         CASE 8//"DESC"    //  Gabri
+       
+           if ! ::lPagination
+              IF ! Empty( ::cOrder )
+                 ::cOrder  += " DESC"
                ENDIF
-            ENDIF            
+           Endif
+           EXIT
+
+         CASE 9 //"ASC"    //  Gabri
+            if ! ::lPagination
+               IF ! Empty( ::cOrder )
+                  ::cOrder  += " ASC"
+               ENDIF
+            Endif
             EXIT
             
-         CASE 9 //"ASC" 
-            IF ! Empty( ::cOrder )
-              ::cOrder  += " ASC"
-            ENDIF
-            IF ! ::lPagination
-               IF Val(::cLimit) <= 1
-                  ::cLimit := ""
-               ENDIF
-            ENDIF            
-            EXIT
       ENDSWITCH
    NEXT
 
