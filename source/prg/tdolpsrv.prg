@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    DATA cNameHost
    
-   DATA cBuild     INIT '22-Sep-10 9:27:25 PM'
+   DATA cBuild     INIT '29-Jul-11 9:00:25 AM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -219,12 +219,12 @@ CLASS TDolphinSrv
    
    METHOD ListDBs( cWild )    /* Returns a array set consisting of database names on the server 
                                  that match the simple regular expression specified by the wild parameter. 
-                                 wild may contain the wildcard characters ï¿½%ï¿½ or ï¿½_ï¿½, 
+                                 wild may contain the wildcard characters n++%n++ or n++_n++, 
                                  or may be a "" to match all databases.*/
    
    METHOD ListTables( cWild ) /* Returns a array set consisting of tables names in current satabase 
                                  that match the simple regular expression specified by the wild parameter. 
-                                 wild may contain the wildcard characters ï¿½%ï¿½ or ï¿½_ï¿½, 
+                                 wild may contain the wildcard characters n++%n++ or n++_n++, 
                                  or may be a "" to match all tables.*/
                                  
    METHOD MultiQuery( aQuery, lTransaction )
@@ -266,7 +266,7 @@ CLASS TDolphinSrv
    
    METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
-                              you should not add a terminating semicolon (ï¿½;ï¿½) or \g to the statement. 
+                              you should not add a terminating semicolon (n++;n++) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
                               the string can contain several statements separated by semicolons.*/
  
