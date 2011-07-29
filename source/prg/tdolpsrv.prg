@@ -1,4 +1,4 @@
-¿/*
+ï»¿/*
  * $Id: 12/13/2010 12:06:00 PM tdolpsrv.prg Z dgarciagil $
  */
    
