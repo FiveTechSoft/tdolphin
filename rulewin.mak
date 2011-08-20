@@ -182,7 +182,6 @@ ifeq ($(PRG_COMPILER),HARBOUR)
 		hbpcre \
 		$(GT_LIB) \
 		hblang \
-		hbnulrdd \
 		hbrdd \
 		hbmacro \
 		hbpp \
@@ -193,6 +192,10 @@ ifeq ($(PRG_COMPILER),HARBOUR)
 		hbtip \
 		hbzlib \
 		xhb \
+		rddcdx \
+		rddfpt \
+		rddntx \
+		hbusrrdd \
 		hbcpage
 	endif
 else	
@@ -215,9 +218,9 @@ endif
 # --------------------------------------------------------
 ifeq ($(C_COMPILER),BCC)
 	ifeq ($(SAMPLE),)
-		C_FLAGS=-c -D__WIN__ -D$(DEFX) -tWM -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -o$@ $<
+		C_FLAGS=-c -D__WIN__ -D$(DEFX) -DHB_LEGACY_TYPES_ON -tWM -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -o$@ $<
 	else
-		C_FLAGS=-c -D__WIN__ -D$(DEFX) -M -e$(SAMPLE).exe -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -o$@ $<
+		C_FLAGS=-c -D__WIN__ -D$(DEFX) -DHB_LEGACY_TYPES_ON -M -e$(SAMPLE).exe -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -o$@ $<
 	endif
 	
 	ifeq ($(LIBMYSQL),)
@@ -228,7 +231,7 @@ ifeq ($(C_COMPILER),BCC)
 		endif
 	endif	
 	
-	STD_LIBS = cw32 import32 
+	STD_LIBS = cw32 import32 psapi
 	
 	ifeq ($(BLD_TYPE),gtgui)
 		STD_OBJS=c0w32.obj
@@ -262,7 +265,7 @@ endif
 # MICROSOFT 32
 # --------------------------------------------------------
 ifeq ($(C_COMPILER),MSVC32)
-	C_FLAGS=-c -D__WIN__ -D$(DEFX) -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -nologo -Fo$@ $<
+	C_FLAGS=-c -D__WIN__ -D$(DEFX) -DHB_LEGACY_TYPES_ON -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -nologo -Fo$@ $<
 	
 	ifeq ($(LIBMYSQL),)
 		ifeq ($(EMBEDDED),no)
@@ -320,7 +323,7 @@ endif
 # --------------------------------------------------------
 
 ifeq ($(C_COMPILER),MSVC64)
-	C_FLAGS=-c -D__WIN__ -D$(DEFX) -TP -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -nologo -Fo$@ $<
+	C_FLAGS=-c -D__WIN__ -D$(DEFX) -DHB_LEGACY_TYPES_ON -TP -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -nologo -Fo$@ $<
 
 	ifeq ($(LIBMYSQL),)
 		LIBMYSQL = libmysql64.lib
@@ -364,7 +367,7 @@ endif
 
 ifeq ($(C_COMPILER),MINGW32)
 	$(LIB_EXT)=a
-	C_FLAGS=-c -D__WIN__ -D$(DEFX) -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -I$(C_COMP_INC_PATH) -o$@ $< 
+	C_FLAGS=-c -D__WIN__ -D$(DEFX) -DHB_LEGACY_TYPES_ON -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -I$(C_COMP_INC_PATH) -o$@ $< 
 
 	ifeq ($(LIBMYSQL),)
 		ifeq ($(EMBEDDED),no)

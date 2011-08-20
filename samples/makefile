@@ -8,7 +8,8 @@ ifeq ($(BLD_TYPE),gtgui)
 		testpag \
 		testsk2 \
 		testvar \
-		sped
+		sped \
+		testdbi
    _OUT = Graphic
 endif
 
@@ -49,7 +50,8 @@ ifeq ($(BLD_TYPE),gtwin)
 			testupd \
 			testproc \
 			testms   \
-			testcon3
+			testcon3 \
+			testdbi
 		else
 			PRG_FILES= testemb1
 		endif

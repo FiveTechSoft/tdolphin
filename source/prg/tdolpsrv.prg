@@ -1,6 +1,6 @@
-/* 
-  $Id: 12/13/2010 12:06:00 PM tdolpsrv.prg Z dgarciagil 
-*/
+﻿/*
+ * $Id: 20-Aug-11 5:48:13 AM tdolpsrv.prg Z dgarciagil $
+ */
 
 /*
  * TDOLPHIN PROJECT source code:
@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    DATA cNameHost
    
-   DATA cBuild     INIT '29-Jul-11 9:00:25 AM'
+   DATA cBuild     INIT '20-Ago-11 5:48:13 AM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -208,6 +208,10 @@ CLASS TDolphinSrv
    
    METHOD Insert( cTable, aColumns, aValues )  
                               /*inserts new rows into an existing table.*/
+                              
+   METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert ) 
+                              /*insert new rows into an existing table from DBF file,
+                                the table should be contain same fieldname that DBF */
 
    METHOD IsAutoIncrement( cField, cTable )
                               /* Verify is a field is Auto Increment*/
@@ -1326,6 +1330,98 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
 
    cExecute = BuildInsert( cTable, aColumns, aValues, , lMulti )
    lRet = ::SqlQuery( cExecute )  
+  
+RETURN lRet
+
+//----------------------------------------------------//
+
+METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert ) CLASS TDolphinSrv
+
+   LOCAL cExecute
+   LOCAL lRet, n := 1
+   LOCAL aInsert := {}
+   LOCAL aStructTable
+   LOCAL aItem
+   LOCAL cColumns := ""
+   LOCAL cValues  := ""
+   LOCAL uValue
+   LOCAL dbs, aDbs := {}
+   
+   DEFAULT nLimit TO 500
+
+#ifndef NOINTERNAL
+   
+   IF Empty( cTable ) 
+      ::nInternalError = ERR_EMPTYTABLE
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+   
+   IF Empty( cAlias ) 
+      ::nInternalError = ERR_EMPTYALIAS
+      ::CheckError()
+      RETURN .F. 
+   ENDIF 
+   
+
+#endif 
+   
+   dbs = ( cAlias )->( DBStruct() )
+   
+   FOR EACH aItem IN dbs 
+      AAdd( aDbs, aItem[ DBS_NAME ] )
+   NEXT
+   
+   DEFAULT aStruct TO aDbs
+
+   aStruct := CheckArray( aStruct )
+   
+   aStructTable = ::TableStructure( cTable )
+   
+   FOR EACH aItem IN aStruct
+      IF AScan( aStructTable, {| a | Upper( a[ DBS_NAME ] ) == Upper( aItem ) } ) == 0
+#ifndef NOINTERNAL
+         ::nInternalError = ERR_NOMATCHCOLUMNSALIAS
+         ::CheckError()
+         RETURN .F.      
+#endif 
+      ENDIF 
+//      AAdd( aColumns, aItem[ DBS_NAME ] )
+      cColumns += aItem  + ","
+   NEXT
+   
+   cColumns = SubStr( cColumns, 1, Len( cColumns ) - 1 ) + ") VALUES"
+   DO WHILE ! ( cAlias )->( eof() )
+      cValues += "("
+      FOR EACH aItem IN aStruct      
+         uValue = ( cAlias )->( FieldGet( FieldPos( aItem ) ) ) 
+         IF ValType( uValue ) == "C"
+            uValue = Val2Escape( uValue ) 
+         ENDIF
+         cValues += ClipValue2SQL( uValue ) + ","
+      NEXT
+      cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + "),"
+      ( cAlias )->( DBSkip() )
+      n++
+      IF n > nLimit
+         //Delete last coma       
+         if bOnInsert != NIL 
+            Eval( bOnInsert )   
+         endif
+         cValues  = SubStr( cValues, 1, Len( cValues ) - 1 )  
+         cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues   
+         lRet = ::SqlQuery( cExecute )        
+         n = 1
+         cValues = ""
+      ENDIF
+   ENDDO
+   
+   IF n <= nLimit .AND. n > 1
+      cValues  = SubStr( cValues, 1, Len( cValues ) - 1 )  
+      cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues     
+      lRet = ::SqlQuery( cExecute )  
+   ENDIF
   
 RETURN lRet
 

@@ -97,6 +97,8 @@
 #define ERR_OPENBACKUPFILE               9038
 #define ERR_INSUFFICIENT_MEMORY          9039
 #define ERR_TABLENOEXIST                 9040
+#define ERR_EMPTYALIAS                   9041
+#define ERR_NOMATCHCOLUMNSALIAS          9042
 
 //MySql Errort
 

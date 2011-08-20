@@ -130,7 +130,7 @@ CLASS TDolphinQry
    METHOD BuildQuery( aColumns, aTables, cWhere, cGroup, cHaving, ;
                       cOrder, cLimit, lWithRoll )   
                       
-   METHOD CheckError( nError )  INLINE ::oServer:CheckError( nError )
+   METHOD CheckError( nError, cExtra )  INLINE ::oServer:CheckError( nError, cExtra )
                                /*Compatibility with CheckError from TDolphinSrv*/
 
    METHOD Delete( lAll )       /*Delete current record active*/
@@ -508,7 +508,7 @@ METHOD Delete( lAll ) CLASS TDolphinQry
 #ifndef NOINTERNAL
    IF !::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDDELETE
-      ::oServer:CheckError()
+      ::CheckError()
       RETURN .F. 
    ENDIF
 #endif   
@@ -565,7 +565,7 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
 #ifndef NOINTERNAL
    IF lError
       ::oServer:nInternalError = ERR_INVALIDFIELDGET
-      ::oServer:CheckError()
+      ::CheckError( , hb_dumpvar( cnField ) )
       RETURN NIL
    ENDIF   
 #endif 
@@ -581,7 +581,7 @@ METHOD FieldName( nNum ) CLASS TDolphinQry
 #ifndef NOINTERNAL      
    ELSE 
       ::oServer:nInternalError = ERR_INVALIDFIELDNUM
-      ::oServer:CheckError()
+      ::CheckError( , hb_dumpvar( nNum ) )
 #endif      
    ENDIF
     
@@ -622,7 +622,7 @@ METHOD FieldPos( cFieldName ) CLASS TDolphinQry
 #ifndef NOINTERNAL
    IF nPos == 0 
       ::oServer:nInternalError = ERR_INVALIDFIELDNAME
-      ::oServer:CheckError()
+      ::CheckError( , hb_dumpvar( cFieldName ) )
    ENDIF
 #endif
 
@@ -689,7 +689,7 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
 #ifndef NOINTERNAL         
       ELSE 
          ::oServer:nInternalError = ERR_INVALIDFIELDTYPE
-         ::oServer:CheckError()
+         ::CheckError( , hb_dumpvar( cnField ) )
 #endif      
       ENDIF
    ENDIF
@@ -823,7 +823,7 @@ METHOD GetBlankRow( lRow ) CLASS TDolphinQry
 #ifndef NOINTERNAL
    IF ! ::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDGETBLANKROW
-      ::oServer:CheckError()
+      ::CheckError()
       RETURN NIL 
    ENDIF
 #endif 
@@ -1031,7 +1031,7 @@ METHOD LoadNextQuery() CLASS TDolphinQry
    IF nNext == -1
       RETURN 	NIL
    ELSEIF nNext > 0 
-      ::oServer:CheckError()
+      ::CheckError()
       RETURN NIL
    ENDIF
 
@@ -1075,7 +1075,7 @@ METHOD LoadNextQuery() CLASS TDolphinQry
       
    ELSE
       IF MySqlFieldCount( oServer:hMysql ) == 0
-         oServer:CheckError()
+         ::CheckError()
       ENDIF    
    ENDIF  
    
@@ -1146,7 +1146,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
       
    ELSE
       IF MySqlFieldCount( oServer:hMysql ) == 0
-         oServer:CheckError()
+         ::CheckError( , ::cQuery )
       ENDIF    
    ENDIF  
    
@@ -1353,7 +1353,7 @@ METHOD Save() CLASS TDolphinQry
 #ifndef NOINTERNAL   
    IF ! ::IsSingleTable()
       ::oServer:nInternalError = ERR_INVALIDSAVE
-      ::oServer:CheckError()
+      ::CheckError()
       RETURN NIL 
    ENDIF
 #endif    
