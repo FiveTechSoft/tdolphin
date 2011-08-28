@@ -2574,7 +2574,7 @@ PROCEDURE Dolphin_DefError( oServer, nError, lInternal, cExtra )
    oError:SubSystem   = If( lInternal, "TDOLPHIN", "MYSQL" )
    oError:SubCode     = nError
    oError:Severity    = 2
-   oError:Description = If( lInternal, "Internal Error", oServer:ErrorTxt() ) + " " + cExtra
+   oError:Description = If( lInternal, "Internal Error:" + DOL_GETERROTEXT( nError ) , oServer:ErrorTxt() ) + " " + cExtra
    
    Eval( ErrorBlock(), oError )   
 

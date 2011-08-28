@@ -4,8 +4,12 @@ PRG_FILES = \
 	tdolpsrv 
   	
 C_FILES = \
-	function
+	function \
+	gerrapi
 	
+LANG_FILES = \
+	msges\
+	msgen
 	
 #No mover esta linea
 ifneq ($(PRG_COMPILER),)
