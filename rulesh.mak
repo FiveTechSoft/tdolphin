@@ -64,6 +64,7 @@ DOLPHIN_LIBNAME=$(LIBNAME).$(LIB_EXT)
 DOLPHIN_INC=$(ROOT)$(SEPARATOR)include
 PRG_SOURCE_PATH=$(ROOT)$(SEPARATOR)source$(SEPARATOR)prg
 C_SOURCE_PATH=$(ROOT)$(SEPARATOR)source$(SEPARATOR)c
+LANG_SOURCE_PATH=$(ROOT)$(SEPARATOR)source$(SEPARATOR)lang
 DOLPHIN_OBJ  = $(ROOT)$(SEPARATOR)obj$(SEPARATOR)$(PRG_COMPILER)$(SEPARATOR)$(C_COMPILER)
 DOLPHIN_LIB  = $(ROOT)$(SEPARATOR)lib$(SEPARATOR)$(PRG_COMPILER)$(SEPARATOR)$(C_COMPILER)
 
@@ -103,7 +104,7 @@ endif
 
 LIB=-ldolphin $(LIBMYSQL) $(addprefix -l,$(LD_LIB))
 
-OBJ_FILES = $(addprefix $(DOLPHIN_OBJ)$(SEPARATOR),$(addsuffix .$(OBJ_EXT),$(PRG_FILES))) $(addprefix $(DOLPHIN_OBJ)$(SEPARATOR),$(addsuffix .$(OBJ_EXT),$(C_FILES)))
+OBJ_FILES = $(addprefix $(DOLPHIN_OBJ)$(SEPARATOR),$(addsuffix .$(OBJ_EXT),$(PRG_FILES))) $(addprefix $(DOLPHIN_OBJ)$(SEPARATOR),$(addsuffix .$(OBJ_EXT),$(C_FILES))) $(addprefix $(DOLPHIN_OBJ)$(SEPARATOR),$(addsuffix .$(OBJ_EXT),$(LANG_FILES)))
 
 #prg compiler commnad
 
@@ -179,6 +180,8 @@ $(DOLPHIN_OBJ)%.$(OBJ_EXT): $(DOLPHIN_OBJ)%.c
 $(DOLPHIN_OBJ)%.$(OBJ_EXT): $(C_SOURCE_PATH)%.c
 	$(C_CMD)
 
+$(DOLPHIN_OBJ)%.$(OBJ_EXT): $(LANG_SOURCE_PATH)%.c
+	$(C_CMD)
 # -----------------------------------------------------
 # dir
 # -----------------------------------------------------
