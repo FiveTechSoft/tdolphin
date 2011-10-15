@@ -44,6 +44,7 @@ ifeq ($(BLD_TYPE),gtwin)
 			testqry2 \
 			testqry3 \
 			testrest \
+			testrst2 \
 			testseek \
 			testset \
 			teststru \

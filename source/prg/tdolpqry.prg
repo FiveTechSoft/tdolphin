@@ -954,7 +954,7 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
 
       aRow    = MySqlFetchRow( ::hResult )
       ::aRowOriginal = aRow
-      
+            
 #ifndef USE_HASH
       ::aRow    = Array( Len( aRow ) )
       ::aOldRow = Array( Len( aRow ) )

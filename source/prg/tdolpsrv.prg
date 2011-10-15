@@ -204,12 +204,12 @@ CLASS TDolphinSrv
                                /*Retrieve total row avalaible in  specified query;
                                 in current database selected*/    
    
-   METHOD hInsert( ctable, hValues )
+   METHOD hInsert( ctable, hValues, cDuplicateKey )
    
-   METHOD Insert( cTable, aColumns, aValues )  
+   METHOD Insert( cTable, aColumns, aValues, cDuplicateKey )  
                               /*inserts new rows into an existing table.*/
                               
-   METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert ) 
+   METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey ) 
                               /*insert new rows into an existing table from DBF file,
                                 the table should be contain same fieldname that DBF */
 
@@ -437,7 +437,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
    LOCAL nPage  := 0
    LOCAL nError := 0
    LOCAL uField, cType
-
+   
    DEFAULT lOverwrite TO .F.
    DEFAULT lDrop TO .F.
    DEFAULT nStep TO 500
@@ -584,6 +584,8 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          cQry += AllTrim( Str( nRecno ) ) + ", "
          cQry += AllTrim( Str( nStep ) )
          oQry := ::Query( cQry )
+
+//         lCancel = MyBackUp( ::hMySql, hFile, cQry, cText2, nStep, ::bOnBackUp, cTable, nTotTable, nCurrTable, nRecno )
 
          WHILE !oQry:eof() .AND. ! lCancel
             cText    += "("
@@ -1273,7 +1275,7 @@ RETURN nTotal
 
 //----------------------------------------------------//
 
-METHOD hInsert( cTable, hValues ) CLASS TDolphinSrv
+METHOD hInsert( cTable, hValues, cDuplicateKey ) CLASS TDolphinSrv
 
    local lRet := .F. 
    local aValues := {}
@@ -1284,14 +1286,14 @@ METHOD hInsert( cTable, hValues ) CLASS TDolphinSrv
       AAdd( aValues, hValues[ aColumns[ n ] ] )
    next 
    
-   lRet := ::Insert( cTable, aColumns, aValues )
+   lRet := ::Insert( cTable, aColumns, aValues, cDuplicateKey )
 
 
 RETURN lRet
 
 //----------------------------------------------------//
 
-METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
+METHOD Insert( cTable, aColumns, aValues, cDuplicateKey ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n
@@ -1328,14 +1330,14 @@ METHOD Insert( cTable, aColumns, aValues ) CLASS TDolphinSrv
    
 #endif 
 
-   cExecute = BuildInsert( cTable, aColumns, aValues, , lMulti )
+   cExecute = BuildInsert( cTable, aColumns, aValues, , lMulti, cDuplicateKey )
    lRet = ::SqlQuery( cExecute )  
   
 RETURN lRet
 
 //----------------------------------------------------//
 
-METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert ) CLASS TDolphinSrv
+METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n := 1
@@ -1411,6 +1413,9 @@ METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert ) CLASS TDolphi
          endif
          cValues  = SubStr( cValues, 1, Len( cValues ) - 1 )  
          cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues   
+         if cDuplicateKey != NIL
+            cExecute += " ON DUPLICATE KEY UPDATE " + cDuplicateKey
+         endif         
          lRet = ::SqlQuery( cExecute )        
          n = 1
          cValues = ""
@@ -1420,6 +1425,9 @@ METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert ) CLASS TDolphi
    IF n <= nLimit .AND. n > 1
       cValues  = SubStr( cValues, 1, Len( cValues ) - 1 )  
       cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues     
+      if cDuplicateKey != NIL
+         cExecute += " ON DUPLICATE KEY UPDATE " + cDuplicateKey
+      endif      
       lRet = ::SqlQuery( cExecute )  
    ENDIF
   
@@ -2222,7 +2230,7 @@ RETURN cQuery
 
 //----------------------------------------------------//  
 
-FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue, lMulti  )  
+FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue, lMulti, cDuplicateKey  )  
 
    LOCAL cExecute
    LOCAL cValues  := ""
@@ -2268,7 +2276,12 @@ FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue, lMulti  )
    ENDIF
    
    cExecute = "INSERT INTO " + D_LowerCase( cTable ) + " ( " + cColumns + cValues
-
+   
+   if cDuplicateKey != NIL
+      cExecute += " ON DUPLICATE KEY UPDATE " + cDuplicateKey
+   endif
+   
+   
 RETURN cExecute
 
 
