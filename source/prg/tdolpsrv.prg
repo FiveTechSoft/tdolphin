@@ -118,6 +118,10 @@ CLASS TDolphinSrv
 
    METHOD BeginTransaction()          INLINE ::SqlQuery( "BEGIN" )    
    
+   METHOD Call( /*...*/ )  /*run a function/procedure with n parameters, 
+                             1st parameter must be a function/procedure name,
+                             this method does not return any result in query */
+   
    METHOD ChangeEngine( cTable, cType )  INLINE ::SqlQuery( "ALTER TABLE " + D_LowerCase( cTable ) + " ENGINE = " + D_LowerCase( cType ) )
       
    METHOD ChangeEngineAll( cType )  
@@ -656,6 +660,40 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
 
 RETURN .T.
 
+//---------------------------------------------//
+METHOD Call( ... ) CLASS TDolphinSrv
+   LOCAL aParams := hb_aParams()   
+   LOCAL n
+   LOCAL cExecute := "call "
+
+#ifndef NOINTERNAL
+   
+   IF Len( aParams ) < 1 .or. ! hb_IsString( aParams[ 1 ] )
+
+   ::nInternalError = ERR_INVALID_PARAMETER_CALL
+   ::CheckError()
+
+   ENDIF
+   
+   IF ::lError
+       RETURN ::lError 
+   ENDIF   
+   
+#endif
+
+   cExecute += aParams[ 1 ] + "( "
+   
+   FOR n = 2 TO Len( aParams )
+      cExecute += ClipValue2Sql( aParams[ n ] ) + ","
+   NEXT 
+   
+   cExecute = Left( cExecute, Len( cExecute ) - 1 ) + ")"
+   
+   ::SqlQuery( cExecute )
+   ::NextResult()
+   
+   
+RETURN NIL
 
 //---------------------------------------------//
 

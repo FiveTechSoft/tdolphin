@@ -97,8 +97,9 @@ int LoadMsgsES() {
   { ERR_INSUFFICIENT_MEMORY         , "Memoria insuficiente" },
   { ERR_TABLENOEXIST                , "Tabla no existe" } ,
   { ERR_EMPTYALIAS                  , "No se icluyo Alias" },
-  { ERR_NOMATCHCOLUMNSALIAS         , "No concuerda las columnas con la DBF"} };
-  
+  { ERR_NOMATCHCOLUMNSALIAS         , "No concuerda las columnas con la DBF"}, 
+  { ERR_INVALID_PARAMETER_CALL      , "Parametro invalido en Metodo Call"} };  
+  	
   BuildErrMsg( ErrMsg, sizeof( ErrMsg ) );
   
   return sizeof( ErrMsg ) / sizeof( G_ERRMSG );

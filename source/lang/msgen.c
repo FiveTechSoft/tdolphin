@@ -97,7 +97,8 @@ int LoadMsgsEN() {
   { ERR_INSUFFICIENT_MEMORY         , "Insufficient Memory" },
   { ERR_TABLENOEXIST                , "Table no exist" } ,
   { ERR_EMPTYALIAS                  , "Empty Alias" },
-  { ERR_NOMATCHCOLUMNSALIAS         , "No Match DBF fields with table Fields"} };
+  { ERR_NOMATCHCOLUMNSALIAS         , "No Match DBF fields with table Fields"},
+  { ERR_INVALID_PARAMETER_CALL      , "Invalid parametres in Call Method"} };
   
   BuildErrMsg( ErrMsg, sizeof( ErrMsg ) );
   

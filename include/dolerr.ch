@@ -99,6 +99,7 @@
 #define ERR_TABLENOEXIST                 9040
 #define ERR_EMPTYALIAS                   9041
 #define ERR_NOMATCHCOLUMNSALIAS          9042
+#define ERR_INVALID_PARAMETER_CALL       9045
 
 //MySql Errort
 

@@ -62,51 +62,6 @@ static G_LANG LangInstalled[] = {
   { "ES", &LoadMsgsES, 0 }
 };
 
-G_ERRMSG g[] = { 
-  { ERR_EMPTYDBNAME                 , "No se ha asignado Base de Datos" },
-  { ERR_INVALID_STRUCT_ROW_SIZE     , "Tamaño inválido de la estructura"},
-  { ERR_INVALID_STRUCT_NOTNULL_VALUE, "Asignaci¢n a valor NOTNUL inválido" },
-  { ERR_INVALID_STRUCT_PRIKEY       , "Llave Primaria inválida" },
-  { ERR_INVALID_STRUCT_UNIQUE       , "LLave Unica inválida" },
-  { ERR_INVALID_STRUCT_AUTO         , "Autoincremtable inválido" },
-  { ERR_NOQUERY                     , "No se envio sentencia" },
-  { ERR_EMPTYVALUES                 , "No se enviaron valores a la sentencia" },
-  { ERR_EMPTYTABLE                  , "No se envio nombre de la tabla" },
-  { ERR_NOMATCHCOLUMNSVALUES        , "No concuerda Campos con Valores" },
-  { ERR_INVALIDCOLUMN               , "Campo Inválido" },
-  { ERR_INVALIDFIELDNUM             , "Numero de campo Inválido" } ,
-  { ERR_INVALIDFIELDNAME            , "Nombre del campo Inválido" } ,
-  { ERR_INVALIDFIELDGET             , "Nombre del campo Inválido en FIELDGET" } ,
-  { ERR_FAILEDGETROW                , "Manejador de la consulta Inválido" } ,
-  { ERR_INVALIDGETBLANKROW          , "Imposible cargar Buffer vacio con multiples tablas" } ,
-  { ERR_INVALIDSAVE                 , "Imposible actualizar con multiples tablas" } ,
-  { ERR_NOTHINGTOSAVE               , "" },
-  { ERR_NODATABASESELECTED          , "No se ha seleccionado Base de Datos para el respaldo" } ,
-  { ERR_MISSINGQRYOBJECT            , "Erropr en objeto TDOLPHINQRY" } ,
-  { ERR_INVALIDBACKUPFILE           , "Fichero de Respaldo Inválido" } ,
-  { ERR_NOTABLESSELECTED            , "No hay tablas seleccionadas para el Respaldo" },
-  { ERR_INVALIDDELETE               , "Iposible borrar con multiples tablas" },
-  { ERR_DELETING                    , "" },
-  { ERR_INVALIDQUERYARRAY           , "Array Multisentencia Inválido" },
-  { ERR_MULTIQUERYFAULIRE           , "Fallo ejecutando Array de multiples sentencia" },
-  { ERR_INVALIDFIELDTYPE            , "Tipo de campo Inválido" } ,
-  { ERR_INVALIDFILENAME             , "Nombre de campo Inválido" },
-  { ERR_NOEXCELINSTALED             , "Excel no instalado" },
-  { ERR_EXPORTTOEXCEL               , "Error exportando a Excel" },
-  { ERR_INVALIDHTMLEXT              , "Invalida extenci¢n HTML" },
-  { ERR_NOWORDINSTALED              , "Word no Instalado" },
-  { ERR_EXPORTTOWORD                , "Error exportando a Word" } ,
-  { ERR_INVALIDTABLES_EXPORTTOSQL   , "No hay tablas seleccionadas para exportar" },
-  { ERR_INVALIDFILE_EXPORTTOSQL     , "Error usando en el archivo de exportanci¢n" },
-  { ERR_NODEFINDEDHOST              , "No se ha definido HOST" } ,
-  { ERR_INVALIDHOSTSELECTION        , "HOST Inválido" }, 
-  { ERR_CANNOTCREATEBKFILE          , "No se pudo crear archivo de respaldo" },
-  { ERR_OPENBACKUPFILE              , "No se puedo abrir archivo de respaldo" },
-  { ERR_INSUFFICIENT_MEMORY         , "Memoria insuficiente" },
-  { ERR_TABLENOEXIST                , "Tabla no existe" } ,
-  { ERR_EMPTYALIAS                  , "No se icluyó Alias" },
-  { ERR_NOMATCHCOLUMNSALIAS         , "No concuerda las columnas con la DBF"} }; 
- 
 static G_ERRMSG * pErrMessage = NULL;
   
 static const char * sIDLang = NULL;
