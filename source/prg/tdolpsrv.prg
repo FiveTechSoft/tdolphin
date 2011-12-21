@@ -577,11 +577,11 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       FWrite( hFile, cText )      
       cText = ""
       FOR nRecno := 0 TO nTRow STEP nStep
-
-         IF lCancel
-            EXIT
-         ENDIF
-
+//
+//         IF lCancel
+//            EXIT
+//         ENDIF
+//
          IF ::bOnBackUp != NIL
             Eval( ::bOnBackUp, ST_FILLBACKUP, cTable, nTotTable, nCurrTable, nRecno )      
          ENDIF   
@@ -589,42 +589,44 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          cQry := "SELECT * FROM " + cTable + " LIMIT " 
          cQry += AllTrim( Str( nRecno ) ) + ", "
          cQry += AllTrim( Str( nStep ) )
-         oQry := ::Query( cQry )
+//         oQry := ::Query( cQry )
 
-//         lCancel = MyBackUp( ::hMySql, hFile, cQry, cText2, nStep, ::bOnBackUp, cTable, nTotTable, nCurrTable, nRecno )
+         if ( lCancel := MyBackUp( ::hMySql, hFile, cQry, cText2, nStep, ::bOnBackUp, cTable, nTotTable, nCurrTable, nRecno ) )
+            exit 
+         endif
 
-         WHILE !oQry:eof() .AND. ! lCancel
-            cText    += "("
-            FOR nCol := 1 TO oQry:FCount()
-               uField = oQry:FieldGet( nCol )
-               cType = oQry:FieldType( nCol )
-               IF cType == "D"
-                  cText += "'"
-                  cText += If( Empty( uField ), '0000-00-00', dtos( uField ) )
-                  cText += "',"
-               ELSEIF cType == "N"
-                  cText += AllTrim( Str( uField ) ) + ","
-               ELSEIF cType == "L"
-                  cText += If( uField, "1", "0" ) + ","
-               ELSE
-                  cText += "'"
-                  cText += MySqlEscape( uField, ::hMysql )
-                  cText += "',"
-               ENDIF
-            NEXT
-            cText := Left( cText, len( cText ) - 1 )
-            cText += "),"
-            oQry:Skip()
-            IF oQry:Eof()
-               cText := Left( cText, len( cText ) - 1 ) + CRLF
-            ENDIF            
-         ENDDO
-         IF nTRow > nRecno
-            FWrite( hFile, cText2 + cText )
-         ENDIF
-         cText = ""
-         oQry:End()
-         oQry  := NIL
+//         WHILE !oQry:eof() .AND. ! lCancel
+//            cText    += "("
+//            FOR nCol := 1 TO oQry:FCount()
+//               uField = oQry:FieldGet( nCol )
+//               cType = oQry:FieldType( nCol )
+//               IF cType == "D"
+//                  cText += "'"
+//                  cText += If( Empty( uField ), '0000-00-00', dtos( uField ) )
+//                  cText += "',"
+//               ELSEIF cType == "N"
+//                  cText += AllTrim( Str( uField ) ) + ","
+//               ELSEIF cType == "L"
+//                  cText += If( uField, "1", "0" ) + ","
+//               ELSE
+//                  cText += "'"
+//                  cText += MySqlEscape( uField, ::hMysql )
+//                  cText += "',"
+//               ENDIF
+//            NEXT
+//            cText := Left( cText, len( cText ) - 1 )
+//            cText += "),"
+//            oQry:Skip()
+//            IF oQry:Eof()
+//               cText := Left( cText, len( cText ) - 1 ) + CRLF
+//            ENDIF            
+//         ENDDO
+//         IF nTRow > nRecno
+//            FWrite( hFile, cText2 + cText )
+//         ENDIF
+//         cText = ""
+//         oQry:End()
+//         oQry  := NIL
       NEXT
       IF ::bOnBackUp != NIL
          Eval( ::bOnBackUp, ST_FILLBACKUP, cTable, nTotTable, nCurrTable, Min( nRecno, nTRow ) )
@@ -644,7 +646,7 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
       IF Empty( cFooter )
          cFooter = "-- Dump completed on " + DToC( Date() ) + " " + Time() + CRLF
       ENDIF
-      cText += cFooter
+      cText += CRLF + cFooter
        
       IF ::bOnBackUp != NIL
          Eval( ::bOnBackUp, ST_ENDBACKUP, cFile )

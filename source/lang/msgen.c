@@ -45,7 +45,7 @@
  * If you do not wish that, delete this exception notice.
  *
  */
-
+  
 #include "hbapi.h"
 #include "hbapilng.h"
 #include "gerrapi.h"

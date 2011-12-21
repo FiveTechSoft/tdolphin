@@ -727,77 +727,53 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
    hb_itemReturnRelease( itemReturn );
 }
 
-////------------------------------------------------//
-//// Build a Array with table structure 
-//HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
-//{
-//  MYSQL_RES * mresult = ( MYSQL_RES * ) hb_MYSQL_RES_par( 1 );
-//  PHB_ITEM pBlock = hb_param( 2, HB_IT_BLOCK ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
-//  unsigned int num_fields, ui;
-//  PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
-//  PHB_ITEM itemRow = hb_itemNew( NULL );
-//  MYSQL_ROW mrow;
-//  ULONG *pulFieldLengths ;
-//  PHB_ITEM self = hb_param( 3, HB_IT_ARRAY );
-//          
-//  int i = 0;
-//  
-//  
-//  if( symClip2MySql == NULL )
-//     symClip2MySql = hb_dynsymSymbol( hb_dynsymFind( "VERIFYVALUE" ) );
-//     
-//  
-//  if( mresult )
-//  {
-//     num_fields = mysql_num_fields( mresult );
-//     pulFieldLengths = mysql_fetch_lengths( mresult ) ;
-//     mysql_data_seek( mresult, 0 );
-//     while( mrow = mysql_fetch_row( mresult ) )
-//     {
-//        if ( mrow )
-//        {
-//          hb_arrayNew( itemRow, num_fields );
-//          for ( ui = 0; ui < num_fields; ui++ )
-//          {
-//            if ( mrow[ ui ] == NULL )
-//            {
-//              hb_arraySetC( itemRow, ui + 1, NULL );
-//            }
-//            else  
-//            {
-//              PHB_ITEM pReturn;
-//              hb_vmPushSymbol( symClip2MySql );
-//              hb_vmPushNil();
-//              hb_vmPush( self );
-//              hb_vmPushLong( ui + 1 );
-//              hb_vmPushString( mrow[ ui ], pulFieldLengths[ ui ] );
-//              hb_vmDo( 3 ); 
-//              pReturn = hb_stackReturnItem();
-//              if( HB_IS_STRING( pReturn ) )
-//                 hb_arraySetC( itemRow, ui + 1, hb_parc( -1 ) ) ;
-//              else if( HB_IS_NUMERIC( pReturn ) )
-//                hb_arraySetNL( itemRow, ui + 1, hb_parnl( -1 ) );
-//              else if( HB_IS_LOGICAL( pReturn ) )
-//                hb_arraySetL( itemRow, ui + 1, hb_parl( -1 ) );
-//              else if( HB_IS_DATE( pReturn ) )
-//                hb_arraySetDS( itemRow, ui + 1, hb_pards( -1 ) );
-//             else
-//                MessageBox( 0, "error", "ok", 0 );
-//            }
-//          }
-//          if( pBlock)
-//            {
-//               PHB_ITEM pParam = hb_itemPutNI( NULL, ++i );
-//               hb_evalBlock( pBlock, itemRow, pParam, 0 );
-//            }
-//          hb_arrayAddForward( itemReturn, itemRow );
-//        }
-//      }
-//   }
-//
-//   hb_itemRelease( itemRow );
-//   hb_itemReturnRelease( itemReturn );
-//}
+HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
+{
+  MYSQL_RES * mresult = ( MYSQL_RES * ) hb_MYSQL_RES_par( 1 );
+  PHB_ITEM pBlock = hb_param( 2, HB_IT_BLOCK ) ? hb_param( 2, HB_IT_BLOCK ) : NULL;
+  unsigned int num_fields, ui, iRec=0;
+  PHB_ITEM itemReturn = hb_itemArrayNew( 0 );
+  PHB_ITEM itemRow = hb_itemNew( NULL );
+  MYSQL_ROW mrow;
+  ULONG *pulFieldLengths ;
+  LONGLONG llRecCount;
+  int i = 0;
+  
+  if( mresult )
+  {
+  	 PHB_ITEM Rec = hb_itemNew( NULL ), Count = hb_itemNew( NULL );
+     num_fields = mysql_num_fields( mresult );
+     pulFieldLengths = mysql_fetch_lengths( mresult ) ;
+     mysql_data_seek( mresult, 0 );
+     llRecCount = mysql_num_rows( mresult );
+     while( mrow = mysql_fetch_row( mresult ) )
+     {
+        if ( mrow )
+        {
+          hb_arrayNew( itemRow, num_fields );
+          for ( ui = 0; ui < num_fields; ui++ )
+          {
+            if ( mrow[ ui ] == NULL )
+            {
+              hb_arraySetC( itemRow, ui + 1, NULL );
+            }else
+            	hb_arraySetC( itemRow, ui + 1, mrow[ ui ] ) ;
+          }
+          hb_arrayAddForward( itemReturn, itemRow );
+          iRec ++;
+          hb_itemPutNL( Rec, iRec );
+          hb_itemPutNL( Count, llRecCount );
+          if( pBlock )
+          	hb_evalBlock( pBlock, itemRow, Rec, Count, NULL  );         
+        }
+      }
+      hb_itemReturnRelease( Rec );
+      hb_itemReturnRelease( Count );
+   }
+
+   hb_itemRelease( itemRow );
+   hb_itemReturnRelease( itemReturn );
+}
 
 
 //------------------------------------------------//
@@ -1594,29 +1570,24 @@ HB_FUNC( MYBACKUP )
           hb_itemRelease( status );
           hb_itemRelease( nRecNo );
           lCancela = hb_itemGetL( pItemCancela );
-          if( lCancela )
-          {
-          	printf( "breakkkkkk\n\n\n" );
-          }
         }
-        }else 
-        	printf( "cancele " );
+        }
       }
       if( ! lCancela )
       {
          memset( cRecord + iLenTotal - 1, 0x00, 1 );
          hb_fsWriteLarge( hb_numToHandle( hb_parnint( 2 ) ), cText, hb_parclen( 4 ) );
          hb_fsWriteLarge( hb_numToHandle( hb_parnint( 2 ) ), cRecord, iLenTotal );
-      }else
-//         mysql_free_result( res_set );
-      printf( "afueraaaa " );   
+      }
+
       hb_xfree( cRecord );      
       mysql_free_result( res_set );
     }
    } else
        fprintf( stderr, "Error %u (%s): %s\n", mysql_errno( hMysql ), mysql_sqlstate( hMysql ), mysql_error( hMysql ) );
+       
+    hb_retl( lCancela );
     
-    hb_retl( lCancela );  
 }
 
 
