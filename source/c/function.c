@@ -1,5 +1,5 @@
 /*
- * $Id: 12/13/2010 12:06:00 PM function.c Z dgarciagil $
+ * $Id: 12/21/2011 12:06:00 PM function.c Z dgarciagil $
  */
 
 /*
@@ -60,7 +60,7 @@
 #include <hbvm.h>
 #include <mysql.h>
 #include <locale.h>
-
+#include <hbapierr.h>
 
 
 #ifndef __XHARBOUR__ //(__HARBOUR__)
@@ -287,23 +287,30 @@ HB_FUNC( MYSQLESCAPE )
    ULONG iSize, iFromSize ;
    char *ToBuffer;
    BOOL bResult = FALSE ;
-   iSize= hb_parclen( 1 ) ;
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 2 );
 
-   FromBuffer = ( char * )hb_parc( 1 ) ;
-   if ( iSize )
+   iSize= hb_parclen( 1 ) ;
+   
+   if( hmysql )
    {
-     ToBuffer = ( char * ) hb_xgrab( ( iSize*2 ) + 1 );
-     if ( ToBuffer )
-     {
-       iSize = mysql_real_escape_string( ( MYSQL * ) hb_MYSQL_par( 2 ), ToBuffer, FromBuffer, iSize );
-       hb_retclenAdopt( ( char * ) ToBuffer, iSize ) ;
-       bResult = TRUE ;
-     }
+      FromBuffer = ( char * )hb_parc( 1 ) ;
+      if ( iSize )
+      {
+        ToBuffer = ( char * ) hb_xgrab( ( iSize*2 ) + 1 );
+        if ( ToBuffer )
+        {
+          iSize = mysql_real_escape_string( hmysql, ToBuffer, FromBuffer, iSize );
+          hb_retclenAdopt( ( char * ) ToBuffer, iSize ) ;
+          bResult = TRUE ;
+        }
+      }
+      if ( !bResult )
+      {
+        hb_retclen( ( char * ) FromBuffer, iSize ) ;
+      }
    }
-   if ( !bResult )
-   {
-     hb_retclen( ( char * ) FromBuffer, iSize ) ;
-   }
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
 }
 
 
@@ -363,7 +370,12 @@ HB_FUNC( MYSEEK )
 // mysql_get_server_info(MYSQL *mysql)
 HB_FUNC( MYSERVERINFO )
 {
-  hb_retc( mysql_get_server_info( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+  MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+  
+  if( hmysql )
+     hb_retc( mysql_get_server_info( hmysql ) );
+  else 
+     hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );  
 }
 
 //------------------------------------------------//
@@ -382,6 +394,8 @@ HB_FUNC( MYSQLCOMMIT )
 
    if( hMysql )
       iret = ( int )mysql_commit( hMysql );
+   else 
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );     
    
    hb_retni( iret );
 } 
@@ -422,7 +436,12 @@ HB_FUNC( MYSQLCONNECT ) // -> MYSQL*
 //int mysql_next_result(MYSQL *mysql)
 HB_FUNC( MYSQL_NEXT_RESULT )
 {
-   hb_retni( mysql_next_result( ( MYSQL * ) hb_MYSQL_par( 1 ) ) ) ;
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+   if( hmysql )
+      hb_retni( mysql_next_result( hmysql ) ) ;
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+   
 }
 
 
@@ -466,7 +485,12 @@ HB_FUNC( MYSQLDATASEEK ) // ->void
 HB_FUNC( MYSQLERROR ) //-> A null-terminated character string that describes the error. 
                       //   An empty string if no error occurred.
 {
-   hb_retc( ( char * ) mysql_error( ( MYSQL * ) hb_MYSQL_par( 1 ) ) );
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+   if( hmysql )
+      hb_retc( ( char * ) mysql_error( hmysql ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS ); 
+   
 }
 
 
@@ -474,8 +498,15 @@ HB_FUNC( MYSQLERROR ) //-> A null-terminated character string that describes the
 // unsigned int mysql_num_fields( MYSQL_RES * )
 HB_FUNC( MYSQLFIELDCOUNT ) //-> num fields
 {
-   hb_retnl( mysql_field_count( ( ( MYSQL * )hb_MYSQL_par( 1 ) ) ) );
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+   if( hmysql )
+      hb_retnl( mysql_field_count( hmysql ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS ); 
+        
+   
 }
+
 
 
 //------------------------------------------------//
@@ -529,7 +560,13 @@ HB_FUNC( MYSQLFETCHROW ) // -> array current row data
 //unsigned int mysql_errno(MYSQL *mysql)
 HB_FUNC( MYSQLGETERRNO )//->An error code value for the last mysql_xxx()
 {
-   hb_retnl( mysql_errno( ( MYSQL * ) hb_MYSQL_par( 1 ) ) );
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+   if( hmysql )
+      hb_retnl( mysql_errno( hmysql ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS ); 
+      
+   
 }
 
 //------------------------------------------------//
@@ -622,7 +659,9 @@ HB_FUNC( MYSQLOPTION )
   int iret = 1;
   if( mysql )
      iret = mysql_options( mysql, ( enum mysql_option )hb_parnl( 2 ), arg );
-     
+  else
+     hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );      
+       
   hb_retni( iret );
 }
 
@@ -635,6 +674,8 @@ HB_FUNC( MYSQLPING )//Zero if the connection to the server is alive. Nonzero if 
    
    if( hMysql )
       nping = mysql_ping( hMysql );
+   else
+     hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );      
    
    hb_retni( nping );
 }
@@ -643,9 +684,14 @@ HB_FUNC( MYSQLPING )//Zero if the connection to the server is alive. Nonzero if 
 //int mysql_real_query(MYSQL *mysql, const char *stmt_str, unsigned long length)
 HB_FUNC( MYSQLQUERY ) //
 {
-   hb_retnl( ( long ) mysql_real_query( ( MYSQL * )hb_MYSQL_par( 1 ),
-              ( const char * ) hb_parc( 2 ),
-              ( unsigned long ) hb_parnl( 3 ) ) ) ;
+   MYSQL * hMysql =  ( MYSQL * )hb_MYSQL_par( 1 );
+   
+   if( hMysql )
+      hb_retnl( ( long ) mysql_real_query( hMysql,
+                 ( const char * ) hb_parc( 2 ),
+                 ( unsigned long ) hb_parnl( 3 ) ) ) ;
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );     
 }
 
 //------------------------------------------------//
@@ -657,6 +703,8 @@ HB_FUNC( MYSQLROLLBACK )
 
    if( hMysql )
       iret = ( int )mysql_rollback( hMysql );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );           
    
    hb_retni( iret );
 } 
@@ -667,14 +715,23 @@ HB_FUNC( MYSQLROLLBACK )
 HB_FUNC( MYSQLSELECTDB ) //-> Zero for success. Nonzero if an error occurred.
 {
    const   char * db = ( const char* ) hb_parc( 2 );
-   hb_retnl( ( long ) mysql_select_db( ( MYSQL * ) hb_MYSQL_par( 1 ), db ) );
+   MYSQL * hMysql =  ( MYSQL * )hb_MYSQL_par( 1 );
+   
+   if( hMysql )      
+      hb_retnl( ( long ) mysql_select_db( hMysql, db ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );                 
 }
 
 //------------------------------------------------//
 //MYSQL_RES *mysql_list_fields(MYSQL *mysql, const char *table, const char *wild)
 HB_FUNC( MYSQLLISTFIELDS ) // -> MYSQL_RES *
 {
-   hb_MYSQL_RES_ret( mysql_list_fields( ( MYSQL * )hb_MYSQL_par( 1 ), hb_parc( 2 ), hb_parc( 3 ) ) );
+   MYSQL * hMysql =  ( MYSQL * )hb_MYSQL_par( 1 );
+   if( hMysql )         
+      hb_MYSQL_RES_ret( mysql_list_fields( hMysql, hb_parc( 2 ), hb_parc( 3 ) ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );                 
 }
 
 
@@ -741,7 +798,7 @@ HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
   
   if( mresult )
   {
-  	 PHB_ITEM Rec = hb_itemNew( NULL ), Count = hb_itemNew( NULL );
+     PHB_ITEM Rec = hb_itemNew( NULL ), Count = hb_itemNew( NULL );
      num_fields = mysql_num_fields( mresult );
      pulFieldLengths = mysql_fetch_lengths( mresult ) ;
      mysql_data_seek( mresult, 0 );
@@ -757,14 +814,14 @@ HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
             {
               hb_arraySetC( itemRow, ui + 1, NULL );
             }else
-            	hb_arraySetC( itemRow, ui + 1, mrow[ ui ] ) ;
+              hb_arraySetC( itemRow, ui + 1, mrow[ ui ] ) ;
           }
           hb_arrayAddForward( itemReturn, itemRow );
           iRec ++;
           hb_itemPutNL( Rec, iRec );
           hb_itemPutNL( Count, llRecCount );
           if( pBlock )
-          	hb_evalBlock( pBlock, itemRow, Rec, Count, NULL  );         
+            hb_evalBlock( pBlock, itemRow, Rec, Count, NULL  );         
         }
       }
       hb_itemReturnRelease( Rec );
@@ -780,14 +837,25 @@ HB_FUNC( DOLPHINFILLARRAY ) //-> Query result Structure
 // MYSQL_RES *mysql_store_result(MYSQL *mysql)
 HB_FUNC( MYSQLSTORERESULT ) // -> MYSQL_RES 
 {
-   hb_MYSQL_RES_ret( mysql_store_result( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+   if( hmysql )
+      hb_MYSQL_RES_ret( mysql_store_result( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );   
+   
 }
 
 //------------------------------------------------//
 // MYSQL_RES *mysql_use_result(MYSQL *mysql)
 HB_FUNC( MYSQLUSERESULT ) // -> MYSQL_RES 
 {
-   hb_MYSQL_RES_ret( mysql_use_result( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+   MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
+   if( hmysql )
+      hb_MYSQL_RES_ret( mysql_use_result( hmysql ) );
+   else
+      hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );   
+  
+   
 }
 
 //------------------------------------------------//
@@ -1600,13 +1668,18 @@ HB_FUNC( _SETMULTISTATEMENT )
   BOOL bStatement = hb_parnl( 2 );
   BOOL bRet;
   
-  if( bStatement )
-     bRet = mysql_set_server_option( hMysql, MYSQL_OPTION_MULTI_STATEMENTS_ON );
-  else 
-     bRet = mysql_set_server_option( hMysql, MYSQL_OPTION_MULTI_STATEMENTS_OFF );
+  if( hMysql )  
+  {
+    if( bStatement )
+       bRet = mysql_set_server_option( hMysql, MYSQL_OPTION_MULTI_STATEMENTS_ON );
+    else 
+       bRet = mysql_set_server_option( hMysql, MYSQL_OPTION_MULTI_STATEMENTS_OFF );
+  } else
+     hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );        
   
   hb_retl( bRet );  
 }
+
 
 #ifdef __WIN__
 HB_FUNC( GETDECIMALSEP )
