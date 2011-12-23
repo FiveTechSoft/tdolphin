@@ -327,7 +327,7 @@ ifeq ($(C_COMPILER),MSVC64)
 	C_FLAGS=-c -D__WIN__ -D$(DEFX) -DHB_LEGACY_TYPES_ON -TP -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -nologo -Fo$@ $<
 
 	ifeq ($(LIBMYSQL),)
-		LIBMYSQL = libmysql64.lib
+		LIBMYSQL = libmysql64
 	endif		
 
 	MSVC_LIB=\

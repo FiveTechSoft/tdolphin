@@ -81,9 +81,10 @@ static void LoadMsgs( void )
     for( i=0; i < iLen; i++ )
     {
       if( hb_stricmp( LangInstalled[ i ].sLang, sID ) == 0 ){
-         int (*fp)();
+      	 typedef int (*fptr)();
+         fptr fp;
          pLangActive = &LangInstalled[ i ];
-         fp = pLangActive->pFuncLang;
+         fp = ( fptr )&pLangActive->pFuncLang;
          pLangActive->lTotalMsgs = (*fp)();
       }
     }
@@ -95,7 +96,7 @@ static void LoadMsgs( void )
 static char * GetGErrorMsg( HB_ERRCODE iCode, const char * sAux )
 {
   int iPos = ( int ) iCode - STARTCODE;
-  char * cMsg = hb_xgrab( 128 );
+  char * cMsg = ( char * )hb_xgrab( 128 );
 
   LoadMsgs();
 

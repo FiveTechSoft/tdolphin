@@ -1547,6 +1547,8 @@ HB_FUNC( MYFIND )
 
 //------------------------------------------------//
 // hMySql, hFile, cQuery
+//------------------------------------------------//
+// hMySql, hFile, cQuery
 HB_FUNC( MYBACKUP )
 {
    const char * cQuery = hb_parc( 3 );
@@ -1555,13 +1557,13 @@ HB_FUNC( MYBACKUP )
    MYSQL_ROW row;
    MYSQL_FIELD * fields;
    char * cField = NULL;
-   char * cRecord = hb_xgrab( 1 );
+   char * cRecord = ( char * ) hb_xgrab( 1 );
    const char * cText = hb_parc( 4 );
    PHB_ITEM pcdOnBackup = hb_param( 6, HB_IT_BLOCK ); 
    long lStep = hb_parnl( 5 );
    long lCurrentStep = 0;
    long lRecord = 0;
-   BOOLEAN lCancela = FALSE;
+   HB_BOOL lCancela = FALSE;
    PHB_ITEM pItemCancela;
 
    if( ! mysql_real_query( hMysql, cQuery, hb_parclen( 3 ) ) )
@@ -1580,7 +1582,7 @@ HB_FUNC( MYBACKUP )
         int i;
         int iLen = 1;
         if( ! lCancela ){
-        cField = hb_xgrab( iLen );  
+        cField = ( char * ) hb_xgrab( iLen );  
         memcpy( cField, "(", iLen  );
         for( i=0; i< iRows; i++ )
         {
@@ -1591,13 +1593,13 @@ HB_FUNC( MYBACKUP )
             if( row[ i ] == NULL )
             {
                iLen += iLenString + 1;
-               cField = hb_xrealloc( cField, iLen );
+               cField = ( char * ) hb_xrealloc( cField, iLen );
                memcpy( cField + iAnt, "NULL", iLenString );
             }
             else 
             {
                iLen += iLenString + 3;
-               cField = hb_xrealloc( cField, iLen );
+               cField = ( char * )hb_xrealloc( cField, iLen );
                memcpy( cField + iAnt, "'", 1 );
                memcpy( cField + iAnt+1, row[ i ], iLenString );
                memcpy( cField + iAnt+iLenString+1, "'", 1 );
@@ -1608,7 +1610,7 @@ HB_FUNC( MYBACKUP )
          else
          {
            iLen += iLenString + 1;
-           cField = hb_xrealloc( cField, iLen );             
+           cField = ( char * ) hb_xrealloc( cField, iLen );             
            memcpy( cField + iAnt, row[ i ] == NULL ? "NULL" : row[ i ], iLenString );
          }
          memcpy( cField + iAnt + iLenString, ",", 1 );
@@ -1616,7 +1618,7 @@ HB_FUNC( MYBACKUP )
         iLenAnt = iLenTotal;
         iLenTotal += iLen + 1;
         memcpy( cField + iLen-1, ")", 1 ); 
-        cRecord = hb_xrealloc( cRecord, iLenTotal );
+        cRecord = ( char * ) hb_xrealloc( cRecord, iLenTotal );
         memcpy( cRecord + iLenAnt - 1, ",", 1 );
         memcpy( cRecord + iLenAnt, cField, iLen );
         hb_xfree( cField );
