@@ -121,7 +121,8 @@ CLASS TDolphinSrv
    METHOD Call( /*...*/ )  /*run a function/procedure with n parameters, 
                              1st parameter must be a function/procedure name,
                              this method does not return any result in query */
-                             
+
+   METHOD Debug( cText )                     INLINE  If(  ::bDebug != NIL, Eval( ::bDebug, cText, ProcName( 1 ), ProcLine( 1 ) ), )
    METHOD ReturnCall( /*...*/ ) /*same METHOD Call but this return a result set*/
    
    METHOD ChangeEngine( cTable, cType )  INLINE ::SqlQuery( "ALTER TABLE " + D_LowerCase( cTable ) + " ENGINE = " + D_LowerCase( cType ) )
@@ -139,7 +140,7 @@ CLASS TDolphinSrv
    METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )    
                               /*to establish a connection to a MySQL database engine running on server*/
 
-   METHOD CommitTransaction()       INLINE MySqlCommit( ::hMySql ) == 0
+   METHOD CommitTransaction()       INLINE ::Debug( "COMMITED" ),  MySqlCommit( ::hMySql ) == 0 
                               /*Commits the current transaction.*/
 
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
@@ -1884,9 +1885,7 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
       
    IF nLen > 0
 #ifdef DEBUG
-      IF ::bDebug != NIL 
-         Eval( ::bDebug, cQuery, ProcName( 1 ), ProcLine( 1 ) )      
-      ENDIF
+      ::Debug( cQuery )
 #endif   
       IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
          ::CheckError()
