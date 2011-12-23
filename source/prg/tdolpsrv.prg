@@ -591,9 +591,9 @@ METHOD Backup( aTables, cFile, lDrop, lOverwrite, nStep, cHeader, cFooter, lCanc
          cQry += AllTrim( Str( nStep ) )
 //         oQry := ::Query( cQry )
 
-         if ( lCancel := MyBackUp( ::hMySql, hFile, cQry, cText2, nStep, ::bOnBackUp, cTable, nTotTable, nCurrTable, nRecno ) )
-            exit 
-         endif
+//         if ( lCancel := MyBackUp( ::hMySql, hFile, cQry, cText2, nStep, ::bOnBackUp, cTable, nTotTable, nCurrTable, nRecno ) )
+//            exit 
+//         endif
 
 //         WHILE !oQry:eof() .AND. ! lCancel
 //            cText    += "("
