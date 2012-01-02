@@ -262,7 +262,7 @@ CLASS TDolphinSrv
                               /*The RevokePrivileges() enables system administrators to revoke privileges from MySQL accounts.*/
    
 
-   METHOD RollBack()                  INLINE MySqlRollBack( ::hMysql )
+   METHOD RollBack()                  INLINE ::Debug( "ROLLBACK" ), MySqlRollBack( ::hMysql )
                               /* Rolls back the current transaction.*/
                              
    METHOD SelectDB( cDBName ) 
@@ -671,9 +671,8 @@ METHOD Call( ... ) CLASS TDolphinSrv
    LOCAL aParams := hb_aParams()   
    LOCAL n
    LOCAL cExecute := "call "
-
 #ifndef NOINTERNAL
-   
+   ::lError = .F.
    IF Len( aParams ) < 1 .or. ! hb_IsString( aParams[ 1 ] )
 
    ::nInternalError = ERR_INVALID_PARAMETER_CALL
@@ -688,17 +687,16 @@ METHOD Call( ... ) CLASS TDolphinSrv
 #endif
 
    cExecute += aParams[ 1 ] + "( "
-   
+
    FOR n = 2 TO Len( aParams )
       cExecute += ClipValue2Sql( aParams[ n ] ) + ","
    NEXT 
-   
+
    cExecute = Left( cExecute, Len( cExecute ) - 1 ) + ")"
-   
    ::SqlQuery( cExecute )
    ::NextResult()
    
-RETURN NIL
+RETURN ! ::lError
 
 //---------------------------------------------//
 
@@ -752,6 +750,8 @@ RETURN NIL
 METHOD CheckError( nError, cExtra ) CLASS TDolphinSrv
 
    LOCAL lInternal := .F.
+   
+   ::lError = .F.
 
    IF ! hb_IsPointer( ::hMysql )
       nError = ERR_INSUFFICIENT_MEMORY
