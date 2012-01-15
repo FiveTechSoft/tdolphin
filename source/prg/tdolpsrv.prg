@@ -1,5 +1,5 @@
 /*
- * $Id: 20-Aug-11 5:48:13 AM tdolpsrv.prg Z dgarciagil $
+ * $Id: 12-Jan-12 1:03:16 AM tdolpsrv.prg Z riztan $
 */
 
 /*
@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    DATA cNameHost
    
-   DATA cBuild     INIT '20-Ago-11 5:48:13 AM'
+   DATA cBuild     INIT '14-Jan-12 11:40:06 PM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        
@@ -143,6 +143,10 @@ CLASS TDolphinSrv
    METHOD CommitTransaction()       INLINE ::Debug( "COMMITED" ),  MySqlCommit( ::hMySql ) == 0 
                               /*Commits the current transaction.*/
 
+   METHOD CreateForeign( cName, cTabParent, aIndColName, cTabChild, aIndColRef, ;
+                         lOnDelete, nActionDelete, lOnUpdate, nActionUpdate ) 
+                              /* Create Foreign Key cName Symbol Name */
+   
    METHOD CreateIndex( cName, cTable, aFNames, nCons, nType )                              
    
    METHOD CreateInfo( cTable )
@@ -160,6 +164,9 @@ CLASS TDolphinSrv
    METHOD DeleteDB( cDB, lExists )
                               /*Delete Tables*/
                               
+   METHOD DeleteForeign( cName, cTable ) 
+                              /*Delete Foreign*/
+
    METHOD DeleteIndex( cName, cTable )         
                               /*Delete Index*/                     
    
@@ -190,6 +197,8 @@ CLASS TDolphinSrv
                                 /*Retrieve next Auto increment value in specified table;
                                  in current database selected*/   
 
+   METHOD GetEngine( cTable, cSchema )
+      
    METHOD GetServerInfo()       INLINE If( ::hMysql != NIL, MyServerInfo( ::hMysql ), "" ) 
                                 /*Returns a string that represents the server version number.*/
 
@@ -852,9 +861,67 @@ METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphin
    DEFAULT nFlags    TO ::nFlags
    DEFAULT cDBName   TO ::cDBName
    
+
+RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName )
+
+//-----------------------------------------------------------
+
+METHOD CreateForeign( cName, cTabParent, aIndColName, cTabChild, aIndColRef, ;
+                      lOnDelete, nActionDelete, lOnUpdate, nActionUpdate ) CLASS TDolphinSrv
+
+   LOCAL cQuery := "ALTER TABLE "
+   LOCAL cField
+   LOCAL aFOREIGN_CONST  := { "RESTRICT", "CASCADE", "SET NULL", "NO ACTION" }
+   
+   IF Upper( ::GetEngine( cTabParent ) ) != "INNODB"
+      RETURN .F.
+   ENDIF
+   IF Upper( ::GetEngine( cTabChild ) ) != "INNODB"
+      RETURN .F.
+   ENDIF
+
+   // NOTE: aFNames each item can be array 2 position (1) column name (2) orden type 
+   // like numeric, (1) ASC, (2) DESC ie. { "FIELD_NAME", 1 }
+   DEFAULT nActionDelete TO 4
+   DEFAULT nActionUpdate TO 4
    
 
-RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, ::bDecrypt )
+   cQuery += D_LowerCase( cTabParent ) + " ADD "
+   cQuery += If( !Empty( cName ), "CONSTRAINT "+ cName +" " , "" )
+   cQuery += "FOREIGN KEY (" 
+
+   FOR EACH cField IN aIndColName
+      IF ValType( cField ) == "A"
+         cQuery += cField[ 1 ] + ","
+      ELSE 
+         cQuery += cField + ","
+      ENDIF 
+   NEXT
+   
+   //remove last coma(,)
+   cQuery = Left( cQuery, Len( cQuery ) - 1 ) + ") "
+   
+   cQuery += "REFERENCES "+D_LowerCase( cTabChild ) + " (" 
+   FOR EACH cField IN aIndColRef
+      IF ValType( cField ) == "A"
+         cQuery += cField[ 1 ] + ","
+      ELSE 
+         cQuery += cField + ","
+      ENDIF 
+   NEXT
+
+   //remove last coma(,)
+   cQuery = Left( cQuery, Len( cQuery ) - 1 ) + ") "
+
+   IF lOnDelete
+      cQuery += "ON DELETE "+aFOREIGN_CONST[ nActionDelete ]+" "
+   ENDIF
+   
+   IF lOnUpdate
+      cQuery += "ON UPDATE "+aFOREIGN_CONST[ nActionDelete ]+" "
+   ENDIF
+
+RETURN ::SqlQuery( cQuery )
 
 //-----------------------------------------------------------
 
@@ -1115,6 +1182,20 @@ RETURN ::SqlQuery( cQuery )
    
 //----------------------------------------------------//   
 
+METHOD DeleteForeign( cName, cTable ) CLASS TDolphinSrv
+   LOCAL cQuery 
+   LOCAL cEngine := Upper( ::GetEngine( cTable ) )
+   
+   If cEngine != "INNODB"
+      RETURN .F.
+   EndIf
+   
+   cQuery := "ALTER TABLE " + D_LowerCase( cTable ) + " DROP FOREIGN KEY " + cName
+
+RETURN ::SqlQuery( cQuery )
+
+//----------------------------------------------------//   
+
 METHOD DeleteIndex( cName, cTable, lPrimary ) CLASS TDolphinSrv
 
    LOCAL cQuery 
@@ -1240,6 +1321,36 @@ METHOD GetAutoIncrement( cTable ) CLASS TDolphinSrv
    oQuery := NIL
 
 RETURN nId
+
+//----------------------------------------------------//
+
+METHOD GetEngine( cTable, cSchema ) CLASS TDolphinSrv
+
+   LOCAL oQuery, cQuery, cEngine
+   
+   DEFAULT cSchema TO ::cDBName
+   
+   IF Empty( cTable )
+      RETURN ""
+   ENDIF
+   
+   IF ( "." $ cTable )
+      cTable := ATAIL( hb_aTokens( cTable, "." ) )
+   ENDIF
+   
+   cQuery := "SELECT ENGINE FROM information_schema.TABLES WHERE "
+   cQuery += "TABLE_SCHEMA = '" + D_LowerCase( cSchema ) + "' AND "
+   cQuery += "TABLE_NAME = '" + D_LowerCase( cTable ) +"'"
+   
+   oQuery := ::Query( cQuery )
+   IF oQuery:LastRec() > 0
+      cEngine := oQuery:FieldGet( 1 )
+   ENDIF
+   
+   oQuery:End()
+   oQuery := NIL
+
+RETURN AllTrim( cEngine )
 
 //----------------------------------------------------//
 
