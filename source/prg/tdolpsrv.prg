@@ -862,7 +862,7 @@ METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphin
    DEFAULT cDBName   TO ::cDBName
    
 
-RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName )
+RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, ::bDecrypt )
 
 //-----------------------------------------------------------
 
