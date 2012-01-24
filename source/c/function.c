@@ -62,6 +62,9 @@
 #include <locale.h>
 #include <hbapierr.h>
 
+#ifdef __XHARBOUR__
+#define HB_BOOL BOOL
+#endif
 
 #ifndef __XHARBOUR__ //(__HARBOUR__)
 #define hb_retclenAdopt( szText, ulLen )     hb_retclen_buffer( (szText), (ulLen) )
