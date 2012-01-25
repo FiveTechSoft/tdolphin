@@ -1,6 +1,6 @@
 /*
- * $Id: 12-Jan-12 1:03:16 AM tdolpsrv.prg Z riztan $
-*/
+ * $Id: 25-Jan-12 6:41:24 AM tdolpsrv.prg Z dgarciagil $
+ */
 
 /*
  * TDOLPHIN PROJECT source code:
@@ -86,7 +86,7 @@ CLASS TDolphinSrv
    DATA cUser          /*DAta contains the user's MySQL login ID*/
    DATA cNameHost
    
-   DATA cBuild     INIT '14-Jan-12 11:40:06 PM'
+   DATA cBuild     INIT '25-Jan-12 6:41:25 AM'
                        
    DATA hMysql         /*MySQL connection handle*/
                        

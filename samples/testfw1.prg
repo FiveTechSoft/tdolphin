@@ -1,5 +1,5 @@
 /*
- * $Id: 11-Jul-10 9:43:51 AM testfw1.PRG Z dgarciagil $
+ * $Id: 25-Jan-12 6:41:24 AM testfw1.prg Z dgarciagil $
  */
 
 //#include "hbcompat.ch"

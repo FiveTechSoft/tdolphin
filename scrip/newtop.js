@@ -44,7 +44,7 @@ function GetFileName ( nIndex ) {
 }
 
 function GetBuild ( sfile, index, time ) {
-	if( sfile == "tdolpsrv.PRG" ){
+	if( sfile == "tdolpsrv.prg" ){
 		UltraEdit.document[index].findReplace.find( "DATA cBuild" );
     UltraEdit.document[index].deleteLine(); 
     UltraEdit.document[index].write( "   DATA cBuild     INIT '" );
