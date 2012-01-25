@@ -24,8 +24,8 @@ PROCEDURE Main()
    cls
    ? "Started"
    oServer:Execute( "TRUNCATE TABLE custo" )
-   oServer:InsertFromDbf( "custo", cAlias )   
-//   oServer:InsertFromDbf( "custo", cAlias, 100, { "FIRST", "LAST", "CITY" }, {|| conteo( cAlias ) } )   
+//   oServer:InsertFromDbf( "custo", cAlias )   
+   oServer:InsertFromDbf( "custo", cAlias, 100, { "FIRST", "LAST", "CITY" }, {|| conteo( cAlias ) } )   
    ? "End"
    oServer:End()
    inkey(5)

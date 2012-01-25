@@ -38,12 +38,12 @@ PROCEDURE DataBrowse( oServer, oWnd )
    
    
    oServer:Execute( "set @balance:=0, @val1:=20, @val2:=100" )
-   oQry = oServer:Query( "select credit, debit, @balance:=@balance+credit-debit as balance, @val1, @VAL2 from test" )
+   oQry = oServer:Query( "select credit, debit, @balance:=@balance+credit-debit as balance, @val1, @VAL2 from testvar" )
    oQry:bOnLoadQuery = {|| oServer:Execute( "set @balance:=0" ) }
    
    DEFINE DIALOG oDlg SIZE 700,300 OF oWnd
 
-   @ 0, 0 XBROWSE oBrw 
+   @ 0, 0 XBROWSE oBrw OF oDlg
    
    SetDolphin( oBrw, oQry )
       

@@ -29,7 +29,7 @@ FUNCTION Main()
    BuildButtons( aBtns, oDlg, oQry )
 
    @ 30, 10 XBROWSE oBrw OBJECT oQry ;
-            AUTOCOLS AUTOSORT PIXEL SIZE 260, 200 LINES
+            AUTOCOLS AUTOSORT PIXEL SIZE 260, 200 LINES OF oDlg
 
 // Uncomment this line for fivewin version < 10.7   
 //   SetDolphin( oBrw, oQry )

@@ -96,11 +96,11 @@ PROCEDURE DataBrowse( oServer, oWnd )
                    "City",;
                    "State",;
                    "Birth Day",;
-                   "Death Day"
+                   "Death Day" ID 4015 OF oDlg
    
    oBrw:SetDolphin( oQry, .F. )
    
-   oBrw:CreateFromResource( 4015 )
+//   oBrw:CreateFromResource( 4015 )
    
    oBrw:bChange = {|| oDlg:Update() }
    

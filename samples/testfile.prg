@@ -95,7 +95,7 @@ PROCEDURE DataBrowse( oServer )
    @ 0, 0 XBROWSE oBrw FIELDS oQry:id, AllTrim( oQry:filename ) ;
           HEADERS "ID", "File Name";
           COLSIZES 50, 200 ;
-          LINES
+          LINES OF oDlg
    
    SetDolphin( oBrw, oQry, .F.)
 

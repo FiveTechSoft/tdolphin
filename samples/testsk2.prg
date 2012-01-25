@@ -18,7 +18,7 @@ FUNCTION Main()
    DEFINE DIALOG oDlg  SIZE 565, 480 
    
    @ 30, 10 XBROWSE oBrw OBJECT oQry ;
-            AUTOCOLS AUTOSORT PIXEL SIZE 260, 200 
+            AUTOCOLS AUTOSORT PIXEL SIZE 260, 200 OF oDlg
 
 // Uncomment this line for fivewin version < 10.7   
 //   SetDolphin( oBrw, oQry )
