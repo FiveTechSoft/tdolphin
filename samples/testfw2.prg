@@ -43,7 +43,7 @@ PROCEDURE DataBrowse( oServer, oWnd )
    
    DEFINE DIALOG oDlg SIZE 700,300 OF oWnd
 
-   @ 0, 0 XBROWSE oBrw 
+   @ 0, 0 XBROWSE oBrw OF oDlg
    
    SetDolphin( oBrw, oQry )
       
