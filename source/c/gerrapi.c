@@ -81,10 +81,9 @@ static void LoadMsgs( void )
     for( i=0; i < iLen; i++ )
     {
       if( hb_stricmp( LangInstalled[ i ].sLang, sID ) == 0 ){
-      	 typedef int (*fptr)();
-         fptr fp;
+         int (*fp)();
          pLangActive = &LangInstalled[ i ];
-         fp = ( fptr )&pLangActive->pFuncLang;
+         fp = (int(*)(void))pLangActive->pFuncLang;
          pLangActive->lTotalMsgs = (*fp)();
       }
     }
