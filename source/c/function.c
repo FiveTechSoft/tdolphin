@@ -1,5 +1,5 @@
 /*
- * $Id: 12/21/2011 12:06:00 PM function.c Z dgarciagil $
+ * $Id$
  */
 
 /*
@@ -1216,6 +1216,15 @@ HB_FUNC( MYSQLEMBEDDED )
    hb_MYSQL_ret( mysql );
 }
 
+static int _fltcmp( float a, float b ){
+   if( a < b )
+   	 return 1;
+   else if( a > b )
+   	 return -1;
+   else 
+   	 return 0;	
+}
+
 //------------------------------------
 
 unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, BOOL bSoft, char * cSearch )
@@ -1248,10 +1257,13 @@ unsigned int InternalSeek( MYSQL_RES* presult, int iData, unsigned int uiField, 
          hb_strncpy( szSource, row[ uiField ], pulFieldLengths[uiField] );
       }
 //         pulFieldLengths[ uiField ] = strlen( cSearch );
-      setlocale( LC_COLLATE, szLang );
-      
-      uii = strcoll( ( const char * ) szSource, ctempSearch );         
-      hb_xfree( szSource );      
+     if( IS_NUM( presult->fields[ uiField ].type ) ){      	
+      	 uii = _fltcmp( atof( ctempSearch ), atof( szSource ) );
+      }else{
+         setlocale( LC_COLLATE, szLang );      
+         uii = strcoll( szSource, ctempSearch );        
+      }
+      hb_xfree( szSource );  
 //      uii = hb_stricmp( ( const char * ) szSource, cSearch );//, ( long ) pulFieldLengths[ uiField ] );
    }
    hb_xfree( ctempSearch );
