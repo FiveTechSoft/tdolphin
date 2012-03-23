@@ -76,6 +76,7 @@ CLASS TDolphinSrv
              
    DATA bOnRestore     /*codeblock to evaluate in restore process*/      
    DATA bOnMultiQry    /*codeblock to evaluate for each Query in METHOD MultiQuery*/      
+   DATA bOnAfterQuery   /*codeblock to evaluate after execute a MySql Statement*/
 #ifdef DEBUG 
    DATA bDebug         /*codeblock to evaluate for each Query, Arg cQuery, ProcName( 1 ), ProcLine( 1 )*/ 
 #endif      
@@ -258,7 +259,7 @@ CLASS TDolphinSrv
                                  to reconnect is made. If the connection is down and auto-reconnect is disabled,
                                  ::ping() returns an error.*/
 
-   METHOD Query( cQuery )   INLINE      TDolphinQry():New( cQuery, Self )
+   METHOD Query( cQuery )   
    
    METHOD ReConnect()
 
@@ -1775,6 +1776,17 @@ RETURN .T.
 
 //---------------------------------------------//
 
+METHOD Query( cQuery )   
+   
+   local oQry
+ 
+   oQry = TDolphinQry():New( cQuery, Self )
+   
+RETURN oQry
+
+
+//---------------------------------------------//
+
 METHOD ReConnect() CLASS TDolphinSrv
 
    LOCAL oQrs
@@ -1999,8 +2011,12 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
       ::Debug( cQuery )
 #endif   
       IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
-         ::CheckError()
+         ::CheckError()      
       ENDIF
+      IF ::bonAfterQuery != NIL
+         Eval( ::bonAfterQuery, Self, cQuery )
+      ENDIF            
+      
 #ifndef NOINTERNAL      
    ELSE 
       ::nInternalError = ERR_NOQUERY
@@ -2199,6 +2215,7 @@ METHOD Update( cTable, aColumns, aValues, cWhere ) CLASS TDolphinSrv
          cValue   = ClipValue2SQL( aValues[ n ][ 1 ], aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] )
          IF aStruc[ nPos ][ MYSQL_FS_CLIP_TYPE ] == "M"
             cExecute += cField + " = CONCAT(" + cField + ", " + cValue + "),"
+         ELSE
             cExecute += cField + " = " + cField + " + " + cValue + ","
          ENDIF         
       ELSE 
