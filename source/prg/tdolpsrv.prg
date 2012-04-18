@@ -2458,7 +2458,7 @@ FUNCTION BuildInsert( cTable, aColumns, aValues, lForceValue, lMulti, cDuplicate
             ELSE 
                uValue = uData
             ENDIF
-            cValues += ClipValue2SQL( uData ) + ","
+            cValues += ClipValue2SQL( uValue ) + ","
          NEXT
          cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + "),"
       NEXT
