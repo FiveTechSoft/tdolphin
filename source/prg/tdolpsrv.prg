@@ -1,5 +1,9 @@
 /*
- * $Id: 25-Jan-12 6:41:24 AM tdolpsrv.prg Z dgarciagil $
+Repository path:    $HeadURL$
+Last committed:     $Revision$
+Last changed by:    $Author$
+Last changed date:    $Date$
+ID:            $Id$
  */
 
 /*
