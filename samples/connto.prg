@@ -30,6 +30,7 @@ FUNCTION ConnectTo( n )
                       DATABASE cDBName
                                 
    CATCH oErr 
+     ? hb_dumpvar( oErr )
      RETURN NIL
    END
    

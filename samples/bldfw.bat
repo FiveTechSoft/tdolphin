@@ -19,7 +19,7 @@ GOTO :BUILD
 SET BLD_TYPE=gtgui
 SET SAMPLE=%1
 SET GUI_LIB=c:\fivewin\svn\repo\lib\fivehc c:\fivewin\svn\repo\lib\fiveh
-SET GUI_INC=\fwh\include
+SET GUI_INC=c:\fivewin\svn\repo\include
 if exist %1.rc SET FILE_RC=%1.rc
 
 ..\win-make sample

@@ -11,6 +11,7 @@ PROCEDURE Main()
    local lCancel := .F., oQry
    local h
    local cFile := "miprueba.txt"
+   local aTables
    
    SET CENTURY ON
    SET DATE FORMAT "dd/mm/yyyy"   
@@ -18,14 +19,16 @@ PROCEDURE Main()
    //Activated Case sensitive
    SET CASESENSITIVE ON
    
-   IF ( oServer := ConnectTo() ) == NIL
+   IF ( oServer := ConnectTo(3) ) == NIL
       RETURN 
    ENDIF
    
    cTime := time()
    cls
    
-   BACKUPMYSQL TABLES "president", "clientes";
+   aTables = oServer:ListTables()
+   
+   BACKUPMYSQL TABLES aTables ;
                FILE "bcktest2.txt";
                OF oServer ;
                DROP OVERWRITE;

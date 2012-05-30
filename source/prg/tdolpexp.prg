@@ -66,6 +66,13 @@
 #define CRLF Chr( 13 ) + Chr( 10 )
 #endif
 
+#ifndef __XHARBOUR__
+#xtranslate GetActiveObject => __oleGetActiveObject
+#xtranslate createObject => __oleCreateObject
+function OLE2TXTERROR()
+return ""
+#endif
+
 //Main class to manager exports 
 CLASS TDolphinExport 
  
@@ -1193,3 +1200,4 @@ METHOD Export() CLASS TDolphinToSql
    ::Close()
 RETURN NIL
 #endif __WIN__
+

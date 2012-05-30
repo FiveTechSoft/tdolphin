@@ -1260,21 +1260,27 @@ METHOD ExecuteScript( cFile, bOnScrip ) CLASS TDolphinSrv
    LOCAL aLine
 
    IF Empty( cFile )
-      RETURN NIL
-   ENDIF
-
-#ifndef NOINTERNAL
-   IF ! File( cFile )
-      ::nInternalError = ERR_INVALIDBACKUPFILE
-      ::CheckError()
-      RETURN .F.
-   ENDIF
-#endif 
-   cText  = D_ReadFile( cFile )
-
-   aLine := hb_ATokens( cText, ";" )
+      cText  = D_ReadFile( cFile )
+      aLine := hb_ATokens( cText, ";" )
    
-   ::MultiQuery( aLine, , bOnScrip )
+      ::MultiQuery( aLine, , bOnScrip )
+
+   ELSE 
+   
+      ::Execute( cFile )
+      
+   ENDIF
+
+//#ifndef NOINTERNAL
+//   IF ! File( cFile )
+//      ::nInternalError = ERR_INVALIDBACKUPFILE
+//      ::CheckError()
+//      RETURN .F.
+//   ENDIF
+//#endif 
+
+   
+
 
 RETURN NIL
 
