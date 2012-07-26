@@ -536,12 +536,12 @@ HB_FUNC( MYSQLFETCHROW ) // -> array current row data
    else
       uiNumFields = mysql_num_fields( mresult );
 
-   itRow           = hb_itemArrayNew( uiNumFields );
    mrow            = mysql_fetch_row( mresult );
    pulFieldLengths = mysql_fetch_lengths( mresult ) ;
    
    if ( mrow )
    {
+     itRow           = hb_itemArrayNew( uiNumFields );
      for ( ui = 0; ui < uiNumFields; ui++ )
      {
        if ( mrow[ ui ] == NULL )
@@ -553,7 +553,8 @@ HB_FUNC( MYSQLFETCHROW ) // -> array current row data
          hb_arraySetCL( itRow, ui + 1, mrow[ ui ], pulFieldLengths[ ui ] );
        }
      }
-   }
+   }else 
+   	 itRow           = hb_itemArrayNew( 0 );
    hb_itemReturnRelease( itRow );
 
 }
