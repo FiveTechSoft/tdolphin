@@ -172,6 +172,8 @@ CLASS TDolphinQry
    METHOD GoTo( nRow ) INLINE   ::GetRow( nRow )
                                 /*Goto specific Row (RecNo) and fill aRow/Hash*/
                                 
+   METHOD GetFieldsModified()   /*Return a Array with fields modified*/                             
+   
    METHOD GetRowObj( nRow )     /*Return TDolphinRow Object*/
                                 
    METHOD GoBottom()   INLINE   ::GetRow( ::nRecCount  ) 
@@ -989,6 +991,34 @@ RETURN ::nRecNo
 
 //----------------------------------------------------//
 
+METHOD GetFieldsModified() CLASS TDolphinQry
+
+   LOCAL aField, uValue, uOldValue
+   LOCAL aOut := {}
+
+   FOR EACH aField IN ::aStructure
+      
+#ifdef USE_HASH
+      uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
+      uOldValue = ::hOldRow[ "_" + aField[ MYSQL_FS_NAME ] ]
+#else 
+#ifdef __XHARBOUR__
+      nIdx = HB_EnumIndex()
+#else
+      nIdx = aField:__EnumIndex()
+#endif /*__XHARBOUR__*/ 
+      uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
+      uOldValue = ::aOldRow[ nIdx ]
+#endif /*USE_HASH*/
+      IF ! ( uValue == uOldValue )
+         AAdd( aOut, aField[ MYSQL_FS_NAME ] )
+      ENDIF
+   NEXT
+   
+RETURN aOut
+
+//----------------------------------------------------//
+
 METHOD GetRowObj( nRow ) CLASS TDolphinQry
 
    IF nRow != NIL .AND. nRow != ::nRecNo
@@ -1008,12 +1038,25 @@ RETURN ::oRow
 //----------------------------------------------------//
 
 METHOD IsEqual( cnField ) CLASS TDolphinQry
+   
+   LOCAL nPos := 0
+   LOCAL lEqual := .F.
+   
+   IF ValType( cnField ) == "N"
+      cnField = ::FieldName( cnField )
+   ENDIF
+   
+   nPos = ::FieldPos( cnField )
+   
+   IF nPos > 0   
 #ifdef USE_HASH
-RETURN ::hRow[ "_" + cnField ] == ::hOldRow[ "_" + cnField ]
+      lEqual = ::hRow[ "_" + cnField ] == ::hOldRow[ "_" + cnField ]
 #else 
-RETURN ::aRow( cnField ) == ::aOldRow( cnField ) 
+      lEqual = ::aRow( cnField ) == ::aOldRow( cnField ) 
 #endif /*USE_HASH*/
-
+   ENDIF
+   
+RETURN lEqual
 
 //----------------------------------------------------//
 

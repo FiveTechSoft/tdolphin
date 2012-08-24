@@ -82,9 +82,9 @@ LIB_FLAGS= rc $(DOLPHIN_LIB)$(SEPARATOR)$(LIBNAME).$(LIB_EXT) $(filter %.o,$^)
 C_FLAGS= -D$(DEFX) -DHB_LEGACY_TYPES_ON -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -I$(C_COMP_INC_PATH) -Wall -c -o $@ $<
 
 ifneq ($(PRG_COMPILER),XHARBOUR)
-	LD_LIB= $(GUI_LIB) $(GT_LIB) z crypt nsl m pthread hbcommon hbcpage hbcplr hbct \
+	LD_LIB= $(GUI_LIB) $(GT_LIB) z crypt nsl pthread hbcommon hbcpage hbcplr hbct \
 hbhsx hblang hbmacro hbmisc hbmzip hbnf hbpcre hbpp hbrdd hbrtl hbsix \
-hbtip hbusrrdd hbvm gtstd gttrm rddcdx rddfpt rddntx xhb ncurses
+hbtip hbusrrdd hbvm gtstd gttrm rddcdx rddfpt rddntx xhb ncurses m
 else
 	LD_LIB= $(GUI_LIB) $(GT_LIB) z crypt m pthread common vm rtl rdd macro lang codepage pp dbfntx dbfcdx dbffpt hbsix hsx pcrepos usrrdd tip ct cgi gtstd gtcgi gtcrs debug ncurses
 endif
