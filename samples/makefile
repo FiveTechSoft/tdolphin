@@ -53,7 +53,8 @@ ifeq ($(BLD_TYPE),gtwin)
 			testms   \
 			testcon3 \
 			testdbi \
-			testupd2
+			testupd2 \
+			testuse
 		else
 			PRG_FILES= testemb1
 		endif
