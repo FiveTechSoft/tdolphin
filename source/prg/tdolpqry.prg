@@ -542,10 +542,11 @@ METHOD FieldGet( cnField ) CLASS TDolphinQry
    LOCAL uValue
 
 //   ::Cargo:cTitle = Time() + " " + Str( ::xLock )
-
 #ifdef USE_HASH
       IF HB_IsNumeric( cnField )         
-         uValue = ::aRowOriginal[ cnField ]
+         IF Len( ::aRowOriginal ) > 0
+            uValue = ::aRowOriginal[ cnField ]
+         ENDIF
          nNum   = cnField
       ELSE 
          nNum := ::FieldToNum( cnField )   
