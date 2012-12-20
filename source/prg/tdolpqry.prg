@@ -456,7 +456,7 @@ METHOD BuildDataWhere() CLASS TDolphinQry
          cWhere += aField[ MYSQL_FS_NAME ] + " = " + ;
                    ClipValue2Sql( uValue, , , .T. ) + " AND "
       ELSE
-        cWhere += aField[ MYSQL_FS_NAME ] + If( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ), " IS ", " = " ) + ;
+        cWhere += aField[ MYSQL_FS_NAME ] + If( uValue == NIL .OR. ( HB_IsString( uValue ) .AND. Empty( uValue ) ) .OR. ( HB_IsDate( uValue ) .AND. Empty( uValue ) ), " IS ", " = " ) + ;
                    ClipValue2Sql( uValue, , , .F. ) + " AND "
       ENDIF
           
