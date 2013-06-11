@@ -1538,7 +1538,7 @@ RETURN lRet
 
 //----------------------------------------------------//
 
-METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey ) CLASS TDolphinSrv
+METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey, bOnRow ) CLASS TDolphinSrv
 
    LOCAL cExecute
    LOCAL lRet, n := 1
@@ -1546,9 +1546,10 @@ METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey 
    LOCAL aStructTable
    LOCAL aItem
    LOCAL cColumns := ""
-   LOCAL cValues  := ""
+   LOCAL cValues  := "", cValues_temp := ""
    LOCAL uValue
    LOCAL dbs, aDbs := {}
+   LOCAL hHash := {=>}
    
    DEFAULT nLimit TO 500
 
@@ -1589,10 +1590,13 @@ METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey 
          ::CheckError()
          RETURN .F.      
 #endif 
-      ENDIF 
+      ENDIF
 //      AAdd( aColumns, aItem[ DBS_NAME ] )
+? aItem
       cColumns += aItem  + ","
    NEXT
+
+
    
    cColumns = SubStr( cColumns, 1, Len( cColumns ) - 1 ) + ") VALUES"
    DO WHILE ! ( cAlias )->( eof() )
@@ -1602,8 +1606,19 @@ METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey 
          IF ValType( uValue ) == "C"
             uValue = Val2Escape( uValue ) 
          ENDIF
-         cValues += ClipValue2SQL( uValue ) + ","
+         hHash[ aItem ] = uValue
+         cValues_temp += ClipValue2SQL( uValue ) + ","
       NEXT
+      IF bOnRow != NIL 
+        cValues_temp = ""
+        Eval( bOnRow, hHash )
+        FOR EACH aItem IN aStruct
+          cValues_temp += ClipValue2SQL( hHash[ aItem ] ) + ","
+        NEXT
+      ENDIF
+      cValues += cValues_temp
+      cValues_temp = ""
+      hHash = {=>}
       cValues  = SubStr( cValues, 1, Len( cValues ) - 1 ) + "),"
       ( cAlias )->( DBSkip() )
       n++

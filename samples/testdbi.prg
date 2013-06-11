@@ -25,7 +25,7 @@ PROCEDURE Main()
    ? "Started"
    oServer:Execute( "TRUNCATE TABLE custo" )
 //   oServer:InsertFromDbf( "custo", cAlias )   
-   oServer:InsertFromDbf( "custo", cAlias, 100, { "FIRST", "LAST", "CITY" }, {|| conteo( cAlias ) } )   
+   oServer:InsertFromDbf( "custo", cAlias, 100, { "FIRST", "LAST", "CITY" }, {|| conteo( cAlias ) }, , {|hRow| CambiaValor(hRow) } )   
    ? "End"
    oServer:End()
    inkey(5)
@@ -36,6 +36,14 @@ PROCEDURE conteo( cAlias )
 
    @ 2, 2 SAY ( cAlias )->( RecNo() )
 
+RETURN
+
+PROCEDURE CambiaValor( hRow )
+   static n := 0
+   if Upper( Alltrim( hRow[ "CITY" ] ) ) == "MIAMI"
+      hRow["CITY"] = "N/C"
+      @ 3, 2 SAY "Cambios: " + str(++n)
+   ENDIF
 RETURN
 
 #include "connto.prg"
