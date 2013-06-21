@@ -3,4 +3,4 @@ make clean
 cd samples
 make cleanall
 cd ..
-
+echo 'Done!!'
