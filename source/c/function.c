@@ -403,6 +403,49 @@ HB_FUNC( MYSQLCOMMIT )
    hb_retni( iret );
 } 
 
+//------------------------------------------------//
+// MYSQL *mysql_real_connect( MYSQL*, char * host, char * user, char * password, char * db, uint port, char *, uint flags )
+HB_FUNC( MYSQLSSLCONNECT ) // -> MYSQL*
+{
+   MYSQL * mysql;
+//   const char *szHost = ( const char * ) hb_parc( 1 );
+//   const char *szUser = ( const char * ) hb_parc( 2 );
+//   const char *szPass = ( const char * ) hb_parc( 3 );
+   unsigned int port  = ISNUM( 4 ) ? ( unsigned int ) hb_parni( 4 ) :  MYSQL_PORT;
+   unsigned int flags = ISNUM( 5 ) ? ( unsigned int ) hb_parni( 5 ) :  0;
+//   const char *szdb = ISCHAR( 6 ) ? ( const char * ) hb_parc( 6 ): 0;
+   PHB_ITEM pcbDecrypt = hb_param( 7, HB_IT_BLOCK );  
+    
+   mysql = mysql_init( NULL );
+   
+   if ( ( mysql != NULL ) )
+   {
+      const char *key = hb_parc(8);
+      const char *cert = hb_parc(9);
+      const char *ca = hb_parc(10);
+      const char *capath = hb_parc(11);
+      const char *cipher = hb_parc(12);
+      HB_BOOL bResult = FALSE;
+
+      bResult = mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
+
+      if( ! bResult ){
+        mysql_real_connect( mysql, 
+                            hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 1, HB_IT_ANY ) ) ), 
+                            hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 2, HB_IT_ANY ) ) ), 
+                            hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 3, HB_IT_ANY ) ) ), 
+                            hb_itemGetC( hb_vmEvalBlockV( pcbDecrypt, 1, hb_param( 6, HB_IT_ANY ) ) ),
+                            port, NULL, flags );
+        hb_MYSQL_ret( mysql );
+      }else 
+        hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );
+   }
+   else
+   {
+     hb_retptr( NULL );
+   }
+}  
+
 
 //------------------------------------------------//
 // MYSQL *mysql_real_connect( MYSQL*, char * host, char * user, char * password, char * db, uint port, char *, uint flags )
@@ -1561,6 +1604,7 @@ HB_FUNC( MYFIND )
    uiOk = uiOk >=0 ? uiOk + 1 : 0;
    hb_retnl( ( long ) uiOk  );
 }
+
 
 //------------------------------------------------//
 // hMySql, hFile, cQuery

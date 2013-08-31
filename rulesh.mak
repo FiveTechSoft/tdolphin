@@ -82,17 +82,17 @@ LIB_FLAGS= rc $(DOLPHIN_LIB)$(SEPARATOR)$(LIBNAME).$(LIB_EXT) $(filter %.o,$^)
 C_FLAGS= -D$(DEFX) -DHB_LEGACY_TYPES_ON -I$(PRG_COMP_INC_PATH) -I$(DOLPHIN_INC) -I$(C_COMP_INC_PATH) -Wall -c -o $@ $<
 
 ifneq ($(PRG_COMPILER),XHARBOUR)
-	LD_LIB= $(GUI_LIB) $(GT_LIB) z crypt nsl pthread hbcommon hbcpage hbcplr hbct \
+	LD_LIB= $(GUI_LIB) $(GT_LIB) z crypt nsl dl pthread hbcommon hbcpage hbcplr hbct \
 hbhsx hblang hbmacro hbmisc hbmzip hbnf hbpcre hbpp hbrdd hbrtl hbsix \
-hbtip hbusrrdd hbvm gtstd gttrm rddcdx rddfpt rddntx xhb ncurses m
+hbtip hbusrrdd hbvm gtstd gttrm rddcdx rddfpt rddntx xhb ncurses m 
 else
 	LD_LIB= $(GUI_LIB) $(GT_LIB) z crypt m pthread common vm rtl rdd macro lang codepage pp dbfntx dbfcdx dbffpt hbsix hsx pcrepos usrrdd tip ct cgi gtstd gtcgi gtcrs debug ncurses
 endif
-LD_FLAGS= -o$@ $@.$(OBJ_EXT) $(mysql_config  --libs) -Wall -s -mwindows \
+LD_FLAGS= -o$@ $@.$(OBJ_EXT) $(mysql_config  --libs) -Wall -s \
 	-L$(DOLPHIN_LIB) \
 	-L$(PRG_COMP_LIB_PATH) \
 	-L/usr/lib/mysql \
-  -mno-cygwin -Wl,--start-group -lsupc++
+ 	-Wl,--start-group -lsupc++
 
 ifeq ($(LIBMYSQL),)
 	ifeq ($(EMBEDDED),no)
