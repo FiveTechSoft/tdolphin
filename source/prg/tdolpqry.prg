@@ -273,9 +273,7 @@ METHOD New( cQuery, uServer, uParams ) CLASS TDolphinQry
       RETURN NIL 
    ENDIF
    
-   cQuery = TransformQueryParams( uParams )
-
-   ::cQuery  = cQuery
+   ::cQuery  = TransformQueryParams( cQuery, uParams ) 
    ::nQryId  = ::oServer:GetQueryId()
    ::oServer:AddQuery( Self )
 
