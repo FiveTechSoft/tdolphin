@@ -43,6 +43,7 @@ ifeq ($(BLD_TYPE),gtwin)
 			testqry1 \
 			testqry2 \
 			testqry3 \
+			testqry4 \
 			testrest \
 			testrst2 \
 			testseek \
@@ -54,6 +55,7 @@ ifeq ($(BLD_TYPE),gtwin)
 			testcon3 \
 			testdbi \
 			testupd2 \
+			teststm \
 			testuse
 		else
 			PRG_FILES= testemb1

@@ -198,7 +198,7 @@ CLASS TDolphinSrv
                                 API function that can succeed or fail. 
                                 A return value of zero means that no error occurred.*/
                                 
-   METHOD Execute( cQuery )   INLINE ::SqlQuery( cQuery )  
+   METHOD Execute( cQuery, uParams )   INLINE ::SqlQuery( cQuery, uParams )  
    
    METHOD ExecuteScript( cFile ) 
 
@@ -293,7 +293,7 @@ CLASS TDolphinSrv
    
    METHOD SetMultiStatement( lOnOf ) INLINE SetMultiStatement( ::hMysql, lOnOf )
    
-   METHOD SqlQuery( cQuery )  /*Executes the SQL statement pointed to by cQuery, 
+   METHOD SqlQuery( cQuery, uParams )  /*Executes the SQL statement pointed to by cQuery, 
                               Normally, the string must consist of a single SQL statement and 
                               you should not add a terminating semicolon (n++;n++) or \g to the statement. 
                               If multiple-statement execution has been enabled, 
@@ -1652,7 +1652,6 @@ METHOD InsertFromDbf( cTable, cAlias, nLimit, aStruct, bOnInsert, cDuplicateKey,
 #endif 
       ENDIF
 //      AAdd( aColumns, aItem[ DBS_NAME ] )
-? aItem
       cColumns += aItem  + ","
    NEXT
 
@@ -2086,7 +2085,7 @@ RETURN NIL
 
 //----------------------------------------------------//
 
-METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
+METHOD SQLQuery( cQuery, uParams ) CLASS TDolphinSrv
 
    LOCAL nLen := If( ! Empty( cQuery ), Len( cQuery ), 0 )
    LOCAL nRet
@@ -2095,6 +2094,7 @@ METHOD SQLQuery( cQuery ) CLASS TDolphinSrv
 #ifdef DEBUG
       ::Debug( cQuery )
 #endif   
+      cQuery = TransformQueryParams( cQuery, uParams )
       IF ( nRet := MySqlQuery( ::hMysql, cQuery, nLen ) ) > 0
          ::CheckError()      
       ENDIF
@@ -2882,3 +2882,25 @@ PROCEDURE Dolphin_DefError( oServer, nError, lInternal, cExtra )
    Eval( ErrorBlock(), oError )   
 
 RETURN
+
+//----------------------------------------------------//
+
+STATIC FUNCTION TransformQueryParams( cQuery, uParams )
+   
+   LOCAL aKeys, uItem, nLen
+
+   IF uParams != NIL
+      IF hb_isHash( uParams )
+         aKeys = HGETKEYS( uParams )
+         FOR EACH uItem IN aKeys
+            cQuery = StrTran( cQuery, "&"+uItem, uParams[uItem])
+         NEXT
+      ELSEIF hb_isArray( uParams )
+         nLen = Len( uParams )
+         FOR uItem = 1 TO nLen
+            cQuery = StrTran( cQuery, "&"+Alltrim( Str( uItem ) ), uParams[uItem])
+         NEXT
+      ENDIF 
+   ENDIF
+
+RETURN cQuery

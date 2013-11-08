@@ -22,7 +22,7 @@ PROCEDURE Main()
    ENDIF
    /*
    cQuery  = "select student.name, grade_event.date, score.score, grade_event.category"
-   cQuery += "from grade_event, score, student where grade_event.date = " + ClipValue2SQL( CToD( '09-23-2008' ) ) + " and "
+   cQuery += "from grade_event, score, student where grade_event.date = &fecha  and "
    cQuery += "grade_event.event_id = score.event_id and score.student_id = student.student_id"
    */
    

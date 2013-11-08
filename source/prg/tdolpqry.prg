@@ -256,9 +256,9 @@ ENDCLASS
 //----------------------------------------------------//
 
 
-METHOD New( cQuery, uServer, uValues ) CLASS TDolphinQry
+METHOD New( cQuery, uServer, uParams ) CLASS TDolphinQry
 
-   LOCAL cKeys, uItem, nLen
+   LOCAL aKeys, uItem, nLen
 
    DEFAULT uServer TO GetServerDefault()
 
@@ -272,21 +272,8 @@ METHOD New( cQuery, uServer, uValues ) CLASS TDolphinQry
       Dolphin_DefError( NIL, ERR_NODEFINDEDHOST, .T. )
       RETURN NIL 
    ENDIF
-
-   IF uValue != NIL
-      IF hb_isHash( uValue )
-         cKeys = hb_HKeys( uValue )
-         FOR EACH uItem IN cKeys
-            StrTran( cQuery, "&"+uItem, uValue[uItem])
-         NEXT
-      ELSEIF hb_isArray( uValue )
-         nLen = Len( uValue )
-         FOR uItem = 1 TO nLen
-            StrTran( cQuery, "&"+Alltrim( Str( uItem ) ), uValue[uItem])
-         NEXT
-      ENDIF 
-   ENDIF
-
+   
+   cQuery = TransformQueryParams( uParams )
 
    ::cQuery  = cQuery
    ::nQryId  = ::oServer:GetQueryId()
@@ -1925,3 +1912,25 @@ RETURN a
 FUNCTION VerifyValue( oQry, nIdx, cField  )
    LOCAL uValue := oQry:VerifyValue( nIdx, cField )
 RETURN uValue
+
+//----------------------------------------------------//
+
+STATIC FUNCTION TransformQueryParams( cQuery, uParams )
+   
+   LOCAL aKeys, uItem, nLen
+
+   IF uParams != NIL
+      IF hb_isHash( uParams )
+         aKeys = HGETKEYS( uParams )
+         FOR EACH uItem IN aKeys
+            cQuery = StrTran( cQuery, "&"+uItem, uParams[uItem])
+         NEXT
+      ELSEIF hb_isArray( uParams )
+         nLen = Len( uParams )
+         FOR uItem = 1 TO nLen
+            cQuery = StrTran( cQuery, "&"+Alltrim( Str( uItem ) ), uParams[uItem])
+         NEXT
+      ENDIF 
+   ENDIF
+
+RETURN cQuery
