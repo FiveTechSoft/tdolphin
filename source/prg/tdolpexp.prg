@@ -244,7 +244,7 @@ METHOD Export() CLASS TDolphinToText
       ENDIF
 
      IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
-        Super:hFile = ::hFile
+        ::super:hFile = ::hFile
         IF ::lAppend
            FSeek( ::hFile, 0, FS_END )
         ENDIF
@@ -842,7 +842,7 @@ METHOD Export() CLASS TDolphinToHtml
       ENDIF
 
       IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
-         Super:hFile = ::hFile
+         ::super:hFile = ::hFile
       ENDIF        
      
       IF bOnStart != NIL 
@@ -1139,7 +1139,7 @@ METHOD Export() CLASS TDolphinToSql
    FClose( FCreate( ::oMain:cFileName ) )
 
    IF( ( ::hFile := FOpen( ::oMain:cFileName, FO_WRITE ) ) != -1 )
-      Super:hFile = ::hFile
+      ::super:hFile = ::hFile
    ENDIF  
    
    IF bOnStart != NIL 

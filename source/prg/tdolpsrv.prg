@@ -108,6 +108,7 @@ CLASS TDolphinSrv
    DATA aQueries       /*Array queries actives*/
    
    METHOD New( cHost, cUser, cPassword, nPort, nFlags, bOnError, cDBName )
+   METHOD ssl( cHost, cUser, cPassword, nPort, nFlags, bOnError, cDBName, cSslKeyFile, cSslCertFile, cSslCaFile, cCertsPath, cSslCipher )
    
    METHOD AddUser( cHost, cUser, cPassword, cDb, lCreateDB, acPrivilegs, cWithOption )
                               /*The AddUser() enables system administrators to grant privileges to MySQL user accounts. 
@@ -144,6 +145,9 @@ CLASS TDolphinSrv
  
    METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName )    
                               /*to establish a connection to a MySQL database engine running on server*/
+
+   METHOD SSLConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, cSslCaFile, cSslCertFile, cSslKeyFile, cSslCipher )
+
 
    METHOD CommitTransaction()       INLINE ::Debug( "COMMITED" ),  MySqlCommit( ::hMySql ) == 0 
                               /*Commits the current transaction.*/
@@ -336,6 +340,47 @@ METHOD New( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError, cNameHost
    ::lReConnect     = .T.
 
    ::hMysql         = ::Connect() 
+   
+   ::CheckError()
+   IF ::lError
+      ::End()
+   ENDIF
+   
+   DEFAULT  cNameHost TO "TEMP" + Alltrim( Str( ::nServerId++ ) )
+   
+   ::cNameHost = cNameHost
+   
+   AAdd( aHost, { Self, cNameHost } )
+   
+   SetServerDefault( Self )
+
+RETURN Self
+
+//----------------------------------------------------//
+
+METHOD ssl( cHost, cUser, cPassword, nPort, nFlags, cDBName, bOnError, cNameHost, bDecrypt, cSslKeyFile, cSslCertFile, cSslCaFile, cCertsPath, cSslCipher ) CLASS TDolphinSrv
+
+   DEFAULT nPort TO 3306 
+   DEFAULT cDBName TO ""
+   
+   DEFAULT bDecrypt TO { | x | x }
+
+   ::bDecrypt = bDecrypt
+   
+   ::cHost          = cHost
+   ::cUser          = cUser
+   ::cPassword      = cPassword
+   ::nPort          = nPort
+   ::nFlags         = nFlags
+   ::lError         = .F.
+   ::bOnError       = bOnError
+   ::nInternalError = 0
+   ::cDBName        = AllTrim( cDBName )
+   ::aQueries       = {}
+      
+   ::lReConnect     = .T.
+
+   ::hMysql         = ::SSLConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, cSslKeyFile, cSslCertFile, cSslCaFile, cCertsPath, cSslCipher )
    
    ::CheckError()
    IF ::lError
@@ -868,6 +913,21 @@ METHOD Connect( cHost, cUser, cPassword, nPort, nFlags, cDBName ) CLASS TDolphin
    
 
 RETURN MySqlConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, ::bDecrypt )
+
+//----------------------------------------------------//
+
+METHOD SSLConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, cSslKeyFile, cSslCertFile, cSslCaFile, cCertsPath, cSslCipher ) CLASS TDolphinSrv
+
+   
+   DEFAULT cHost     TO ::cHost
+   DEFAULT cUser     TO ::cUser
+   DEFAULT cPassword TO ::cPassword
+   DEFAULT nPort     TO ::nPort
+   DEFAULT nFlags    TO ::nFlags
+   DEFAULT cDBName   TO ::cDBName
+   
+
+RETURN MySqlSSLConnect( cHost, cUser, cPassword, nPort, nFlags, cDBName, ::bDecrypt, cSslKeyFile, cSslCertFile, cSslCaFile, cCertsPath, cSslCipher )
 
 //-----------------------------------------------------------
 
