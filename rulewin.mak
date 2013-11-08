@@ -197,7 +197,8 @@ ifeq ($(PRG_COMPILER),HARBOUR)
 		rddfpt \
 		rddntx \
 		hbusrrdd \
-		hbcpage
+		hbcpage \
+		hbcplr
 	endif
 else	
 	ifeq ($(C_COMPILER),MINGW32)

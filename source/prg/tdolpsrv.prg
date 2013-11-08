@@ -1801,11 +1801,11 @@ RETURN .T.
 
 //---------------------------------------------//
 
-METHOD Query( cQuery )   
+METHOD Query( cQuery, uValues )   
    
    local oQry
  
-   oQry = TDolphinQry():New( cQuery, Self )
+   oQry = TDolphinQry():New( cQuery, Self, uValues )
    
 RETURN oQry
 

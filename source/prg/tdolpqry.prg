@@ -256,7 +256,9 @@ ENDCLASS
 //----------------------------------------------------//
 
 
-METHOD New( cQuery, uServer ) CLASS TDolphinQry
+METHOD New( cQuery, uServer, uValues ) CLASS TDolphinQry
+
+   LOCAL cKeys, uItem, nLen
 
    DEFAULT uServer TO GetServerDefault()
 
@@ -269,7 +271,22 @@ METHOD New( cQuery, uServer ) CLASS TDolphinQry
    IF ::oServer == NIL   
       Dolphin_DefError( NIL, ERR_NODEFINDEDHOST, .T. )
       RETURN NIL 
-   ENDIF   
+   ENDIF
+
+   IF uValue != NIL
+      IF hb_isHash( uValue )
+         cKeys = hb_HKeys( uValue )
+         FOR EACH uItem IN cKeys
+            StrTran( cQuery, "&"+uItem, uValue[uItem])
+         NEXT
+      ELSEIF hb_isArray( uValue )
+         nLen = Len( uValue )
+         FOR uItem = 1 TO nLen
+            StrTran( cQuery, "&"+Alltrim( Str( uItem ) ), uValue[uItem])
+         NEXT
+      ENDIF 
+   ENDIF
+
 
    ::cQuery  = cQuery
    ::nQryId  = ::oServer:GetQueryId()
