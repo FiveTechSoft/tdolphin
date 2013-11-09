@@ -814,9 +814,8 @@ HB_FUNC( MYSQLRESULTSTRUCTURE ) //-> Query result Structure
            hb_arraySetC( itemField, 2, mfield->table );  
         else
            hb_arraySetC( itemField, 2, hb_strLower( mfield->table, strlen( mfield->table ) ) ) ;  
-       
-//        MessageBox( 0, mfield->name, "ok", 0 );              
-        hb_arraySetC( itemField, 3, mfield->def );
+                     
+        //hb_arraySetC( itemField, 3, mfield->def );
         hb_arraySetNL( itemField, 4, mfield->type );
         hb_arraySetNL( itemField, 5, mfield->length );
         hb_arraySetNL( itemField, 6, mfield->max_length );

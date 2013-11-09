@@ -930,10 +930,10 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
    LOCAL cCol
    LOCAL nIdx
    LOCAL aRow
+   LOCAL hRow, uItem, aStructure, nPad
 
    DEFAULT nRow  TO ::nRecNo
 
-   
    IF ::hResult <> NIL
       DO CASE
          CASE ::nRecCount < 1
@@ -980,7 +980,83 @@ METHOD GetRow( nRow ) CLASS TDolphinQry
         
             ::SetData( nIdx, uValue )
          NEXT
+      ELSE
 
+         IF useClipperDefaultValue()
+            aStructure = ::aStructure
+            
+            //hRow = Hash()
+            
+            FOR EACH uItem IN aStructure
+   #ifdef __XHARBOUR__
+               nIdx = HB_EnumIndex()
+   #else
+               nIdx = uItem:__EnumIndex()
+   #endif
+               cType := uItem[ MYSQL_FS_CLIP_TYPE ]
+               SWITCH cType
+               
+               CASE "M"
+                  // we can not use PadR in  memo field
+                  IF uItem[ MYSQL_FS_DEF ] != NIL
+                     uValue = uItem[ MYSQL_FS_DEF ]
+                  ELSE 
+                     uValue = ""
+                  ENDIF 
+                  EXIT         
+               CASE "C"
+                  IF D_SetPadRight()
+                     nPad = Min( If( uItem[ MYSQL_FS_MAXLEN ] > uItem[ MYSQL_FS_LENGTH ],;
+                               uItem[ MYSQL_FS_MAXLEN ], uItem[ MYSQL_FS_LENGTH] ), MAX_BLOCKSIZE )
+                  ELSE 
+                     nPad = 0 
+                  ENDIF
+                  IF uItem[ MYSQL_FS_DEF ] != NIL
+                     uValue = PadR( uItem[ MYSQL_FS_DEF ], Max( Len( uItem[ MYSQL_FS_DEF ] ), nPad ) )
+                  ELSE 
+                     uValue = Space( nPad )
+                  ENDIF 
+                  EXIT
+
+               CASE "N"
+               CASE "I"
+                  IF uItem[ MYSQL_FS_DEF ] != NIL
+                     uValue = Val( uItem[ MYSQL_FS_DEF ] )
+                  ELSE 
+                     uValue = 0
+                  ENDIF 
+                  EXIT
+
+               CASE "L"
+                  IF uItem[ MYSQL_FS_DEF ] != NIL
+                     uValue = uItem[ MYSQL_FS_DEF ] == "1"
+                  ELSE 
+                     uValue = .F.
+                  ENDIF 
+                  
+                  EXIT
+
+               CASE "D"
+                  IF uItem[ MYSQL_FS_DEF ] != NIL
+                     uValue = SqlDate2Clip( uItem[ MYSQL_FS_DEF ] )
+                  ELSE 
+                     uValue = CToD("")
+                  ENDIF 
+               
+                  EXIT
+
+         #ifdef __XHARBOUR__
+               DEFAULT
+         #else 
+               OTHERWISE
+         #endif
+                  uValue := nil
+               END
+               ::SetData( nIdx, uValue )
+               //HSet( hRow, Lower( uItem[ MYSQL_FS_NAME ] ) , uValue )
+
+            NEXT
+         ENDIF
       ENDIF
 #ifndef NOINTERNAL      
    ELSE 
@@ -1161,7 +1237,7 @@ METHOD LoadQuery( lBuildData ) CLASS TDolphinQry
    
    ::hResult := MySqlStoreResult( oServer:hMysql )
 //   ::hResult := MySqlUseResult( oServer:hMysql )
-   
+
    IF ! ( ::hResult == NIL )
       ::aStructure = MySqlResultStructure( ::hResult, lCaseSen, D_LogicalValue() ) 
       ::nRecCount := MySqlNumRows( ::hResult )
@@ -1696,6 +1772,7 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
    LOCAL nPad
 
    cType := ::aStructure[ nIdx ][ MYSQL_FS_CLIP_TYPE ] //, ::aStructure[ nIdx ][ MYSQL_FS_TYPE ]
+
    SWITCH cType
       CASE "L"
          IF cField == NIL

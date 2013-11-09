@@ -2668,6 +2668,22 @@ FUNCTION D_LogicalValue( lOnOff )
   ENDIF
 
 RETURN lOldStatus
+
+//----------------------------------------------------//  
+// use default clipper value when no fetched any row in query
+FUNCTION useClipperDefaultValue( lOnOff )
+
+  LOCAL lOldStatus
+
+  STATIC lStatus := .F.
+
+  lOldStatus = lStatus
+
+  IF PCount() == 1 .AND. ValType( lOnOff ) == "L"
+     lStatus = lOnOff
+  ENDIF
+
+RETURN lOldStatus
    
 //----------------------------------------------------//  
 

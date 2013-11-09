@@ -199,6 +199,8 @@
 #xcommand SET CASESENSITIVE <on:ON,OFF> => D_SetCaseSensitive( Upper(<(on)>) == "ON" )
 #xcommand SET PADRIGHT <on:ON,OFF> => D_SetPadRight( Upper(<(on)>) == "ON" )
 #xcommand SET LOGICALVALUE <on:ON,OFF> => D_LogicalValue( Upper(<(on)>) == "ON" )
+#xcommand SET DEFAULTCLPVALUE <on:ON,OFF> => useClipperDefaultValue( Upper(<(on)>) == "ON" )
+
 
 //-------------------
 
