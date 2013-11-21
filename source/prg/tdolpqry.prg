@@ -677,9 +677,9 @@ METHOD FieldPut( cnField, uValue ) CLASS TDolphinQry
       ELSE 
          cCol = "_" + Lower( cnField )
       ENDIF
-      IF Valtype( uValue ) == Valtype( ::hRow[ cCol ] ) .OR. ::hRow[ cCol ] == NIL
+      IF ( Valtype( uValue ) == Valtype( ::hRow[ cCol ] ) .OR. Empty( ::hRow[ cCol ] ) ) .OR. ::hRow[ cCol ] == NIL
 #else      
-      IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] ) .OR. ::aRow[ nNum ] == NIL      
+      IF Valtype( uValue ) == Valtype( ::aRow[ nNum ] .OR. Empty( ::aRow[ nNum ] ) ) .OR. ::aRow[ nNum ] == NIL      
 #endif      
          IF ValType( uValue ) == "C"
             uValue := MySqlEscape( AllTrim( uValue ), ::oServer:hMySql )
@@ -1129,7 +1129,9 @@ METHOD IsEqual( cnField ) CLASS TDolphinQry
    
    IF nPos > 0   
 #ifdef USE_HASH
-      lEqual = ::hRow[ "_" + cnField ] == ::hOldRow[ "_" + cnField ]
+      if ! ( Empty( ::hOldRow[ "_" + cnField ] ) .AND. ! empty(::hRow[ "_" + cnField ] ) )
+        lEqual = ::hRow[ "_" + cnField ] == ::hOldRow[ "_" + cnField ]
+      endif
 #else 
       lEqual = ::aRow( cnField ) == ::aOldRow( cnField ) 
 #endif /*USE_HASH*/
@@ -1512,7 +1514,7 @@ METHOD Save() CLASS TDolphinQry
          uValue = ::FieldGet( aField[ MYSQL_FS_NAME ] )
          uOldValue = ::aOldRow[ nIdx ]
 #endif /*USE_HASH*/
-         IF ! ( uValue == uOldValue ) .and. ! lChanged
+         IF ( ! Empty( uValue ) .AND. Empty( uOldValue ) .OR. ! ( uValue == uOldValue ) ) .and. ! lChanged
             lChanged = .T.
          ENDIF
       ENDIF
@@ -1775,31 +1777,32 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
 
    SWITCH cType
       CASE "L"
-         IF cField == NIL
-            uValue = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ::aStructure[ nIdx ][ MYSQL_FS_DEF ], .F. )
+         IF cField == NIL .OR. Empty(cField)
+             uValue = If( IS_NOT_NULL( ::aStructure[ nIdx ][ MYSQL_FS_FLAGS ] ), .F., cField )
          ELSE
             uValue := If( ValType( cField ) == "L", cField, !( Val( cField ) == 0 ) )
          ENDIF
          EXIT
 
       CASE "N"
-         IF cField == NIL
-            uValue = If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, Val( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), 0 )
+       
+         IF cField == NIL .OR. Empty(cField)
+            uValue = If( IS_NOT_NULL( ::aStructure[ nIdx ][ MYSQL_FS_FLAGS ] ), 0, cField )
          ELSE
             uValue = If( ValType( cField ) == "N", cField, Val( cField ) )
-         ENDIF               
+         ENDIF     
          EXIT
 
       CASE "D"
-         IF Empty( cField )
-            uValue := If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, SqlDate2Clip( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] ), CToD( "" ) )
+         IF Empty( cField ) .OR. Empty(cField)
+            uValue = If( IS_NOT_NULL( ::aStructure[ nIdx ][ MYSQL_FS_FLAGS ] ),  CToD( "" ), cField )
          ELSE
             uValue := If( ValType( cField ) == "D", cField, SqlDate2Clip( cField ) )
          ENDIF
          EXIT
       CASE "M"
          // we can not use PadR in  memo field
-         IF ( cField == NIL )
+         IF ( cField == NIL .OR. Empty(cField) )
             uValue := ""
          ELSE
             uValue := cField
@@ -1813,10 +1816,8 @@ METHOD VerifyValue( nIdx, cField ) CLASS TDolphinQry
          ELSE 
             nPad = 0 
          ENDIF
-         IF ( cField == NIL )
-            uValue := PadR( If( ::aStructure[ nIdx ][ MYSQL_FS_DEF ] != NIL, ;
-                                ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ""), PadR( ::aStructure[ nIdx ][ MYSQL_FS_DEF ], ;
-                                nPad ) )
+         IF ( cField == NIL .OR. Empty(cField) )
+            uValue = If( IS_NOT_NULL( ::aStructure[ nIdx ][ MYSQL_FS_FLAGS ] ), PadR(nPad), cField )
          ELSE
             uValue := PadR( cField, Max( Len( cField ), nPad ) ) 
          ENDIF

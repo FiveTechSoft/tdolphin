@@ -2346,9 +2346,15 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt, lNoNull ) // Compatibility wint TMys
    SWITCH cType
       CASE "N"
       CASE "I"
-
-         if Value != NIL .OR. lNoNull
-            cValue := AllTrim( Str( Value ) )
+         if ( Value != NIL .OR. lNoNull )
+            LogFile("debug.txt", {"value", VAlue, "typo", ValType(value), "VACIO", EMPTY(vALUE)})
+            if ValType( Value ) == "C"
+              IF Empty( Value )
+                 cValue = "NULL"
+              endif
+            else
+              cValue := AllTrim( Str( Value ) )
+            endif
          else
             cValue := "NULL"
          endif
@@ -2888,15 +2894,12 @@ PROCEDURE Dolphin_DefError( oServer, nError, lInternal, cExtra )
    LOCAL oError
    
    DEFAULT cExtra TO ""
-
    oError := ErrorNew()
    oError:SubSystem   = If( lInternal, "TDOLPHIN", "MYSQL" )
    oError:SubCode     = nError
    oError:Severity    = 2
    oError:Description = If( lInternal, "Internal Error:" + DOL_GETERROTEXT( nError ) , oServer:ErrorTxt() ) + " " + cExtra
-   
-   Eval( ErrorBlock(), oError )   
-
+   Eval( ErrorBlock(), oError )
 RETURN
 
 //----------------------------------------------------//

@@ -59,7 +59,8 @@ static G_LANG * pLangActive;
 
 static G_LANG LangInstalled[] = {
   { "EN", &LoadMsgsEN, 0 },
-  { "ES", &LoadMsgsES, 0 }
+  { "ES", &LoadMsgsES, 0 },
+  { "es.ESWIN", &LoadMsgsES, 0 }  
 };
 
 static G_ERRMSG * pErrMessage = NULL;
@@ -103,11 +104,13 @@ static char * GetGErrorMsg( HB_ERRCODE iCode, const char * sAux )
   {
     if( sAux != NULL )
     {
+       
        sprintf( cMsg,  pErrMessage[ iPos ].sDescription, sAux );
        return ( char * )cMsg;
     }else
     {
-      memcpy( cMsg, pErrMessage[ iPos ].sDescription, strlen( pErrMessage[ iPos ].sDescription ) );     
+      hb_snprintf( cMsg, strlen( pErrMessage[ iPos ].sDescription ) + 1, "%s", pErrMessage[ iPos ].sDescription );
+      //memcpy( cMsg, pErrMessage[ iPos ].sDescription, strlen( pErrMessage[ iPos ].sDescription ) );     
       return cMsg;
     }
   }
