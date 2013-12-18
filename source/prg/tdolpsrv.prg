@@ -2347,7 +2347,6 @@ FUNCTION ClipValue2SQL( Value, cType, lTxt, lNoNull ) // Compatibility wint TMys
       CASE "N"
       CASE "I"
          if ( Value != NIL .OR. lNoNull )
-            LogFile("debug.txt", {"value", VAlue, "typo", ValType(value), "VACIO", EMPTY(vALUE)})
             if ValType( Value ) == "C"
               IF Empty( Value )
                  cValue = "NULL"
