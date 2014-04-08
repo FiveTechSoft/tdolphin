@@ -734,11 +734,15 @@ HB_FUNC( MYSQLQUERY ) //
 {
    MYSQL * hMysql =  ( MYSQL * )hb_MYSQL_par( 1 );
    
-   if( hMysql )
-      hb_retnl( ( long ) mysql_real_query( hMysql,
-                 ( const char * ) hb_parc( 2 ),
-                 ( unsigned long ) hb_parnl( 3 ) ) ) ;
-   else
+   if( hMysql ){
+      if( mysql_ping( hMysql ) == 0 )
+        hb_retnl( ( long ) mysql_real_query( hMysql,
+                   ( const char * ) hb_parc( 2 ),
+                   ( unsigned long ) hb_parnl( 3 ) ) ) ;
+      else
+        hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS ); 
+
+   }else
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );     
 }
 
@@ -886,7 +890,9 @@ HB_FUNC( MYSQLSTORERESULT ) // -> MYSQL_RES
 {
    MYSQL * hmysql = ( MYSQL * ) hb_MYSQL_par( 1 );
    if( hmysql )
-      hb_MYSQL_RES_ret( mysql_store_result( ( MYSQL * )hb_MYSQL_par( 1 ) ) );
+   {
+      hb_MYSQL_RES_ret( mysql_store_result( hmysql ) );
+   }
    else
       hb_errRT_BASE( EG_ARG, 2020, NULL, HB_ERR_FUNCNAME, HB_ERR_ARGS_BASEPARAMS );   
    
