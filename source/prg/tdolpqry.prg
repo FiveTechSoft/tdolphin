@@ -506,7 +506,7 @@ METHOD Delete( lAll ) CLASS TDolphinQry
    LOCAL cTable
    LOCAL cQry := ""
    LOCAL cPrimary
-   
+   LOCAL nPos
    DEFAULT lAll TO .F.
 
 #ifndef NOINTERNAL
@@ -516,8 +516,13 @@ METHOD Delete( lAll ) CLASS TDolphinQry
       RETURN .F. 
    ENDIF
 #endif   
-   
-   cTable := ::aTables[ 1 ]
+   nPos:=At(' ',::aTables[1])                       
+   IF nPos>0                                        
+      cTable := SubStr( ::aTables[ 1 ],1,nPos )     
+   ELSE                                             
+      cTable := ::aTables[ 1 ]                      
+   ENDIF                                            
+
    cQry   := "DELETE FROM " + cTable
 
    If ! lAll
